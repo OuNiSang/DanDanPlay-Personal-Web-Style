@@ -1,0 +1,6 @@
+<link rel="stylesheet" href="css/main.css?v=@Model.StaticResourceVersion&amp;ui=2.2">
+
+<!-- Theme controller: applies stored theme synchronously before paint
+     and injects the toggle button after DOM ready. -->
+<script src="js/theme.js?v=@Model.StaticResourceVersion"></script>
+<script src="js/app.js?v=@Model.StaticResourceVersion"></script>

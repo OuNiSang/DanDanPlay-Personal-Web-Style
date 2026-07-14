@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="css/icon.png" type="image/x-icon">
+    <title>@Model.WebSiteName - 番剧列表 - @Model.Title</title>
+    <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
+    <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
+    @Partial['style.sshtml'];
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<nav class="app-nav app-nav--library" aria-label="媒体库导航">
+    <div class="app-nav__inner">
+        <a class="app-nav__brand" href="index.html">
+            <i class="fas fa-play-circle"></i>
+            <span>@Model.WebSiteName</span>
+        </a>
+        <div class="library-nav__rail" aria-label="媒体库页面">
+            <a class="library-nav__home" href="index.html" data-library-nav="home">
+                <i class="fas fa-house" aria-hidden="true"></i>
+                <span>首页</span>
+            </a>
+            <div class="library-nav__group" aria-label="观看动态">
+                <span class="library-nav__group-label">动态</span>
+                <a class="library-nav__link" href="bangumi.html?nav=lastplay" data-library-nav="lastplay">最近播放</a>
+                <a class="library-nav__link" href="bangumi.html?nav=lastupdate" data-library-nav="lastupdate">最近更新</a>
+                <a class="library-nav__link" href="bangumi.html?nav=lastadd" data-library-nav="lastadd">最近关注</a>
+            </div>
+            <span class="library-nav__divider" aria-hidden="true"></span>
+            <div class="library-nav__group" aria-label="浏览媒体库">
+                <span class="library-nav__group-label">浏览</span>
+                <a class="library-nav__link" href="bangumi.html?nav=season" data-library-nav="season">番剧季度</a>
+                <a class="library-nav__link" href="bangumi.html?nav=name" data-library-nav="name">番剧</a>
+                <a class="library-nav__link" href="bangumi.html?nav=category" data-library-nav="category">分类</a>
+                <a class="library-nav__link" href="bangumi.html?nav=rating" data-library-nav="rating">排行榜</a>
+                <a class="library-nav__link" href="filelist.html?type=nav&amp;name=%E6%9C%80%E8%BF%91%E6%94%B6%E5%BD%95" data-library-nav="recent-files">最近收录</a>
+            </div>
+        </div>
+        <div class="app-nav__end">
+            <div class="app-nav__search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="搜索番剧…" autocomplete="off">
+            </div>
+            @IfNot.IsAnonymous
+            <span class="app-nav__user">
+                <i class="fas fa-user-circle"></i> @Model.UserName
+            </span>
+            <a href="/web1/logout" class="app-nav__logout" aria-label="退出登录" title="退出登录">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+            @EndIf
+            <button id="theme-toggle" type="button" class="theme-toggle" title="切换主题">
+                <i class="fas fa-sun" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="app-main">
+    <section class="shelf">
+        <div class="shelf__header">
+            <div class="page-heading">
+                <div class="page-heading__eyebrow" id="pageEyebrow"><i class="fas fa-layer-group"></i> 媒体库</div>
+                <h1 class="shelf__title">@Model.Title</h1>
+                <p class="page-heading__description" id="pageDescription">浏览已收录的作品，使用搜索或分组索引立即定位。</p>
+            </div>
+            <div class="library-summary" id="librarySummary" aria-live="polite">
+                <strong>--</strong>
+                <span>部作品</span>
+            </div>
+        </div>
+
+        <div id="loadingIndicator" class="state-panel" role="status">
+            <span class="state-panel__icon"><i class="fas fa-spinner fa-spin"></i></span>
+            <strong class="state-panel__title">正在整理媒体库</strong>
+            <span class="state-panel__description">作品数量较多时可能需要几秒钟。</span>
+        </div>
+
+        <div id="emptyState" class="state-panel" style="display:none;">
+            <span class="state-panel__icon"><i class="fas fa-film"></i></span>
+            <strong class="state-panel__title">没有找到作品</strong>
+            <span class="state-panel__description">尝试清空搜索条件，或稍后等待媒体库完成扫描。</span>
+        </div>
+
+        <div id="errorState" class="state-panel state-panel--error" style="display:none;" role="alert">
+            <span class="state-panel__icon"><i class="fas fa-triangle-exclamation"></i></span>
+            <strong class="state-panel__title">媒体库加载失败</strong>
+            <span class="state-panel__description" id="errorMessage">服务器暂时没有返回作品列表。</span>
+            <span class="state-panel__actions"><button type="button" class="btn-accent" id="retryLoadBtn"><i class="fas fa-rotate-right"></i> 重新加载</button></span>
+        </div>
+
+        <div id="posterGrid" class="poster-grid" style="display: none;">
+            <!-- 番剧列表将通过JavaScript动态加载 -->
+        </div>
+    </section>
+</main>
+
+<footer class="app-footer">
+    <p>@Model.ServerInfo</p>
+</footer>
+
+<!-- 番剧详情弹窗 -->
+<div id="bangumiModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h3 id="modalTitle"></h3>
+                <small id="lastWatchedInfo" style="color: var(--text-2); font-size: 0.875rem;"></small>
+            </div>
+            <button type="button" class="close" onclick="closeModal()" aria-label="关闭番剧详情">&times;</button>
+        </div>
+        <div id="loading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <div id="seasonTabs" class="season-tabs" style="display: none;"></div>
+        <ul id="episodeList" class="episode-list" style="display: none;"></ul>
+    </div>
+</div>
+
+<!-- Quick Nav -->
+<div id="quickNavContainer">
+    <div id="quickNav" class="quick-nav collapsed">
+        <!-- 通过JavaScript动态生成 -->
+    </div>
+    <button type="button" id="quickNavToggle" class="quick-nav-toggle" aria-label="展开快速索引" aria-expanded="false">
+        <i class="fas fa-angle-left"></i>
+    </button>
+</div>
+
+<script src="js/jquery-3.7.1.min.js"></script>
+<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=2.2"></script>
+<script src="js/recent-play-refresh.js"></script>
+<script src="js/bootstrap.bundle-5.3.3.min.js"></script>
+<script src="js/lazysizes-5.3.1.min.js"></script>
+
+<script>
+    var bangumiListApi = "@Model.BangumiListApi";
+    var bangumiDetailsApiTemplate = "@Model.BangumiDetailsApi";
+    var bangumiList = [];
+    var bangumiMapById = {};
+    var currentModalState = null;
+    var libraryFallbackPromise = null;
+    var currentNav = (new URLSearchParams(window.location.search).get('nav') || '').toLowerCase();
+    var listRequest = null;
+    var modalRequest = null;
+
+    var viewPresentations = {
+        lastplay: ['fa-circle-play', '观看动态', '从上次停下的位置继续，观看进度会直接显示在卡片上。'],
+        lastupdate: ['fa-clock-rotate-left', '入库时间', '按最近更新的时间分组，快速查看媒体库中的新变化。'],
+        lastadd: ['fa-bookmark', '关注动态', '最近关注与新加入媒体库的作品，按时间自然归档。'],
+        season: ['fa-calendar-days', '季度归档', '按播出季度浏览收藏，快速定位每一季的作品。'],
+        name: ['fa-arrow-down-a-z', '名称索引', '按作品名称浏览媒体库，在完整海报墙中快速定位。'],
+        category: ['fa-shapes', '类型索引', '按题材和类型分组浏览，发现同类作品之间的关联。'],
+        rating: ['fa-ranking-star', '收藏排行', '按照媒体库评分分组排列，醒目的序号帮助快速比较。']
+    };
+
+    $(document).ready(function () {
+        applyViewPresentation();
+        $('#loadingIndicator').show();
+        $('#posterGrid').hide();
+
+        var searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('search') === '1') {
+            window.setTimeout(function () {
+                var searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.focus({ preventScroll: true });
+                    searchInput.select();
+                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 120);
+        }
+
+        loadBangumiList();
+
+        $('#retryLoadBtn').on('click', loadBangumiList);
+
+        $('#searchInput').on('input', function () {
+            var searchQuery = $(this).val().trim().toLowerCase();
+            var filteredList = bangumiList.filter(function (bangumi) {
+                return String(bangumi.Title || '').toLowerCase().includes(searchQuery);
+            });
+            $('#emptyState').toggle(filteredList.length === 0);
+            $('#posterGrid').toggle(filteredList.length > 0);
+            renderBangumiList(filteredList);
+            renderQuickNav(filteredList);
+            updateLibrarySummary(filteredList.length, countGroups(filteredList));
+        });
+
+        $('#quickNavToggle').click(function () {
+            $('#quickNav').toggleClass('collapsed');
+            var collapsed = $('#quickNav').hasClass('collapsed');
+            var icon = $('#quickNavToggle i');
+            $(this).attr('aria-expanded', collapsed ? 'false' : 'true')
+                .attr('aria-label', collapsed ? '展开快速索引' : '收起快速索引');
+            if (collapsed) {
+                icon.removeClass('fa-angle-right').addClass('fa-angle-left');
+            } else {
+                icon.removeClass('fa-angle-left').addClass('fa-angle-right');
+            }
+        });
+    });
+
+    function loadBangumiList() {
+        if (listRequest) listRequest.abort();
+        $('#loadingIndicator').show();
+        $('#posterGrid, #emptyState, #errorState').hide();
+        DandanApp.setBusy(document.getElementById('retryLoadBtn'), true, '加载中');
+
+        listRequest = $.ajax({
+            url: bangumiListApi,
+            method: 'GET',
+            timeout: 12000,
+            success: function (response) {
+                applyBangumiList(Array.isArray(response) ? response : []);
+                if (window.RecentPlayRefresh && isRecentPlayNav()) {
+                    RecentPlayRefresh.hydrate(bangumiList, bangumiDetailsApiTemplate, {
+                        limit: 16,
+                        concurrency: 4,
+                        timeout: 3500
+                    }).then(function (freshItems) {
+                        applyBangumiList(freshItems);
+                    });
+                }
+            },
+            error: function (xhr, status) {
+                if (status === 'abort') return;
+                $('#loadingIndicator, #posterGrid, #emptyState').hide();
+                $('#errorMessage').text(DandanApp.describeError(xhr, '无法加载番剧列表，请稍后重试。'));
+                $('#errorState').show();
+            },
+            complete: function () {
+                listRequest = null;
+                DandanApp.setBusy(document.getElementById('retryLoadBtn'), false);
+            }
+        });
+    }
+
+    function applyBangumiList(items) {
+        bangumiList = items || [];
+        bangumiMapById = {};
+        bangumiList.forEach(function (bangumi) {
+            bangumiMapById[String(bangumi.AnimeId)] = bangumi;
+        });
+        $('#loadingIndicator').hide();
+        $('#errorState').hide();
+        $('#emptyState').toggle(bangumiList.length === 0);
+        $('#posterGrid').toggle(bangumiList.length > 0);
+        renderBangumiList(bangumiList);
+        renderQuickNav(bangumiList);
+        updateLibrarySummary(bangumiList.length, countGroups(bangumiList));
+    }
+
+    function isRecentPlayNav() {
+        return currentNav === 'lastplay' || /(?:nav[=:])lastplay/i.test(bangumiListApi || '');
+    }
+
+    function refreshBangumiListFromDetails(bangumi, response) {
+        if (!window.RecentPlayRefresh || !bangumi) return;
+        if (!RecentPlayRefresh.applyDetails(bangumi, response)) return;
+        if (!isRecentPlayNav()) return;
+        applyBangumiList(RecentPlayRefresh.sort(bangumiList));
+    }
+
+    function renderBangumiList(bangumiList) {
+        var posterGrid = $('#posterGrid');
+        posterGrid.empty();
+        var groups = groupBangumiItems(bangumiList);
+        var globalIndex = 0;
+
+        groups.forEach(function (group, groupIndex) {
+            var groupSection = $('<section></section>')
+                .addClass('poster-group')
+                .attr('id', 'group-' + groupIndex)
+                .attr('aria-labelledby', 'group-title-' + groupIndex);
+            var groupHeader = $('<header></header>').addClass('poster-group__header').appendTo(groupSection);
+            $('<h2></h2>')
+                .addClass('group-name')
+                .text(group.name)
+                .attr('id', 'group-title-' + groupIndex)
+                .appendTo(groupHeader);
+            $('<span></span>').addClass('poster-group__count').text(group.items.length + ' 部').appendTo(groupHeader);
+            var groupGrid = $('<div></div>').addClass('poster-group__grid').appendTo(groupSection);
+
+            group.items.forEach(function (bangumi) {
+                var watched = Number(bangumi.EpisodeWatched) || 0;
+                var total = Number(bangumi.EpisodeTotal) || 0;
+                var progress = total > 0 ? Math.max(0, Math.min(100, Math.round(watched / total * 100))) : 0;
+                var posterItem = $('<div></div>')
+                    .addClass('poster-item')
+                    .attr('data-list-index', globalIndex)
+                    .attr('role', 'button')
+                    .attr('tabindex', '0')
+                    .css('--watch-progress', progress + '%')
+                    .on('click', function () {
+                        showModal(String(bangumi.AnimeId), bangumi.Title);
+                    })
+                    .on('keydown', function (event) {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            showModal(String(bangumi.AnimeId), bangumi.Title);
+                        }
+                    });
+
+                var watchedInfo = $('<div></div>')
+                    .addClass('watched-info')
+                    .text(watched + '/' + total)
+                    .appendTo(posterItem);
+
+                if (currentNav === 'rating') {
+                    $('<span></span>').addClass('poster-rank').text('#' + (globalIndex + 1)).appendTo(posterItem);
+                }
+
+                var posterImg = $('<img>')
+                    .attr('data-src', bangumi.Cover)
+                    .attr('alt', bangumi.Title)
+                    .addClass('lazyload')
+                    .appendTo(posterItem);
+
+                var posterInfo = $('<div></div>').addClass('poster-info').appendTo(posterItem);
+                $('<h3></h3>').text(bangumi.Title).attr('title', bangumi.Title).appendTo(posterInfo);
+                $('<p></p>').text(bangumi.Details).appendTo(posterInfo);
+                if (currentNav === 'lastplay') {
+                    $('<span></span>').addClass('poster-progress').attr('aria-hidden', 'true').appendTo(posterItem);
+                }
+
+                groupGrid.append(posterItem);
+                globalIndex += 1;
+            });
+            posterGrid.append(groupSection);
+        });
+    }
+
+    function renderQuickNav(bangumiList) {
+        var quickNav = $('#quickNav');
+        quickNav.empty();
+
+        groupBangumiItems(bangumiList).forEach(function (group, groupIndex) {
+            var navLink = $('<a></a>')
+                .attr('href', '#group-' + groupIndex);
+            $('<i class="fas fa-angle-right" aria-hidden="true"></i>').appendTo(navLink);
+            navLink.append(document.createTextNode(' ' + group.name));
+            quickNav.append(navLink);
+        });
+    }
+
+    function groupBangumiItems(items) {
+        var groups = [];
+        var groupMap = {};
+        (items || []).forEach(function (bangumi) {
+            var groupName = bangumi.GroupName || '未分组';
+            if (!groupMap[groupName]) {
+                groupMap[groupName] = { name: groupName, items: [] };
+                groups.push(groupMap[groupName]);
+            }
+            groupMap[groupName].items.push(bangumi);
+        });
+        return groups;
+    }
+
+    function countGroups(items) {
+        return groupBangumiItems(items).length;
+    }
+
+    function updateLibrarySummary(itemCount, groupCount) {
+        $('#librarySummary strong').text(itemCount);
+        $('#librarySummary span').text(groupCount ? groupCount + ' 个分组' : '部作品');
+    }
+
+    function applyViewPresentation() {
+        var presentation = viewPresentations[currentNav];
+        if (!presentation) return;
+        $('#pageEyebrow').html('<i class="fas ' + presentation[0] + '" aria-hidden="true"></i> ' + presentation[1]);
+        $('#pageDescription').text(presentation[2]);
+    }
+
+    function showModal(animeId, title) {
+        if (modalRequest) modalRequest.abort();
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('lastWatchedInfo').innerText = '';
+        document.getElementById('loading').innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i><span class="visually-hidden">加载中</span>';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('seasonTabs').style.display = 'none';
+        document.getElementById('seasonTabs').innerHTML = '';
+        document.getElementById('episodeList').style.display = 'none';
+        document.getElementById('episodeList').innerHTML = '';
+        document.getElementById('bangumiModal').style.display = 'block';
+
+        var getBangumiDetailsApi = bangumiDetailsApiTemplate.replace('{id}', animeId);
+        var bangumiMeta = bangumiMapById[String(animeId)] || null;
+
+        modalRequest = $.ajax({
+            url: getBangumiDetailsApi,
+            method: 'GET',
+            timeout: 10000,
+            success: function (response) {
+                refreshBangumiListFromDetails(bangumiMeta, response);
+                if (shouldAttemptLibraryFallback(response, bangumiMeta)) {
+                    fetchLibraryFallback()
+                        .done(function (libraryResponse) {
+                            renderModalState(animeId, response, bangumiMeta, libraryResponse);
+                        })
+                        .fail(function () {
+                            renderModalState(animeId, response, bangumiMeta, []);
+                        });
+                    return;
+                }
+
+                renderModalState(animeId, response, bangumiMeta, []);
+            },
+            error: function (xhr, status) {
+                if (status === 'abort') return;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('episodeList').style.display = 'block';
+                document.getElementById('episodeList').innerHTML = '<li class="episode-item empty-state">作品详情加载失败，请关闭后重试。</li>';
+                DandanApp.toast(DandanApp.describeError(xhr, '作品详情加载失败。'), 'error');
+            },
+            complete: function () {
+                modalRequest = null;
+            }
+        });
+    }
+
+    function shouldAttemptLibraryFallback(response, bangumiMeta) {
+        var episodes = response && response.Episodes ? response.Episodes : [];
+        if (!episodes.length || !bangumiMeta) {
+            return false;
+        }
+
+        var seasonIds = collectSeasonIds(episodes);
+        var allFilesMissing = episodes.every(function (episode) {
+            return !episode.LocalMatchedFiles || !episode.LocalMatchedFiles.length;
+        });
+
+        return seasonIds.length <= 1 &&
+            (Number(bangumiMeta.EpisodeTotal || 0) > episodes.length ||
+                (Number(bangumiMeta.VideoFileCount || 0) > 0 && allFilesMissing));
+    }
+
+    function fetchLibraryFallback() {
+        if (!libraryFallbackPromise) {
+            libraryFallbackPromise = $.ajax({
+                url: getLibraryFallbackApi(),
+                method: 'GET',
+                timeout: 10000
+            });
+        }
+        return libraryFallbackPromise;
+    }
+
+    function getLibraryFallbackApi() {
+        var tokenMatch = bangumiDetailsApiTemplate.match(/[?&]token=([^&]+)/);
+        var token = tokenMatch ? tokenMatch[1] : '';
+        var apiPrefix = bangumiDetailsApiTemplate.split('/api/v1/library/v2/bangumi/details/')[0];
+        return apiPrefix + '/api/v1/library' + (token ? '?token=' + token : '');
+    }
+
+    function renderModalState(animeId, response, bangumiMeta, libraryResponse) {
+        document.getElementById('loading').style.display = 'none';
+        currentModalState = buildModalState(animeId, response, bangumiMeta, libraryResponse);
+        renderSeasonTabs(currentModalState);
+        renderSeasonEpisodes(currentModalState.activeSeasonId);
+    }
+
+    function buildModalState(animeId, response, bangumiMeta, libraryResponse) {
+        var officialEpisodes = response && response.Episodes ? response.Episodes : [];
+        var officialGroups = buildSeasonGroups(officialEpisodes);
+        var fallbackGroups = buildFallbackSeasonGroups(animeId, libraryResponse);
+        var mergedGroups = mergeSeasonGroups(officialGroups, fallbackGroups);
+        var lastWatchedState = findLastWatchedEpisode(officialEpisodes);
+        var activeSeasonId = determineInitialSeasonId(officialGroups, mergedGroups, lastWatchedState.episode);
+
+        return {
+            animeId: animeId,
+            bangumiMeta: bangumiMeta,
+            seasons: mergedGroups,
+            activeSeasonId: activeSeasonId,
+            lastWatchedEpisodeId: lastWatchedState.episode ? String(lastWatchedState.episode.EpisodeId) : null,
+            lastWatchedInfoHtml: buildLastWatchedInfoHtml(lastWatchedState.episode, lastWatchedState.time, lastWatchedState.isCloudTime)
+        };
+    }
+
+    function buildSeasonGroups(episodes) {
+        var groups = {};
+        var order = [];
+
+        (episodes || []).forEach(function (episode) {
+            var seasonId = normalizeSeasonId(episode.SeasonId);
+            if (!groups[seasonId]) {
+                groups[seasonId] = [];
+                order.push(seasonId);
+            }
+            groups[seasonId].push(episode);
+        });
+
+        order.sort(compareSeasonIds);
+
+        Object.keys(groups).forEach(function (seasonId) {
+            groups[seasonId].sort(compareEpisodes);
+        });
+
+        return {
+            groups: groups,
+            order: order
+        };
+    }
+
+    function buildFallbackSeasonGroups(animeId, libraryResponse) {
+        var groups = {};
+        var order = [];
+        var episodeMap = {};
+
+        (libraryResponse || []).forEach(function (file) {
+            if (String(file.AnimeId) !== String(animeId)) {
+                return;
+            }
+
+            var seasonId = inferSeasonIdFromFile(file);
+            if (!seasonId) {
+                seasonId = 'special';
+            }
+
+            if (!groups[seasonId]) {
+                groups[seasonId] = [];
+                order.push(seasonId);
+            }
+
+            var episodeKey = String(file.EpisodeId);
+            if (!episodeMap[seasonId]) {
+                episodeMap[seasonId] = {};
+            }
+
+            if (!episodeMap[seasonId][episodeKey]) {
+                var fallbackEpisode = {
+                    SeasonId: seasonId,
+                    EpisodeId: file.EpisodeId,
+                    EpisodeTitle: normalizeFallbackEpisodeTitle(file.EpisodeTitle),
+                    EpisodeNumber: inferEpisodeNumberFromFile(file),
+                    LastWatched: null,
+                    LastWatchedCloud: null,
+                    AirDate: null,
+                    AirStatus: 0,
+                    LocalMatchedExists: true,
+                    LocalMatchedFiles: []
+                };
+                episodeMap[seasonId][episodeKey] = fallbackEpisode;
+                groups[seasonId].push(fallbackEpisode);
+            }
+
+            episodeMap[seasonId][episodeKey].LocalMatchedFiles.push({
+                Id: file.Id,
+                Name: file.Name
+            });
+        });
+
+        order.sort(compareSeasonIds);
+
+        Object.keys(groups).forEach(function (seasonId) {
+            groups[seasonId].sort(compareEpisodes);
+        });
+
+        return {
+            groups: groups,
+            order: order
+        };
+    }
+
+    function mergeSeasonGroups(officialGroups, fallbackGroups) {
+        var groups = {};
+        var order = [];
+
+        officialGroups.order.forEach(function (seasonId) {
+            groups[seasonId] = mergeEpisodeArrays(officialGroups.groups[seasonId], fallbackGroups.groups[seasonId] || []);
+            order.push(seasonId);
+        });
+
+        fallbackGroups.order.forEach(function (seasonId) {
+            if (!groups[seasonId]) {
+                groups[seasonId] = fallbackGroups.groups[seasonId];
+                order.push(seasonId);
+            }
+        });
+
+        order.sort(compareSeasonIds);
+
+        return {
+            groups: groups,
+            order: order
+        };
+    }
+
+    function mergeEpisodeArrays(officialEpisodes, fallbackEpisodes) {
+        var merged = [];
+        var byId = {};
+
+        (officialEpisodes || []).forEach(function (episode) {
+            var copy = Object.assign({}, episode);
+            copy.LocalMatchedFiles = (episode.LocalMatchedFiles || []).slice();
+            byId[String(copy.EpisodeId)] = copy;
+            merged.push(copy);
+        });
+
+        (fallbackEpisodes || []).forEach(function (fallbackEpisode) {
+            var existing = byId[String(fallbackEpisode.EpisodeId)];
+            if (existing) {
+                if (!existing.LocalMatchedFiles || !existing.LocalMatchedFiles.length) {
+                    existing.LocalMatchedFiles = (fallbackEpisode.LocalMatchedFiles || []).slice();
+                    existing.LocalMatchedExists = existing.LocalMatchedFiles.length > 0;
+                }
+                return;
+            }
+
+            merged.push(fallbackEpisode);
+        });
+
+        merged.sort(compareEpisodes);
+        return merged;
+    }
+
+    function renderSeasonTabs(modalState) {
+        var seasonTabs = document.getElementById('seasonTabs');
+        var episodeList = document.getElementById('episodeList');
+
+        document.getElementById('lastWatchedInfo').innerHTML = modalState.lastWatchedInfoHtml;
+
+        if (!modalState.seasons.order.length) {
+            seasonTabs.style.display = 'none';
+            episodeList.style.display = 'block';
+            episodeList.innerHTML = '<li class="episode-item empty-state">未找到剧集信息</li>';
+            return;
+        }
+
+        if (modalState.seasons.order.length <= 1) {
+            seasonTabs.style.display = 'none';
+            return;
+        }
+
+        seasonTabs.innerHTML = '';
+        seasonTabs.style.display = 'flex';
+
+        modalState.seasons.order.forEach(function (seasonId) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'season-tab' + (seasonId === modalState.activeSeasonId ? ' active' : '');
+            button.setAttribute('data-season-id', seasonId);
+            button.innerText = formatSeasonLabel(seasonId);
+            button.onclick = function () {
+                renderSeasonEpisodes(seasonId);
+            };
+            seasonTabs.appendChild(button);
+        });
+    }
+
+    function renderSeasonEpisodes(seasonId) {
+        if (!currentModalState || !currentModalState.seasons.groups[seasonId]) {
+            return;
+        }
+
+        currentModalState.activeSeasonId = seasonId;
+        updateSeasonTabState();
+
+        var episodeList = document.getElementById('episodeList');
+        episodeList.style.display = 'block';
+        episodeList.innerHTML = '';
+
+        var lastWatchedElement = null;
+        currentModalState.seasons.groups[seasonId].forEach(function (episode) {
+            var li = document.createElement('li');
+            li.className = 'episode-item';
+
+            if (currentModalState.lastWatchedEpisodeId && String(episode.EpisodeId) === currentModalState.lastWatchedEpisodeId) {
+                li.classList.add('last-watched-episode');
+                lastWatchedElement = li;
+            }
+
+            li.innerHTML = `
+                <div class="episode-title">
+                    ${buildStatusIcon(episode)}
+                    <i class="fas fa-tv"></i>
+                    ${formatEpisodeHeading(episode)}
+                </div>
+                <div class="episode-details">
+                    <div><i class="fas fa-calendar-alt"></i> 上映日期: ${formatDateValue(episode.AirDate)}</div>
+                    <div><i class="fas fa-clock"></i> 上次观看时间: ${formatDateTimeValue(episode.LastWatched)}</div>
+                    <div><i class="fas fa-cloud"></i> 上次观看时间（云端）: ${formatDateTimeValue(episode.LastWatchedCloud)}</div>
+                </div>
+                <div class="local-files">
+                    ${buildFilesHtml(episode.LocalMatchedFiles || [])}
+                </div>
+            `;
+            episodeList.appendChild(li);
+        });
+
+        if (lastWatchedElement) {
+            setTimeout(function () {
+                lastWatchedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        } else {
+            episodeList.scrollTop = 0;
+        }
+    }
+
+    function updateSeasonTabState() {
+        var seasonTabs = document.getElementById('seasonTabs');
+        Array.prototype.slice.call(seasonTabs.querySelectorAll('.season-tab')).forEach(function (tab) {
+            tab.classList.toggle('active', tab.getAttribute('data-season-id') === String(currentModalState.activeSeasonId));
+        });
+    }
+
+    function buildFilesHtml(files) {
+        if (!files.length) {
+            return '<div class="no-local-files"><i class="fas fa-folder-open"></i> 当前季暂无匹配到的本地文件</div>';
+        }
+
+        return files.map(function (file) {
+            var thumbnailUrl = `/api/v1/image/id/${file.Id}`;
+            return `
+                <a href="video.html?id=${file.Id}" target="_blank" class="file-item-link">
+                    <img src="${thumbnailUrl}" alt="${file.Name}" class="file-thumbnail"
+                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2214%22%3E无缩略图%3C/text%3E%3C/svg%3E';">
+                    <div class="file-item-info">
+                        <i class="fas fa-file-video"></i> ${file.Name}
+                    </div>
+                </a>
+            `;
+        }).join('');
+    }
+
+    function buildStatusIcon(episode) {
+        if (episode.AirStatus === 1) {
+            return '<i class="fas fa-check-circle status-icon watched"></i>';
+        }
+        if (episode.AirStatus === 2) {
+            return '<i class="fas fa-clock status-icon not-aired"></i>';
+        }
+        return '<i class="fas fa-minus-circle status-icon not-watched"></i>';
+    }
+
+    function formatEpisodeHeading(episode) {
+        var prefix = episode.EpisodeNumber ? episode.EpisodeNumber + ' - ' : '';
+        return prefix + (episode.EpisodeTitle || '未知剧集');
+    }
+
+    function formatDateValue(value) {
+        return value ? new Date(value).toLocaleDateString() : 'N/A';
+    }
+
+    function formatDateTimeValue(value) {
+        return value ? new Date(value).toLocaleString() : 'N/A';
+    }
+
+    function findLastWatchedEpisode(episodes) {
+        var lastWatchedEpisode = null;
+        var lastWatchedTime = null;
+        var isCloudTime = false;
+
+        (episodes || []).forEach(function (episode) {
+            var localTime = episode.LastWatched ? new Date(episode.LastWatched) : null;
+            var cloudTime = episode.LastWatchedCloud ? new Date(episode.LastWatchedCloud) : null;
+            var episodeLastTime = null;
+            var episodeIsCloud = false;
+
+            if (localTime && cloudTime) {
+                if (cloudTime > localTime) {
+                    episodeLastTime = cloudTime;
+                    episodeIsCloud = true;
+                } else {
+                    episodeLastTime = localTime;
+                }
+            } else if (cloudTime) {
+                episodeLastTime = cloudTime;
+                episodeIsCloud = true;
+            } else if (localTime) {
+                episodeLastTime = localTime;
+            }
+
+            if (episodeLastTime && (!lastWatchedTime || episodeLastTime > lastWatchedTime)) {
+                lastWatchedTime = episodeLastTime;
+                lastWatchedEpisode = episode;
+                isCloudTime = episodeIsCloud;
+            }
+        });
+
+        return {
+            episode: lastWatchedEpisode,
+            time: lastWatchedTime,
+            isCloudTime: isCloudTime
+        };
+    }
+
+    function buildLastWatchedInfoHtml(lastWatchedEpisode, lastWatchedTime, isCloudTime) {
+        if (!lastWatchedEpisode || !lastWatchedTime) {
+            return '';
+        }
+
+        var sourceStr = isCloudTime ? '云端' : '本地';
+        return `<i class="fas fa-history"></i> 上次观看: ${lastWatchedEpisode.EpisodeTitle} (${sourceStr}, ${lastWatchedTime.toLocaleString()})`;
+    }
+
+    function collectSeasonIds(episodes) {
+        var seasonMap = {};
+        (episodes || []).forEach(function (episode) {
+            seasonMap[normalizeSeasonId(episode.SeasonId)] = true;
+        });
+        return Object.keys(seasonMap);
+    }
+
+    function normalizeSeasonId(seasonId) {
+        if (seasonId === null || seasonId === undefined || seasonId === '') {
+            return 'special';
+        }
+        return String(seasonId);
+    }
+
+    function inferSeasonIdFromFile(file) {
+        var titleMatch = (file.EpisodeTitle || '').match(/第\s*(\d+)\s*季/i);
+        if (titleMatch) {
+            return String(parseInt(titleMatch[1], 10));
+        }
+
+        var nameMatch = (file.Name || '').match(/S(\d{1,2})E\d{1,2}/i);
+        if (nameMatch) {
+            return String(parseInt(nameMatch[1], 10));
+        }
+
+        return null;
+    }
+
+    function inferEpisodeNumberFromFile(file) {
+        var titleMatch = (file.EpisodeTitle || '').match(/\((\d+)\)/);
+        if (titleMatch) {
+            return String(parseInt(titleMatch[1], 10));
+        }
+
+        var nameMatch = (file.Name || '').match(/S\d{1,2}E(\d{1,2})/i);
+        if (nameMatch) {
+            return String(parseInt(nameMatch[1], 10));
+        }
+
+        return '';
+    }
+
+    function normalizeFallbackEpisodeTitle(title) {
+        if (!title) {
+            return '未知剧集';
+        }
+        return title.replace(/^第\s*\d+\s*季\s*\(\d+\)\s*/, '');
+    }
+
+    function determineInitialSeasonId(officialGroups, mergedGroups, lastWatchedEpisode) {
+        if (lastWatchedEpisode && lastWatchedEpisode.SeasonId !== undefined && lastWatchedEpisode.SeasonId !== null) {
+            return normalizeSeasonId(lastWatchedEpisode.SeasonId);
+        }
+
+        if (officialGroups.order.length) {
+            return officialGroups.order[0];
+        }
+
+        return mergedGroups.order.length ? mergedGroups.order[0] : null;
+    }
+
+    function compareSeasonIds(a, b) {
+        var aNum = a === 'special' ? Number.MAX_SAFE_INTEGER : parseInt(a, 10);
+        var bNum = b === 'special' ? Number.MAX_SAFE_INTEGER : parseInt(b, 10);
+        return aNum - bNum;
+    }
+
+    function compareEpisodes(a, b) {
+        var aNumber = parseInt(a.EpisodeNumber, 10);
+        var bNumber = parseInt(b.EpisodeNumber, 10);
+
+        if (!isNaN(aNumber) && !isNaN(bNumber) && aNumber !== bNumber) {
+            return aNumber - bNumber;
+        }
+
+        return String(a.EpisodeId).localeCompare(String(b.EpisodeId));
+    }
+
+    function formatSeasonLabel(seasonId) {
+        return seasonId === 'special' ? '特别篇' : `第${seasonId}季`;
+    }
+
+    function closeModal() {
+        document.getElementById('bangumiModal').style.display = 'none';
+        if (modalRequest) modalRequest.abort();
+        modalRequest = null;
+    }
+
+    window.onclick = function (event) {
+        const modal = document.getElementById('bangumiModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>

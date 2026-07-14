@@ -1,0 +1,3493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="css/icon.png" type="image/x-icon">
+    <title>@Model.WebSiteName</title>
+    <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
+    <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
+    @Partial['style.sshtml'];
+    <script>
+    (function () {
+        try {
+            var startAtHero = !window.location.hash;
+            if (startAtHero && 'scrollRestoration' in history) history.scrollRestoration = 'manual';
+            if (startAtHero) {
+                window.addEventListener('pageshow', function () {
+                    window.requestAnimationFrame(function () {
+                        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                    });
+                }, { once: true });
+            }
+        } catch (error) {}
+    })();
+    </script>
+    <style>
+    /* ═══════════════════════════════
+       INDEX-SPECIFIC LAYOUT
+       ═══════════════════════════════ */
+
+    html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 0;
+    }
+
+    body {
+        background:
+            radial-gradient(circle at 18% -8%, rgba(232,160,32,0.18), transparent 30vw),
+            radial-gradient(circle at 92% 8%, rgba(96,126,255,0.12), transparent 34vw),
+            var(--bg);
+        overflow-x: hidden;
+    }
+
+    /* ── 顶部导航 ── */
+    .idx-nav {
+        height: 58px;
+        background: linear-gradient(180deg, rgba(8,9,11,0.72), rgba(8,9,11,0.38));
+        backdrop-filter: blur(22px) saturate(1.15);
+        -webkit-backdrop-filter: blur(22px) saturate(1.15);
+        border-bottom: 0.5px solid rgba(255,255,255,0.08);
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        gap: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        box-shadow: 0 18px 52px rgba(0,0,0,0.18);
+    }
+
+    [data-theme="light"] .idx-nav {
+        background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.42));
+        border-bottom-color: rgba(0,0,0,0.06);
+    }
+
+    .idx-nav__brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        flex-shrink: 0;
+        margin-right: 24px;
+    }
+
+    .idx-nav__icon {
+        width: 30px; height: 30px;
+        background: linear-gradient(135deg, #ffd36a, var(--accent) 48%, #ff8b24);
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px;
+        color: #000;
+        flex-shrink: 0;
+        box-shadow: 0 0 28px rgba(232,160,32,0.34);
+    }
+
+    .idx-nav__name {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text-1);
+        letter-spacing: -0.02em;
+    }
+
+    .idx-nav__links {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .idx-nav__link {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-3);
+        padding: 6px 12px;
+        border-radius: 999px;
+        text-decoration: none;
+        transition: color 0.18s, background 0.18s, transform 0.18s;
+        white-space: nowrap;
+    }
+
+    .idx-nav__link:hover  {
+        color: var(--text-1);
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-1px);
+    }
+    .idx-nav__link.active {
+        color: var(--text-1);
+        font-weight: 700;
+        background: rgba(255,255,255,0.09);
+    }
+
+    .idx-nav__end {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+    }
+
+    .idx-nav__search-btn {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        border: 0.5px solid rgba(255,255,255,0.08);
+        color: var(--text-3);
+        font-size: 14px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.18s, color 0.18s, transform 0.18s, box-shadow 0.18s;
+    }
+
+    .idx-nav__search-btn:hover {
+        background: rgba(255,255,255,0.14);
+        color: var(--text-1);
+        transform: translateY(-1px) scale(1.04);
+        box-shadow: 0 0 24px rgba(255,255,255,0.08);
+    }
+
+    .idx-nav__avatar {
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        background: var(--surface-3);
+        border: 1.5px solid var(--border-md);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-1);
+        text-decoration: none;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: border-color 0.15s;
+    }
+
+    .idx-nav__avatar:hover { border-color: var(--accent); }
+
+    /* ── Cinematic Hero ── */
+    .idx-hero {
+        position: relative;
+        height: 100vh;
+        height: 100svh;
+        height: 100dvh;
+        min-height: 100vh;
+        min-height: 100svh;
+        min-height: 100dvh;
+        max-height: none;
+        overflow: hidden;
+        background: #07080a;
+        display: block; /* reserve the complete first viewport before data arrives */
+        isolation: isolate;
+        box-shadow: inset 0 -1px 0 rgba(255,255,255,0.04);
+    }
+
+    .idx-hero::before,
+    .idx-hero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .idx-hero::before {
+        z-index: 4;
+        opacity: 0.22;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+            radial-gradient(circle at 18% 72%, rgba(232,160,32,0.32), transparent 23vw),
+            radial-gradient(circle at 82% 24%, rgba(113,144,255,0.24), transparent 26vw);
+        background-size: 100% 4px, auto, auto;
+        mix-blend-mode: screen;
+        animation: hero-grain-drift 12s linear infinite;
+    }
+
+    .idx-hero::after {
+        z-index: 5;
+        background:
+            radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.44) 78%, rgba(0,0,0,0.78) 100%),
+            linear-gradient(180deg, rgba(0,0,0,0.22) 0%, transparent 34%, rgba(0,0,0,0.72) 100%);
+    }
+
+    .idx-hero__scroll-cue {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        z-index: 8;
+        width: 34px;
+        height: 48px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        transform: translateX(-50%);
+        display: grid;
+        place-items: center;
+        color: rgba(255,255,255,0.72);
+        pointer-events: none;
+        box-shadow: 0 16px 36px rgba(0,0,0,0.2);
+        animation: hero-scroll-cue 1.55s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+
+    .idx-hero__scroll-cue::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: rotate(45deg) translateY(-2px);
+    }
+
+    .idx-hero__bg {
+        position: absolute;
+        inset: -7%;
+        background-size: cover;
+        background-position: center 24%;
+        filter: blur(42px) saturate(1.24) brightness(0.48);
+        transform: scale(1.16);
+        opacity: 0.9;
+        transition: background-image 0.42s ease, opacity 0.42s ease, filter 0.42s ease;
+        animation: hero-ambient-shift 18s ease-in-out infinite alternate;
+    }
+
+    .idx-hero__overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        background:
+            linear-gradient(90deg, rgba(5,7,10,0.96) 0%, rgba(5,7,10,0.82) 30%, rgba(5,7,10,0.36) 62%, rgba(5,7,10,0.08) 100%),
+            linear-gradient(180deg, rgba(0,0,0,0.58) 0%, transparent 20%, rgba(0,0,0,0.2) 62%, var(--bg) 100%);
+    }
+
+    .idx-hero__overlay::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.06) 46%, transparent 58%),
+            linear-gradient(180deg, transparent 58%, var(--bg) 100%);
+        transform: translateX(-38%);
+        opacity: 0.35;
+        animation: hero-light-sweep 7.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+        pointer-events: none;
+    }
+
+    [data-theme="light"] .idx-hero__overlay {
+        background:
+            linear-gradient(90deg, rgba(246,246,242,0.96) 0%, rgba(246,246,242,0.86) 32%, rgba(246,246,242,0.34) 64%, rgba(246,246,242,0.08) 100%),
+            linear-gradient(180deg, rgba(246,246,242,0.46) 0%, transparent 28%, rgba(246,246,242,0.18) 62%, var(--bg) 100%);
+    }
+
+    [data-theme="light"] .idx-hero__bg {
+        filter: blur(42px) saturate(0.9) brightness(1.08);
+        opacity: 0.64;
+    }
+
+    [data-theme="light"] .idx-hero::after {
+        background:
+            radial-gradient(ellipse at center, transparent 42%, rgba(255,255,255,0.22) 82%, rgba(255,255,255,0.5) 100%),
+            linear-gradient(180deg, rgba(255,255,255,0.14) 0%, transparent 42%, rgba(255,255,255,0.58) 100%);
+    }
+
+    .idx-hero__inner {
+        position: relative;
+        z-index: 6;
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        margin: 0 auto;
+        padding: 78px clamp(28px, 4.7vw, 60px) 0;
+    }
+
+    .idx-hero__content {
+        position: relative;
+        z-index: 7;
+        width: min(54%, 650px);
+        max-width: 650px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding-bottom: clamp(72px, 13vh, 126px);
+        animation: hero-copy-enter 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .idx-hero__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 0.5px solid rgba(255,255,255,0.16);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.88);
+        margin-bottom: 16px;
+        width: fit-content;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow: 0 14px 38px rgba(0,0,0,0.18);
+    }
+
+    [data-theme="light"] .idx-hero__badge {
+        color: rgba(20,22,26,0.84);
+        background: rgba(255,255,255,0.58);
+        border-color: rgba(0,0,0,0.08);
+    }
+
+    .idx-hero__title {
+        font-size: clamp(40px, 6.2vw, 82px);
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: -0.065em;
+        line-height: 0.96;
+        margin-bottom: 18px;
+        text-wrap: balance;
+        text-shadow: 0 18px 54px rgba(0,0,0,0.54), 0 0 34px rgba(232,160,32,0.08);
+    }
+
+    [data-theme="light"] .idx-hero__title {
+        color: #111317;
+        text-shadow: 0 18px 48px rgba(255,255,255,0.58), 0 2px 18px rgba(0,0,0,0.08);
+    }
+
+    .idx-hero__meta {
+        font-size: 13px;
+        color: rgba(255,255,255,0.7);
+        margin-bottom: 26px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        max-width: 560px;
+    }
+
+    [data-theme="light"] .idx-hero__meta {
+        color: rgba(17,19,23,0.64);
+    }
+
+    .idx-hero__meta-dot {
+        width: 4px; height: 4px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.48;
+        display: inline-block;
+    }
+
+    .idx-hero__meta .rating {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    .idx-hero__actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-hero-play {
+        background: linear-gradient(135deg, #fff 0%, #f7f7f7 48%, #e8a020 100%);
+        color: #000;
+        border: none;
+        border-radius: 999px;
+        padding: 13px 26px;
+        font-size: 15px;
+        font-weight: 850;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        box-shadow: 0 18px 44px rgba(0,0,0,0.28), 0 0 34px rgba(232,160,32,0.22);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s, filter 0.28s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-hero-play::after {
+        content: '';
+        position: absolute;
+        inset: -80% -50%;
+        background: linear-gradient(112deg, transparent 42%, rgba(255,255,255,0.88) 50%, transparent 58%);
+        transform: translateX(-90%) rotate(8deg);
+        opacity: 0;
+    }
+
+    .btn-hero-play:hover {
+        color: #000;
+        transform: translateY(-3px) scale(1.035);
+        filter: saturate(1.08);
+        box-shadow: 0 24px 60px rgba(0,0,0,0.36), 0 0 48px rgba(232,160,32,0.32);
+    }
+
+    .btn-hero-play:hover::after {
+        animation: hero-button-sheen 0.82s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-hero-add {
+        background: var(--surface-3);
+        color: var(--text-1);
+        border: 0.5px solid var(--border-md);
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: background 0.15s;
+    }
+
+    .btn-hero-add:hover { background: var(--surface-4); color: var(--text-1); }
+
+    .btn-hero-mode {
+        min-height: 45px;
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 999px;
+        padding: 0 16px;
+        color: rgba(255,255,255,0.86);
+        background: rgba(255,255,255,0.08);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 760;
+        cursor: pointer;
+        box-shadow: 0 16px 34px rgba(0,0,0,0.18);
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.22s, border-color 0.22s;
+    }
+
+    .btn-hero-mode:hover {
+        transform: translateY(-2px);
+        background: rgba(255,255,255,0.14);
+        border-color: rgba(232,160,32,0.45);
+    }
+
+    [data-theme="light"] .btn-hero-mode {
+        color: rgba(20,22,26,0.78);
+        background: rgba(255,255,255,0.58);
+        border-color: rgba(0,0,0,0.08);
+    }
+
+    .idx-hero__cover {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        overflow: hidden;
+        z-index: 2;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-4);
+        font-size: 40px;
+    }
+
+    .idx-hero__cover img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        object-position: center 30%;
+        transform: scale(1.035);
+        opacity: 0.86;
+        transition: transform 11s cubic-bezier(0.2,0.7,0.2,1), opacity 0.42s ease, filter 0.42s ease;
+        filter: saturate(1.06) contrast(1.04);
+    }
+
+    .idx-hero[data-art-source="dandanplay"] .idx-hero__cover,
+    .idx-hero[data-art-source="anilist-cover"] .idx-hero__cover {
+        justify-content: center;
+        padding: 0;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+
+    .idx-hero[data-art-source="dandanplay"] .idx-hero__cover img,
+    .idx-hero[data-art-source="anilist-cover"] .idx-hero__cover img {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: auto;
+        object-fit: cover;
+        border-radius: 0;
+        opacity: 0.72;
+        box-shadow: none;
+        filter: blur(0) saturate(1.08) contrast(1.04);
+    }
+
+    .idx-hero[data-visual-mode="cover"] .idx-hero__cover img {
+        object-fit: contain;
+        object-position: center center;
+        opacity: 0.92;
+        filter: saturate(1.04) contrast(1.02) drop-shadow(0 28px 58px rgba(0,0,0,0.52));
+    }
+
+    .idx-hero[data-art-source="anilist-banner"] .idx-hero__bg {
+        filter: blur(34px) saturate(1.2) brightness(0.5);
+        opacity: 0.92;
+    }
+
+    [data-theme="light"] .idx-hero[data-art-source="anilist-banner"] .idx-hero__bg {
+        filter: blur(34px) saturate(0.9) brightness(1.06);
+        opacity: 0.62;
+    }
+
+    .idx-hero.is-ready .idx-hero__cover img { transform: scale(1.11); }
+
+    .idx-hero[data-art-source="dandanplay"].is-ready .idx-hero__cover img,
+    .idx-hero[data-art-source="anilist-cover"].is-ready .idx-hero__cover img {
+        transform: scale(1.08);
+    }
+
+    @keyframes hero-copy-enter {
+        from { opacity: 0; transform: translateY(34px) scale(0.98); filter: blur(8px); }
+        to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    @keyframes hero-ambient-shift {
+        from { transform: scale(1.15) translate3d(-1%, -1%, 0); }
+        to { transform: scale(1.22) translate3d(1.5%, 1%, 0); }
+    }
+
+    @keyframes hero-light-sweep {
+        0%, 58% { opacity: 0; transform: translateX(-45%); }
+        72% { opacity: 0.38; }
+        100% { opacity: 0; transform: translateX(42%); }
+    }
+
+    @keyframes hero-grain-drift {
+        from { background-position: 0 0, center, center; }
+        to { background-position: 0 24px, center, center; }
+    }
+
+    @keyframes hero-button-sheen {
+        0% { opacity: 0; transform: translateX(-90%) rotate(8deg); }
+        32% { opacity: 1; }
+        100% { opacity: 0; transform: translateX(90%) rotate(8deg); }
+    }
+
+    @keyframes hero-scroll-cue {
+        0%, 100% { opacity: 0.46; transform: translateX(-50%) translateY(0); }
+        50% { opacity: 0.95; transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* ── 内容区 ── */
+    .idx-body {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* ── 区块标题栏 ── */
+    .sec-hd {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        position: relative;
+    }
+
+    .sec-hd__title {
+        font-size: clamp(20px, 2.2vw, 28px);
+        font-weight: 900;
+        color: var(--text-1);
+        letter-spacing: -0.055em;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sec-hd__title::before {
+        content: '';
+        width: 8px;
+        height: 24px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #fff 0%, var(--accent) 72%, #ff6c1f 100%);
+        box-shadow: 0 0 24px rgba(232,160,32,0.34);
+    }
+
+    .sec-hd__more {
+        font-size: 12px;
+        color: var(--text-3);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.15s;
+    }
+
+    .sec-hd__more:hover { color: var(--accent); }
+
+    .idx-section {
+        width: min(1400px, calc(100% - 56px));
+        min-height: 0;
+        margin: 0 auto;
+        padding: 64px 0 38px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        animation: section-rise 0.64s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .idx-section:nth-of-type(2) { animation-delay: 70ms; }
+    .idx-section:nth-of-type(3) { animation-delay: 130ms; }
+
+    @keyframes section-rise {
+        from { opacity: 0; transform: translateY(26px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── 三类内容轨道 ── */
+    .poster-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+        gap: 16px;
+    }
+
+    .continue-row {
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(2, auto);
+        grid-auto-columns: clamp(168px, 14vw, 204px);
+        gap: 18px;
+        align-items: flex-start;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: inline proximity;
+        scroll-padding-inline: 4px;
+        scrollbar-width: none;
+        padding: 18px 5px 24px;
+        perspective: 1200px;
+        -webkit-overflow-scrolling: touch;
+        -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 92%, transparent 100%);
+        mask-image: linear-gradient(90deg, #000 0%, #000 92%, transparent 100%);
+    }
+
+    .continue-row::-webkit-scrollbar { display: none; }
+
+    .continue-row .pc {
+        width: 100%;
+        scroll-snap-align: start;
+        transition: flex-basis 0.46s cubic-bezier(0.16, 1, 0.3, 1), transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: flex-basis;
+    }
+
+    .update-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+    .update-timeline {
+        position: relative;
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(2, auto);
+        grid-auto-columns: minmax(330px, 390px);
+        gap: 18px;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: inline proximity;
+        scroll-padding-inline: 4px;
+        scrollbar-width: none;
+        padding: 40px 4px 22px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .update-timeline::-webkit-scrollbar { display: none; }
+
+    .update-timeline::before,
+    .update-timeline::after {
+        content: '';
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(232,160,32,0.85), rgba(232,160,32,0.16) 58%, transparent);
+        box-shadow: 0 0 26px rgba(232,160,32,0.22);
+    }
+
+    .update-timeline::before { top: 23px; }
+    .update-timeline::after { top: 195px; }
+    .follow-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 16px;
+    }
+
+    .rail-dots {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 18px;
+        margin-top: -4px;
+        pointer-events: auto;
+    }
+
+    .rail-dots__dot {
+        width: 6px;
+        height: 6px;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.32);
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+        cursor: pointer;
+        opacity: 0.72;
+        transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.22s, opacity 0.22s, transform 0.22s;
+    }
+
+    .rail-dots__dot:hover { opacity: 1; transform: translateY(-1px); }
+
+    .rail-dots__dot.is-active {
+        width: 22px;
+        background: linear-gradient(90deg, #fff4c7, var(--accent));
+        opacity: 1;
+        box-shadow: 0 0 18px rgba(232,160,32,0.36);
+    }
+
+    /* ── 海报卡片 ── */
+    .pc {
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        cursor: pointer;
+    }
+
+    .pc__frame {
+        aspect-ratio: 2/3;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--surface-2);
+        border: 0.5px solid var(--border);
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s, box-shadow 0.28s, filter 0.28s;
+    }
+
+    .pc__backdrop {
+        position: absolute;
+        inset: -18%;
+        background-size: cover;
+        background-position: center;
+        filter: blur(18px) saturate(1.22) brightness(0.62);
+        opacity: 0;
+        transform: scale(1.12);
+        transition: opacity 0.34s, transform 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pc--continue {
+        position: relative;
+        isolation: isolate;
+        animation: continue-card-enter 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: calc(var(--card-index, 0) * 55ms);
+    }
+
+    .pc--continue .pc__frame {
+        aspect-ratio: auto;
+        height: clamp(216px, 18vw, 276px);
+        border-radius: 18px;
+        border: 1px solid rgba(232,160,32,0.28);
+        background: #090a0c;
+        box-shadow: 0 18px 42px rgba(0,0,0,0.34), 0 0 0 0 rgba(232,160,32,0);
+        transform-origin: center center;
+        transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.42s;
+    }
+
+    .pc--continue .pc__backdrop {
+        opacity: 0;
+    }
+
+    .pc--continue .pc__frame::after {
+        content: '';
+        position: absolute;
+        inset: -30% -70%;
+        z-index: 1;
+        pointer-events: none;
+        background: linear-gradient(112deg, transparent 38%, rgba(255,255,255,0.32) 48%, transparent 58%);
+        transform: translateX(-72%) rotate(5deg);
+        opacity: 0;
+    }
+
+    .pc--continue .pc__img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        padding: 0;
+        position: relative;
+        z-index: 1;
+        filter: saturate(1.04) contrast(1.02);
+        transition: transform 0.72s cubic-bezier(0.16, 1, 0.3, 1), filter 0.42s;
+    }
+
+    .pc--continue .pc__overlay {
+        z-index: 2;
+        padding: 78px 12px 12px;
+        background:
+            radial-gradient(circle at 18% 80%, rgba(232,160,32,0.16), transparent 42%),
+            linear-gradient(transparent, rgba(0,0,0,0.94));
+    }
+
+    .pc--continue .pc__title {
+        position: relative;
+        font-size: 14px;
+        font-weight: 820;
+        transition: color 0.25s, transform 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pc--continue .pc__badge {
+        z-index: 3;
+        top: 9px;
+        left: 9px;
+        padding: 3px 7px;
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(8,8,8,0.76);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    .pc--continue .pc__bar { z-index: 4; height: 4px; }
+    .pc--continue .pc__bar-fill { box-shadow: 0 0 12px rgba(232,160,32,0.82); }
+
+    .pc__play {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        background: rgba(8,8,8,0.62);
+        border: 1px solid rgba(255,255,255,0.48);
+        font-size: 10px;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity 0.2s, transform 0.2s, background 0.2s;
+    }
+
+    .pc--continue .pc__play {
+        z-index: 3;
+        left: 50%;
+        right: auto;
+        top: 50%;
+        bottom: auto;
+        width: 48px;
+        height: 48px;
+        font-size: 14px;
+        opacity: 0;
+        transform: translate(-50%, -35%) scale(0.42) rotate(-18deg);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.36);
+        transition: opacity 0.26s, transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s, box-shadow 0.35s;
+    }
+
+    .pc--continue:hover .pc__play,
+    .pc--continue:focus-visible .pc__play {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) rotate(0);
+        background: var(--accent);
+        color: #000;
+        border-color: var(--accent);
+    }
+
+    .pc:hover .pc__frame {
+        transform: scale(1.04);
+        border-color: var(--accent);
+    }
+
+    .continue-row .pc--continue:hover .pc__frame,
+    .continue-row .pc--continue:focus-visible .pc__frame {
+        border-radius: 22px;
+    }
+
+    .pc--continue:hover .pc__frame,
+    .pc--continue:focus-visible .pc__frame {
+        transform: scale(1.018) rotateY(-2deg);
+        border-color: var(--accent);
+        box-shadow: 0 26px 54px rgba(0,0,0,0.46), 0 0 0 1px rgba(232,160,32,0.22), 0 0 36px rgba(232,160,32,0.2);
+    }
+
+    .pc--continue:hover .pc__frame::after,
+    .pc--continue:focus-visible .pc__frame::after {
+        animation: continue-card-sheen 0.88s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pc--continue:hover .pc__img,
+    .pc--continue:focus-visible .pc__img {
+        transform: scale(1.04);
+        filter: saturate(1.12) contrast(1.04);
+    }
+
+    .pc--continue:hover .pc__backdrop,
+    .pc--continue:focus-visible .pc__backdrop {
+        transform: scale(1.2);
+    }
+
+    .pc--continue:hover .pc__title,
+    .pc--continue:focus-visible .pc__title {
+        color: var(--accent);
+        transform: translateX(4px);
+    }
+
+    @keyframes continue-card-enter {
+        from { opacity: 0; transform: translateY(22px) scale(0.94); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes continue-card-sheen {
+        0% { opacity: 0; transform: translateX(-72%) rotate(5deg); }
+        28% { opacity: 1; }
+        100% { opacity: 0; transform: translateX(72%) rotate(5deg); }
+    }
+
+    .pc__img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        display: block;
+        position: relative;
+        z-index: 1;
+    }
+
+    .pc__placeholder {
+        width: 100%; height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-4);
+        font-size: 36px;
+    }
+
+    /* 底部渐变信息条 */
+    .pc__overlay {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        z-index: 2;
+        background: linear-gradient(transparent, rgba(0,0,0,0.85));
+        padding: 24px 8px 6px;
+    }
+
+    .pc__ep {
+        font-size: 10px;
+        color: rgba(255,255,255,0.7);
+        line-height: 1.3;
+    }
+
+    /* 进度条 */
+    .pc__bar {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        z-index: 4;
+        height: 3px;
+        background: rgba(255,255,255,0.15);
+    }
+
+    .pc__bar-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 0 2px 0 0;
+        transition: width 0.3s;
+    }
+
+    /* 进度角标 */
+    .pc__badge {
+        position: absolute;
+        top: 6px; left: 6px;
+        z-index: 4;
+        background: rgba(0,0,0,0.65);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 9px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.85);
+    }
+
+    .pc__title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-1);
+        line-height: 1.3;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .pc__sub {
+        font-size: 10px;
+        color: var(--text-3);
+        margin-top: 2px;
+    }
+
+    .timeline-card {
+        position: relative;
+        scroll-snap-align: start;
+        color: inherit;
+        text-decoration: none;
+        display: grid;
+        grid-template-columns: 86px minmax(0, 1fr);
+        gap: 12px;
+        min-height: 154px;
+        padding: 18px 14px 14px;
+        border-radius: 18px;
+        background:
+            radial-gradient(circle at 14% 16%, rgba(232,160,32,0.18), transparent 34%),
+            linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 18px 42px rgba(0,0,0,0.26);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        animation: update-card-enter 0.56s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: calc(var(--card-index, 0) * 42ms);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.24s, box-shadow 0.28s;
+    }
+
+    .timeline-card::before {
+        content: '';
+        position: absolute;
+        top: -22px;
+        left: 30px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 3px solid var(--bg);
+        box-shadow: 0 0 0 1px rgba(232,160,32,0.5), 0 0 24px rgba(232,160,32,0.55);
+    }
+
+    .timeline-card:hover,
+    .timeline-card:focus-visible {
+        color: inherit;
+        transform: translateY(-8px);
+        border-color: rgba(232,160,32,0.46);
+        box-shadow: 0 28px 62px rgba(0,0,0,0.42), 0 0 36px rgba(232,160,32,0.12);
+    }
+
+    .timeline-card__cover {
+        width: 86px;
+        height: 124px;
+        border-radius: 12px;
+        object-fit: cover;
+        background: var(--surface-3);
+        box-shadow: 0 14px 28px rgba(0,0,0,0.32);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .timeline-card__body {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .timeline-card__time {
+        width: fit-content;
+        margin-bottom: 9px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        color: #000;
+        background: linear-gradient(135deg, #ffe6a1, var(--accent));
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+    .timeline-card__title {
+        color: var(--text-1);
+        font-size: 14px;
+        font-weight: 820;
+        line-height: 1.28;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .timeline-card__meta {
+        margin-top: 8px;
+        color: var(--text-3);
+        font-size: 11px;
+        line-height: 1.45;
+    }
+
+    .timeline-card__bar {
+        margin-top: auto;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        overflow: hidden;
+    }
+
+    .timeline-card__bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent), #ffd776);
+        box-shadow: 0 0 16px rgba(232,160,32,0.42);
+    }
+
+    @keyframes update-card-enter {
+        from { opacity: 0; transform: translateY(20px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .follow-card {
+        min-height: 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        padding: 0;
+        color: inherit;
+        text-decoration: none;
+        background: transparent;
+        border: 0;
+        border-radius: 16px;
+        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), filter 0.24s;
+        animation: follow-card-pop 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: calc(var(--card-index, 0) * 32ms);
+    }
+
+    .follow-card:hover,
+    .follow-card:focus-visible {
+        color: inherit;
+        transform: translateY(-8px) rotateZ(-0.7deg);
+        filter: drop-shadow(0 20px 34px rgba(0,0,0,0.34));
+    }
+
+    .follow-card__cover {
+        width: 100%;
+        aspect-ratio: 2/3;
+        height: auto;
+        object-fit: cover;
+        border-radius: 16px;
+        background: var(--surface-3);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 14px 36px rgba(0,0,0,0.25);
+        transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.24s, box-shadow 0.24s;
+    }
+
+    .follow-card:hover .follow-card__cover,
+    .follow-card:focus-visible .follow-card__cover {
+        transform: scale(1.025);
+        border-color: rgba(232,160,32,0.5);
+        box-shadow: 0 22px 48px rgba(0,0,0,0.4), 0 0 34px rgba(232,160,32,0.13);
+    }
+
+    .follow-card__body { min-width: 0; }
+    .follow-card__title {
+        color: var(--text-1);
+        font-size: 13px;
+        font-weight: 650;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .follow-card__meta { margin-top: 5px; color: var(--text-3); font-size: 11px; }
+    .follow-card__arrow {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: #000;
+        background: var(--accent);
+        font-size: 10px;
+        opacity: 0;
+        transform: translateY(4px) scale(0.7);
+        transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+        pointer-events: none;
+    }
+    .follow-card:hover .follow-card__arrow,
+    .follow-card:focus-visible .follow-card__arrow {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    @keyframes follow-card-pop {
+        from { opacity: 0; transform: translateY(18px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── 工具列表 (静态备用) ── */
+    .tool-list {
+        border: 0.5px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .tool-item {
+        display: flex;
+        align-items: center;
+        padding: 13px 16px;
+        background: var(--surface-1);
+        border-bottom: 0.5px solid var(--border);
+        text-decoration: none;
+        color: inherit;
+        transition: background 0.15s;
+    }
+
+    .tool-item:last-child { border-bottom: none; }
+    .tool-item:hover { background: var(--surface-2); }
+
+    .tool-item__icon {
+        width: 32px; height: 32px;
+        border-radius: 8px;
+        background: var(--surface-3);
+        border: 0.5px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--accent);
+        font-size: 13px;
+        flex-shrink: 0;
+        margin-right: 13px;
+    }
+
+    .tool-item__body { flex: 1; }
+    .tool-item__name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+    .tool-item__desc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .tool-item__arrow { font-size: 11px; color: var(--text-4); flex-shrink: 0; }
+
+    .home-status {
+        min-height: 72px;
+        display: grid;
+        grid-template-columns: auto minmax(0,1fr) auto;
+        align-items: center;
+        gap: 13px;
+        width: 100%;
+        margin-bottom: 18px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--surface-1) 90%, transparent);
+        box-shadow: 0 12px 36px rgba(0,0,0,.12);
+    }
+    .home-status__icon {
+        width: 40px; height: 40px; display: grid; place-items: center;
+        border-radius: 12px; background: var(--accent-dim); color: var(--accent);
+    }
+    .home-status strong { display: block; font-size: 13px; color: var(--text-1); }
+    .home-status small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-3); }
+    .home-status.is-error .home-status__icon { color: var(--danger); background: var(--danger-dim); }
+
+    /* ── 响应式 ── */
+    @media (max-width: 900px) {
+        .idx-hero {
+            height: 100vh;
+            height: 100svh;
+            height: 100dvh;
+            min-height: 100vh;
+            min-height: 100svh;
+            min-height: 100dvh;
+        }
+        .idx-hero__content {
+            width: 62%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .idx-nav__links { display: none; }
+        .idx-nav {
+            height: 58px;
+            padding: 0 14px;
+            background: linear-gradient(180deg, rgba(8,9,11,0.82), rgba(8,9,11,0.28));
+        }
+        .idx-nav__brand { margin-right: 10px; }
+        .idx-nav__search-btn,
+        .theme-toggle { width: 44px; height: 44px; }
+        .idx-nav__avatar { display: none; }
+        .idx-hero {
+            height: 100vh;
+            height: 100svh;
+            height: 100dvh;
+            min-height: 100vh;
+            min-height: 100svh;
+            min-height: 100dvh;
+            max-height: none;
+        }
+        .idx-hero__inner { padding: 0; }
+        .idx-hero__content {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: none;
+            height: auto;
+            min-height: 285px;
+            padding: 96px 18px 30px;
+            justify-content: flex-end;
+            background:
+                linear-gradient(transparent 0%, rgba(10,10,10,0.78) 25%, var(--bg) 78%),
+                radial-gradient(circle at 12% 64%, rgba(232,160,32,0.22), transparent 42%);
+        }
+        [data-theme="light"] .idx-hero__content {
+            background:
+                linear-gradient(transparent 0%, rgba(244,244,242,0.78) 25%, var(--bg) 78%),
+                radial-gradient(circle at 12% 64%, rgba(232,160,32,0.16), transparent 42%);
+        }
+        .idx-hero__cover {
+            width: 100%;
+            height: 100%;
+            right: 0;
+            top: 0;
+            -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, transparent 100%);
+            mask-image: linear-gradient(180deg, #000 0%, #000 58%, transparent 100%);
+        }
+        .idx-hero[data-art-source="dandanplay"] .idx-hero__cover,
+        .idx-hero[data-art-source="anilist-cover"] .idx-hero__cover {
+            padding: 0;
+            justify-content: center;
+        }
+        .idx-hero[data-art-source="dandanplay"] .idx-hero__cover img,
+        .idx-hero[data-art-source="anilist-cover"] .idx-hero__cover img {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            object-fit: contain;
+            object-position: center top;
+            opacity: 0.92;
+            filter: saturate(1.04) contrast(1.02) drop-shadow(0 18px 38px rgba(0,0,0,0.4));
+        }
+        .idx-hero[data-art-source="anilist-banner"] .idx-hero__cover img {
+            object-position: center top;
+        }
+        .idx-hero__cover img { object-position: center top; }
+        .idx-hero__title {
+            font-size: clamp(30px, 10vw, 44px);
+            max-width: 12em;
+            letter-spacing: -0.055em;
+        }
+        .idx-hero__badge { display: none !important; }
+        .idx-hero__meta { font-size: 12px; margin-bottom: 18px; }
+        .idx-hero__scroll-cue {
+            bottom: 14px;
+            width: 30px;
+            height: 42px;
+            opacity: 0.72;
+        }
+        .idx-body { padding: 0; }
+        .idx-section {
+            width: calc(100% - 32px);
+            min-height: 0;
+            margin: 0 auto;
+            padding: 54px 0 28px;
+        }
+        .sec-hd__title { font-size: 22px; }
+        .continue-row {
+            grid-template-rows: repeat(1, auto);
+            grid-auto-columns: min(72vw, 260px);
+            margin-right: -16px;
+            padding: 12px 16px 30px 1px;
+            gap: 14px;
+            -webkit-mask-image: none;
+            mask-image: none;
+        }
+        .continue-row .pc {
+            min-width: 210px;
+        }
+        .pc--continue .pc__frame {
+            height: min(94vw, 360px);
+        }
+        .continue-row .pc--continue:hover .pc__img,
+        .continue-row .pc--continue:focus-visible .pc__img {
+            object-fit: cover;
+            filter: saturate(1.12) contrast(1.04);
+        }
+        .poster-row,
+        .follow-grid {
+            grid-auto-flow: column;
+            grid-template-rows: repeat(2, auto);
+            overflow-x: auto;
+            overscroll-behavior-inline: contain;
+            scroll-snap-type: inline proximity;
+            scroll-padding-inline: 1px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            margin-right: -16px;
+            padding: 2px 16px 12px 1px;
+        }
+        .poster-row {
+            grid-template-columns: repeat(4, minmax(238px, 72vw));
+            gap: 14px 12px;
+        }
+        .update-timeline {
+            grid-template-rows: repeat(2, auto);
+            grid-auto-columns: minmax(246px, 74vw);
+            margin-right: -16px;
+            padding-right: 16px;
+        }
+        .follow-grid {
+            grid-template-columns: repeat(4, minmax(138px, 39vw));
+            gap: 14px 12px;
+        }
+        .poster-row::-webkit-scrollbar,
+        .follow-grid::-webkit-scrollbar { display: none; }
+        .poster-row .pc,
+        .follow-grid .follow-card { scroll-snap-align: start; }
+        .rail-dots { margin-top: -8px; }
+        .rail-dots__dot { width: 5px; height: 5px; }
+        .rail-dots__dot.is-active { width: 20px; }
+        .follow-card { gap: 8px; }
+        .follow-card__cover { width: 100%; height: auto; }
+        .follow-card__title { font-size: 12px; -webkit-line-clamp: 2; }
+        .follow-card__meta { margin-top: 5px; font-size: 10px; }
+    }
+
+    @media (max-width: 480px) {
+        .idx-nav__name { font-size: 14px; }
+        .idx-hero { min-height: 540px; }
+        .idx-hero__content { padding-inline: 16px; padding-bottom: 24px; }
+        .idx-hero__title { font-size: 31px; }
+        .btn-hero-play { min-height: 44px; padding-inline: 18px; }
+        .poster-row { grid-template-columns: repeat(4, minmax(224px, 78vw)); }
+        .follow-grid { grid-template-columns: repeat(4, minmax(132px, 42vw)); }
+        .home-status { grid-template-columns: auto minmax(0,1fr); }
+        .home-status .btn-ghost { grid-column: 1 / -1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .idx-hero,
+        .idx-hero::before,
+        .idx-hero__bg,
+        .idx-hero__overlay::after,
+        .idx-hero__cover img,
+        .idx-hero__scroll-cue,
+        .pc__frame,
+        .pc__backdrop,
+        .pc--continue,
+        .pc--continue .pc__img,
+        .pc--continue .pc__play,
+        .timeline-card,
+        .follow-card,
+        .idx-section,
+        .btn-hero-play { transition: none !important; animation: none !important; }
+        .pc--continue,
+        .pc--continue .pc__frame::after,
+        .timeline-card,
+        .follow-card { animation: none !important; }
+    }
+    </style>
+    <link href="css/home-v18.css?v=home18-r29" rel="stylesheet">
+</head>
+<body class="idx-home">
+
+<!-- ══ 顶部导航 ══ -->
+<nav class="idx-nav">
+    <a class="idx-nav__brand" href="index.html">
+        <span class="idx-nav__icon"><i class="fas fa-play"></i></span>
+        <span class="idx-nav__name">@Model.WebSiteName</span>
+    </a>
+
+    <div class="idx-nav__links" id="homeNavLinks" aria-label="首页导航">
+        <div class="idx-nav__group idx-nav__group--sections" aria-label="页内分区">
+            <span class="idx-nav__group-label" aria-hidden="true">页内</span>
+            <a href="#heroBanner" class="idx-nav__link idx-nav__link--section active" data-home-section="heroBanner" aria-current="location" title="返回 Hero">首页</a>
+            <a href="#cwSection" class="idx-nav__link idx-nav__link--section" data-home-section="cwSection">继续观看</a>
+            <a href="#luSection" class="idx-nav__link idx-nav__link--section" data-home-section="luSection">最近更新</a>
+            <a href="#lfSection" class="idx-nav__link idx-nav__link--section" data-home-section="lfSection">最近关注</a>
+            <a href="#mediaSection" class="idx-nav__link idx-nav__link--section" data-home-section="mediaSection">所有分区</a>
+        </div>
+
+        <span class="idx-nav__divider" aria-hidden="true"></span>
+
+        <div class="idx-nav__group idx-nav__group--pages" aria-label="番剧浏览页面">
+            <span class="idx-nav__group-label" aria-hidden="true">浏览</span>
+            <a href="bangumi.html?nav=season" class="idx-nav__page-link" title="按番剧季度浏览"><i class="fas fa-calendar-alt" aria-hidden="true"></i><span>番剧季度</span></a>
+            <a href="bangumi.html?nav=name" class="idx-nav__page-link" title="按番剧名称浏览"><i class="fas fa-font" aria-hidden="true"></i><span>番剧</span></a>
+            <a href="bangumi.html?nav=category" class="idx-nav__page-link" title="按分类浏览"><i class="fas fa-tags" aria-hidden="true"></i><span>分类</span></a>
+            <a href="bangumi.html?nav=rating" class="idx-nav__page-link" title="查看番剧排行榜"><i class="fas fa-ranking-star" aria-hidden="true"></i><span>排行榜</span></a>
+            <a href="filelist.html?type=nav&name=最近收录" class="idx-nav__page-link" title="查看最近收录"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i><span>最近收录</span></a>
+            @If.ShowAdminTools
+            <a href="download.html" class="idx-nav__page-link idx-nav__page-link--utility" title="下载工具"><i class="fas fa-download" aria-hidden="true"></i><span>工具</span></a>
+            @EndIf
+        </div>
+    </div>
+
+    <div class="idx-nav__end">
+        <button class="idx-nav__menu-btn" id="homeNavMenuBtn" type="button" aria-label="打开首页导航" aria-controls="homeNavLinks" aria-expanded="false">
+            <i class="fas fa-bars" aria-hidden="true"></i>
+        </button>
+        <button class="idx-nav__search-btn" type="button" title="搜索" aria-label="进入番剧搜索">
+            <i class="fas fa-search"></i>
+        </button>
+        @IfNot.IsAnonymous
+        <a href="/web1/logout" class="idx-nav__avatar" id="userAvatar" title="退出登录">
+            <i class="fas fa-user"></i>
+        </a>
+        @EndIf
+        <button id="theme-toggle" type="button" class="theme-toggle" title="切换主题">
+            <i class="fas fa-sun" aria-hidden="true"></i>
+        </button>
+    </div>
+</nav>
+
+<!-- ══ Hero (动态加载) ══ -->
+<section class="idx-hero" id="heroBanner">
+    <div class="idx-hero__bg"  id="heroBg"></div>
+    <div class="idx-hero__overlay"></div>
+    <div class="idx-hero__inner">
+        <div class="idx-hero__content">
+            <div class="idx-hero__badge" id="heroBadge">
+                <i class="fas fa-star"></i>
+                <span id="heroBadgeText">连载中</span>
+            </div>
+            <h1 class="idx-hero__title" id="heroTitle"></h1>
+            <div class="idx-hero__meta" id="heroMeta"></div>
+            <p class="idx-hero__description" id="heroDescription" hidden></p>
+            <div class="idx-hero__actions">
+                <a class="btn-hero-play" id="heroPlayBtn" href="#">
+                    <i class="fas fa-play"></i> 继续观看
+                </a>
+                <button class="btn-hero-mode" id="heroModeToggle" type="button" title="按画质切换下一张 Hero 图片">
+                    <i class="fas fa-shuffle"></i>
+                    <span id="heroModeText">换一张</span>
+                    <small id="heroArtSource">本地</small>
+                </button>
+            </div>
+        </div>
+        <div class="idx-hero__cover" id="heroCover">
+            <i class="fas fa-play-circle"></i>
+        </div>
+    </div>
+    <div class="idx-hero__scroll-cue" aria-hidden="true"></div>
+</section>
+
+<!-- ══ 主体内容 ══ -->
+<div class="idx-body">
+
+    <div class="home-status" id="homeStatus" role="status">
+        <span class="home-status__icon"><i class="fas fa-spinner fa-spin"></i></span>
+        <span><strong id="homeStatusTitle">正在整理你的媒体库</strong><small id="homeStatusDescription">最近播放、更新和关注内容正在同步。</small></span>
+        <button type="button" class="btn-ghost" id="homeRetryBtn" style="display:none;"><i class="fas fa-rotate-right"></i> 重试</button>
+    </div>
+
+    <!-- 继续观看 -->
+    <div class="idx-section idx-section--continue" id="cwSection" style="display:none;">
+        <div class="sec-hd">
+            <div>
+                <h2 class="sec-hd__title">继续观看</h2>
+                <p class="sec-hd__summary"><span id="cwCount">0</span> 部正在观看，进度保留在这里</p>
+            </div>
+            <a href="bangumi.html?nav=lastplay" class="sec-hd__more">
+                查看全部 <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+        <div class="continue-row" id="cwGrid"></div>
+    </div>
+    <!-- 最近更新 -->
+    <div class="idx-section idx-section--updates" id="luSection" style="display:none;">
+        <div class="sec-hd">
+            <div>
+                <h2 class="sec-hd__title">最近更新</h2>
+                <p class="sec-hd__summary"><span id="luCount">0</span> 部作品按更新日期编排</p>
+            </div>
+            <a href="bangumi.html?nav=lastupdate" class="sec-hd__more">
+                查看全部 <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+        <div class="update-timeline" id="luGrid"></div>
+    </div>
+
+    <!-- 最近关注 -->
+    <div class="idx-section idx-section--follows" id="lfSection" style="display:none;">
+        <div class="sec-hd">
+            <div>
+                <h2 class="sec-hd__title">最近关注</h2>
+                <p class="sec-hd__summary"><span id="lfCount">0</span> 部作品已加入媒体库</p>
+            </div>
+            <a href="bangumi.html?nav=lastadd" class="sec-hd__more">
+                查看全部 <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+        <div class="follow-grid" id="lfGrid"></div>
+    </div>
+
+    <!-- 媒体库 (静态快捷入口，始终显示) -->
+    <div class="idx-section" id="mediaSection">
+        <div class="sec-hd">
+            <h2 class="sec-hd__title">所有分区</h2>
+        </div>
+        <div class="tool-list">
+            <a href="bangumi.html?nav=lastplay" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-clock"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">最近播放</div>
+                    <div class="tool-item__desc">继续上次观看的内容</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="bangumi.html?nav=lastupdate" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-sync-alt"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">最近更新</div>
+                    <div class="tool-item__desc">最新收录的番剧</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="bangumi.html?nav=lastadd" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-heart"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">最近关注</div>
+                    <div class="tool-item__desc">你最近添加的番剧</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="bangumi.html?nav=season" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">番剧季度</div>
+                    <div class="tool-item__desc">按季度浏览</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="bangumi.html?nav=name" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-font"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">按名称</div>
+                    <div class="tool-item__desc">字母顺序浏览</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="bangumi.html?nav=category" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-tags"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">分类</div>
+                    <div class="tool-item__desc">按分类浏览</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="bangumi.html?nav=rating" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-star"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">排行榜</div>
+                    <div class="tool-item__desc">浏览热门分类与高分作品</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="filelist.html?type=nav&name=最近收录" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-file-import"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">最近收录</div>
+                    <div class="tool-item__desc">查看刚进入媒体库的文件</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="filelist.html?type=nav&name=未识别" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-circle-question"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">未识别</div>
+                    <div class="tool-item__desc">处理尚未匹配作品的文件</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="filelist.html?type=nav&name=独立文件" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-file-video"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">独立文件</div>
+                    <div class="tool-item__desc">浏览未归入番剧的媒体</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+        </div>
+    </div>
+
+    @If.HasLocalFolderNames
+    <div class="idx-section">
+        <div class="sec-hd"><span class="sec-hd__title">本机文件夹</span></div>
+        <div class="tool-list">
+            @Each.LocalFolderNames
+            <a href="filelist.html?type=local&name=@!Current" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-folder-open"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">@Current</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            @EndEach
+        </div>
+    </div>
+    @EndIf
+
+    @If.HasRemoteFolderNames
+    <div class="idx-section">
+        <div class="sec-hd"><span class="sec-hd__title">远程媒体库</span></div>
+        <div class="tool-list">
+            @Each.RemoteFolderNames
+            <a href="filelist.html?type=remote&name=@!Current" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-network-wired"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">@Current</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            @EndEach
+        </div>
+    </div>
+    @EndIf
+
+    @If.ShowAdminTools
+    <div class="idx-section">
+        <div class="sec-hd"><span class="sec-hd__title">工具</span></div>
+        <div class="tool-list">
+            <a href="download.html" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-download"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">下载任务管理</div>
+                    <div class="tool-item__desc">管理 BT / HTTP 下载任务</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="remote-pc.html" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-tv"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">PC 版遥控器</div>
+                    <div class="tool-item__desc">远程控制 PC 端播放</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+            <a href="remote-android.html" class="tool-item">
+                <div class="tool-item__icon"><i class="fas fa-mobile-alt"></i></div>
+                <div class="tool-item__body">
+                    <div class="tool-item__name">安卓版遥控器</div>
+                    <div class="tool-item__desc">远程控制安卓端播放</div>
+                </div>
+                <i class="fas fa-chevron-right tool-item__arrow"></i>
+            </a>
+        </div>
+    </div>
+    @EndIf
+
+</div><!-- /idx-body -->
+
+<div id="bangumiModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div>
+                <h3 id="modalTitle"></h3>
+                <small id="lastWatchedInfo" style="color: var(--text-2); font-size: 0.875rem;"></small>
+            </div>
+            <button type="button" class="close" onclick="closeModal()" aria-label="关闭番剧详情">&times;</button>
+        </div>
+        <div id="loading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <div id="seasonTabs" class="season-tabs" style="display: none;"></div>
+        <ul id="episodeList" class="episode-list" style="display: none;"></ul>
+    </div>
+</div>
+
+<footer class="app-footer">
+    <p>@Model.ServerInfo</p>
+</footer>
+
+<script src="js/jquery-3.7.1.min.js"></script>
+<script src="js/recent-play-refresh.js"></script>
+<script src="js/bootstrap.bundle-5.3.3.min.js"></script>
+<script src="js/lazysizes-5.3.1.min.js"></script>
+<script>
+$(function () {
+    var bangumiListApi = null;
+    var bangumiDetailsApiTemplate = null;
+    var bangumiMapById = {};
+    var currentModalState = null;
+    var libraryFallbackPromise = null;
+    var sectionData = { continueWatching: [], latestUpdates: [], latestFollows: [] };
+    var recentPlayItems = [];
+    var currentHeroAnimeId = null;
+    var resizeTimer = null;
+    var heroArtworkRequestId = 0;
+    var HERO_ART_CACHE_PREFIX = 'dandanplay.hero-art.v3.';
+    var HERO_ART_CACHE_OK_TTL = 30 * 24 * 60 * 60 * 1000;
+    var HERO_ART_CACHE_COVER_ONLY_TTL = 30 * 60 * 1000;
+    var HERO_ART_CACHE_MISS_TTL = 6 * 60 * 60 * 1000;
+    var HERO_DESCRIPTION_CACHE_PREFIX = 'dandanplay.hero-description.v1.';
+    var HERO_DESCRIPTION_CACHE_OK_TTL = 30 * 24 * 60 * 60 * 1000;
+    var HERO_DESCRIPTION_CACHE_MISS_TTL = 6 * 60 * 60 * 1000;
+    var TIMELINE_TIME_ZONE = 'Asia/Shanghai';
+    var currentHeroArtwork = null;
+    var heroArtworkCandidates = [];
+    var heroArtworkIndex = 0;
+    var bangumiSubjectPromises = {};
+    var renderedSectionSignatures = {};
+    var shouldStartAtHero = !window.location.hash;
+
+    $(window).one('wheel.homeHeroStart touchstart.homeHeroStart keydown.homeHeroStart pointerdown.homeHeroStart', function () {
+        shouldStartAtHero = false;
+    });
+
+    function restoreInitialHeroPosition(finalize) {
+        if (!shouldStartAtHero) return;
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        if (finalize) {
+            shouldStartAtHero = false;
+            $(window).off('.homeHeroStart');
+        }
+    }
+
+    function getStepTop(section) {
+        return section.getBoundingClientRect().top + window.scrollY;
+    }
+
+    /* ── 页内导航：当前位置跟随（不接管滚动） ── */
+    var sectionNavLinks = Array.prototype.slice.call(document.querySelectorAll('[data-home-section]'));
+    var sectionNavTargets = sectionNavLinks.map(function (link) {
+        return {
+            link: link,
+            section: document.getElementById(link.getAttribute('data-home-section'))
+        };
+    }).filter(function (item) {
+        return item.section;
+    });
+    var sectionNavFrame = 0;
+
+    function updateSectionNavState() {
+        sectionNavFrame = 0;
+        if (!sectionNavTargets.length) return;
+
+        var marker = window.scrollY + Math.min(window.innerHeight * 0.46, 460);
+        var activeItem = sectionNavTargets[0];
+
+        sectionNavTargets.forEach(function (item) {
+            if (item.section.offsetParent === null) return;
+            if (getStepTop(item.section) <= marker) activeItem = item;
+        });
+
+        sectionNavTargets.forEach(function (item) {
+            var isActive = item === activeItem;
+            item.link.classList.toggle('active', isActive);
+            if (isActive) item.link.setAttribute('aria-current', 'location');
+            else item.link.removeAttribute('aria-current');
+        });
+    }
+
+    function scheduleSectionNavUpdate() {
+        if (sectionNavFrame) return;
+        sectionNavFrame = window.requestAnimationFrame(updateSectionNavState);
+    }
+
+    window.addEventListener('scroll', scheduleSectionNavUpdate, { passive: true });
+    window.addEventListener('resize', scheduleSectionNavUpdate);
+    sectionNavLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+            window.requestAnimationFrame(scheduleSectionNavUpdate);
+        });
+    });
+    updateSectionNavState();
+
+    /* ── 用户头像首字母 ── */
+    var uname = "@Model.UserName";
+    if (uname) {
+        $('#userAvatar').html(uname.charAt(0).toUpperCase());
+    }
+
+    $('.idx-nav__search-btn').on('click', function () {
+        window.location.assign('bangumi.html?nav=name&search=1');
+    });
+
+    function setHomeNavMenu(open) {
+        $('#homeNavLinks').toggleClass('is-open', open);
+        $('#homeNavMenuBtn')
+            .attr('aria-expanded', open ? 'true' : 'false')
+            .attr('aria-label', open ? '关闭首页导航' : '打开首页导航')
+            .find('i')
+            .toggleClass('fa-bars', !open)
+            .toggleClass('fa-xmark', open);
+    }
+
+    $('#homeNavMenuBtn').on('click', function (event) {
+        event.stopPropagation();
+        setHomeNavMenu(!$('#homeNavLinks').hasClass('is-open'));
+    });
+
+    $('#homeNavLinks a').on('click', function () {
+        setHomeNavMenu(false);
+    });
+
+    $(document).on('click.homeNav', function (event) {
+        if (!$(event.target).closest('.idx-nav').length) setHomeNavMenu(false);
+    }).on('keydown.homeNav', function (event) {
+        if (event.key === 'Escape') {
+            setHomeNavMenu(false);
+            $('#homeNavMenuBtn').trigger('focus');
+        }
+    });
+
+    $('#heroModeToggle').on('click', function () {
+        if (heroArtworkCandidates.length < 2) return;
+        heroArtworkIndex = (heroArtworkIndex + 1) % heroArtworkCandidates.length;
+        applyHeroCandidate(heroArtworkCandidates[heroArtworkIndex]);
+    });
+
+    updateHeroModeButton();
+
+    function updateHeroModeButton() {
+        var hasAlternates = heroArtworkCandidates.length > 1;
+        $('#heroModeText').text(hasAlternates ? '换一张' : '当前图片');
+        $('#heroModeToggle')
+            .prop('disabled', !hasAlternates)
+            .attr('aria-disabled', hasAlternates ? 'false' : 'true')
+            .attr('title', hasAlternates ? '按当前屏幕的构图与画质排序切换图片' : '暂时只有一张可用图片');
+    }
+
+    // Scroll behavior is fully native. CSS proximity snapping only guides section alignment.
+
+    /* ── 从 bangumi.html 页面提取真实的 API 地址 ── */
+    function extractApiUrl(html, varName) {
+        var re = new RegExp('var\\s+' + varName + '\\s*=\\s*"([^"]+)"');
+        var m = html.match(re);
+        return m ? m[1] : null;
+    }
+
+    function replaceBangumiNav(apiUrl, navValue) {
+        if (!apiUrl) return apiUrl;
+        if (apiUrl.indexOf('nav=') !== -1) {
+            return apiUrl.replace(/nav=[^&]+/, 'nav=' + navValue);
+        }
+        if (apiUrl.indexOf('nav:') !== -1) {
+            return apiUrl.replace(/nav:[^?&/]+/, 'nav:' + navValue);
+        }
+        return apiUrl;
+    }
+
+    function bindBangumiCard($card, b) {
+        return $card.attr({
+            href: '#',
+            'data-anime-id': String(b.AnimeId),
+            'data-cover-url': b.Cover || ''
+        }).on('click', function (event) {
+            event.preventDefault();
+            showModal(String(b.AnimeId), b.Title);
+        });
+    }
+
+    function appendCover($frame, b, className) {
+        if (b.Cover) {
+            $('<img>')
+                .addClass(className)
+                .attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' })
+                .appendTo($frame);
+        } else {
+            $('<div class="pc__placeholder"><i class="fas fa-play-circle"></i></div>').appendTo($frame);
+        }
+    }
+
+    function getEpisodeText(b) {
+        return b.Details || (b.EpisodeTotal > 0 ? '共' + b.EpisodeTotal + '话' : '查看详情');
+    }
+
+    function getWatchProgress(b) {
+        var watched = Number(b.EpisodeWatched || 0);
+        var total = Number(b.EpisodeTotal || 0);
+        if (watched <= 0 || total <= 0) return null;
+        return {
+            watched: watched,
+            total: total,
+            percent: Math.max(0, Math.min(100, Math.round(watched / total * 100)))
+        };
+    }
+
+    function appendWatchProgress($frame, progress) {
+        if (!progress) return;
+        var $bar = $('<div class="pc__bar" role="progressbar"></div>').attr({
+            'aria-label': '观看进度',
+            'aria-valuemin': '0',
+            'aria-valuemax': '100',
+            'aria-valuenow': String(progress.percent),
+            'title': '已看 ' + progress.watched + '/' + progress.total + ' · ' + progress.percent + '%'
+        });
+        $('<div class="pc__bar-fill"></div>').css('width', progress.percent + '%').appendTo($bar);
+        $bar.appendTo($frame);
+    }
+
+    /* ── 继续观看：完整竖版海报进度卡 ── */
+    function makeContinueCard(b, index) {
+        var progress = getWatchProgress(b);
+        var pct = progress ? progress.percent : 0;
+        var $card = bindBangumiCard($('<a class="pc pc--continue"></a>'), b)
+            .css('--card-index', String(index || 0));
+        var $frame = $('<div class="pc__frame"></div>');
+        appendCover($frame, b, 'pc__img');
+        if (b.EpisodeWatched > 0) {
+            $('<div class="pc__badge">' + b.EpisodeWatched + '/' + b.EpisodeTotal + '</div>').appendTo($frame);
+        }
+        var epText = '第' + b.EpisodeWatched + '话 · ' + pct + '%';
+        var $ov = $('<div class="pc__overlay"></div>');
+        $('<div class="pc__ep"></div>').text(epText).appendTo($ov);
+        $ov.appendTo($frame);
+        $('<span class="pc__play"><i class="fas fa-play"></i></span>').appendTo($frame);
+        appendWatchProgress($frame, progress);
+        $card.append($frame);
+        $card.append($('<div class="pc__title"></div>').text(b.Title));
+        return $card;
+    }
+
+    function parseTimelineDate(value) {
+        if (!value) return null;
+        var raw = String(value).trim();
+        var normalized = raw.replace(' ', 'T');
+        if (/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/.test(normalized)) {
+            normalized += normalized.indexOf('T') === -1 ? 'T00:00:00+08:00' : '+08:00';
+        }
+        var time = new Date(normalized).getTime();
+        return Number.isFinite(time) && time > 0 ? new Date(time) : null;
+    }
+
+    function getTimelineDateParts(date) {
+        var formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: TIMELINE_TIME_ZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        var values = {};
+        formatter.formatToParts(date).forEach(function (part) {
+            if (part.type !== 'literal') values[part.type] = part.value;
+        });
+        return {
+            year: Number(values.year),
+            month: Number(values.month),
+            day: Number(values.day)
+        };
+    }
+
+    function getTimelineDayStamp(date) {
+        var parts = getTimelineDateParts(date);
+        return Date.UTC(parts.year, parts.month - 1, parts.day);
+    }
+
+    function getUpdateDateCandidate(b) {
+        var names = [
+            'LastUpdated', 'LastUpdate', 'UpdateTime', 'UpdatedAt', 'ModifiedAt',
+            'LastModified', 'PublishDate', 'AirDate', 'EpisodeAirDate', 'LastEpisodeAirDate',
+            'CreateTime', 'CreatedAt', 'AddedAt'
+        ];
+        for (var i = 0; i < names.length; i++) {
+            if (b && b[names[i]]) {
+                var parsed = parseTimelineDate(b[names[i]]);
+                if (parsed) return parsed;
+            }
+        }
+        return null;
+    }
+
+    function formatTimelineDateLabel(b, index) {
+        var date = getUpdateDateCandidate(b);
+        if (!date) {
+            if (index === 0) return '最新';
+            if (index < 3) return '近期';
+            return '队列 ' + String(index + 1).padStart(2, '0');
+        }
+        var today = new Date();
+        var startToday = getTimelineDayStamp(today);
+        var startDate = getTimelineDayStamp(date);
+        var diffDays = Math.round((startToday - startDate) / 86400000);
+        if (diffDays <= 0) return '今天';
+        if (diffDays === 1) return '昨天';
+        if (diffDays > 1 && diffDays < 7) return diffDays + '天前';
+        var parts = getTimelineDateParts(date);
+        return parts.month + '/' + parts.day;
+    }
+
+    /* ── 最近更新：横向时间线 ── */
+    function makeUpdateCard(b, index) {
+        var progress = getWatchProgress(b);
+        var pct = progress ? progress.percent : 0;
+        var $card = bindBangumiCard($('<a class="timeline-card"></a>'), b)
+            .css('--card-index', String(index || 0));
+        if (b.Cover) {
+            $('<img class="timeline-card__cover">').attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' }).appendTo($card);
+        } else {
+            $('<div class="timeline-card__cover pc__placeholder"><i class="fas fa-play-circle"></i></div>').appendTo($card);
+        }
+        var $body = $('<div class="timeline-card__body"></div>');
+        $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($body);
+        $('<div class="timeline-card__title"></div>').text(b.Title).appendTo($body);
+        $('<div class="timeline-card__meta"></div>').text(progress ? ('第' + progress.watched + '话 · ' + pct + '%') : getEpisodeText(b)).appendTo($body);
+        var $bar = $('<div class="timeline-card__bar"></div>');
+        $('<span></span>').css('width', (progress ? pct : 0) + '%').appendTo($bar);
+        $bar.appendTo($body);
+        $body.appendTo($card);
+        return $card;
+    }
+
+    /* ── 最近关注：收藏海报墙 ── */
+    function makeFollowCard(b, index) {
+        var $card = bindBangumiCard($('<a class="follow-card"></a>'), b)
+            .css('--card-index', String(index || 0));
+        if (b.Cover) {
+            $('<img class="follow-card__cover">').attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' }).appendTo($card);
+        } else {
+            $('<div class="follow-card__cover pc__placeholder"><i class="fas fa-play-circle"></i></div>').appendTo($card);
+        }
+        var $body = $('<div class="follow-card__body"></div>');
+        $('<div class="follow-card__title"></div>').text(b.Title).appendTo($body);
+        $('<div class="follow-card__meta"></div>').text(getEpisodeText(b)).appendTo($body);
+        $body.appendTo($card);
+        $('<i class="fas fa-chevron-right follow-card__arrow" aria-hidden="true"></i>').appendTo($card);
+        return $card;
+    }
+
+    function estimateColumns($grid, minWidth, gap) {
+        var width = $grid.innerWidth() || $('.idx-body').innerWidth() || window.innerWidth;
+        return Math.max(1, Math.floor((width + gap) / (minWidth + gap)));
+    }
+
+    function renderItems($grid, items, count, cardFactory, signatureKey) {
+        var visibleItems = items.slice(0, count);
+        var signature = visibleItems.map(function (item) {
+            return [item.AnimeId, item.Cover || '', item.EpisodeWatched || 0, item.EpisodeTotal || 0].join(':');
+        }).join('|');
+        if (signatureKey && renderedSectionSignatures[signatureKey] === signature) return;
+        if (signatureKey) renderedSectionSignatures[signatureKey] = signature;
+        $grid.empty();
+        visibleItems.forEach(function (item, index) {
+            $grid.append(cardFactory(item, index));
+        });
+    }
+
+    function getScheduleGroupLabel(item, index) {
+        var date = getUpdateDateCandidate(item);
+        if (date) {
+            var diffDays = Math.round((getTimelineDayStamp(new Date()) - getTimelineDayStamp(date)) / 86400000);
+            if (diffDays <= 0) return '今天';
+            if (diffDays === 1) return '昨天';
+            if (diffDays < 7) return '本周';
+            if (diffDays < 14) return '上周';
+            if (diffDays < 21) return '上上周';
+            var dateParts = getTimelineDateParts(date);
+            var todayParts = getTimelineDateParts(new Date());
+            return dateParts.year === todayParts.year
+                ? (dateParts.month + '月')
+                : (dateParts.year + '年' + dateParts.month + '月');
+        }
+        var groupIndex = Math.floor(index / 8);
+        return ['最新一批', '近期更新', '稍早更新'][groupIndex] || '更新归档';
+    }
+
+    function renderUpdateSchedule($grid, items, count) {
+        var visibleItems = items.slice(0, count);
+        var signature = visibleItems.map(function (item) {
+            return [item.AnimeId, item.Cover || '', getScheduleGroupLabel(item, 0)].join(':');
+        }).join('|');
+        if (renderedSectionSignatures.updates === signature) return;
+        renderedSectionSignatures.updates = signature;
+        $grid.empty();
+
+        var groups = [];
+        var groupMap = {};
+        visibleItems.forEach(function (item, index) {
+            var label = getScheduleGroupLabel(item, index);
+            if (!groupMap[label]) {
+                groupMap[label] = { label: label, items: [] };
+                groups.push(groupMap[label]);
+            }
+            groupMap[label].items.push(item);
+        });
+
+        groups.forEach(function (group, groupIndex) {
+            var $day = $('<section class="schedule-day"></section>');
+            var $header = $('<header class="schedule-day__header"></header>');
+            $('<h3 class="schedule-day__label"></h3>').text(group.label).appendTo($header);
+            $('<span class="schedule-day__count"></span>').text(group.items.length + ' 部').appendTo($header);
+            $header.appendTo($day);
+            var $items = $('<div class="schedule-day__items"></div>').appendTo($day);
+            group.items.slice(0, 8).forEach(function (item, itemIndex) {
+                $items.append(makeUpdateCard(item, groupIndex * 8 + itemIndex));
+            });
+            $day.appendTo($grid);
+        });
+    }
+
+    function setupRailIndicator(rail) {
+        if (!rail) return;
+        var $rail = $(rail);
+        var id = $rail.attr('id') || ('rail' + Math.random().toString(36).slice(2));
+        $rail.attr('id', id);
+
+        var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+        var pageCount = maxScroll > 24 ? Math.min(12, Math.ceil(rail.scrollWidth / Math.max(1, rail.clientWidth))) : 1;
+        var $dots = $rail.next('.rail-dots');
+        if (!$dots.length) {
+            $dots = $('<div class="rail-dots" aria-hidden="true"></div>').insertAfter($rail);
+        }
+
+        if (pageCount <= 1) {
+            $dots.empty().hide();
+            $rail.off('scroll.railDots');
+            return;
+        }
+
+        $dots.show();
+        if ($dots.children().length !== pageCount) {
+            $dots.empty();
+            for (var i = 0; i < pageCount; i++) {
+                $('<button class="rail-dots__dot" type="button" tabindex="-1"></button>')
+                    .attr('aria-label', '滚动到第 ' + (i + 1) + ' 页')
+                    .data('page', i)
+                    .appendTo($dots);
+            }
+        }
+
+        function updateActiveDot() {
+            var currentMaxScroll = Math.max(1, rail.scrollWidth - rail.clientWidth);
+            var active = Math.max(0, Math.min(pageCount - 1, Math.round(rail.scrollLeft / currentMaxScroll * (pageCount - 1))));
+            $dots.children().removeClass('is-active').eq(active).addClass('is-active');
+        }
+
+        $dots.off('click.railDots').on('click.railDots', '.rail-dots__dot', function () {
+            var page = Number($(this).data('page') || 0);
+            var currentMaxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+            var left = pageCount <= 1 ? 0 : currentMaxScroll * page / (pageCount - 1);
+            rail.scrollTo({ left: left, behavior: 'smooth' });
+        });
+
+        var frameRequested = false;
+        $rail.off('scroll.railDots').on('scroll.railDots', function () {
+            if (frameRequested) return;
+            frameRequested = true;
+            window.requestAnimationFrame(function () {
+                frameRequested = false;
+                updateActiveDot();
+            });
+        });
+        updateActiveDot();
+    }
+
+    function setupRailIndicators() {
+        $('.continue-row, .update-timeline, .poster-row, .follow-grid').each(function () {
+            setupRailIndicator(this);
+        });
+    }
+
+    function renderDynamicSections() {
+        var isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+        if (sectionData.continueWatching.length) {
+            $('#cwSection').css('display', 'flex');
+            $('#cwCount').text(sectionData.continueWatching.length);
+            renderItems($('#cwGrid'), sectionData.continueWatching, isMobile ? 12 : 30, makeContinueCard, 'continue');
+        }
+
+        if (sectionData.latestUpdates.length) {
+            $('#luSection').css('display', 'flex');
+            $('#luCount').text(sectionData.latestUpdates.length);
+            renderUpdateSchedule($('#luGrid'), sectionData.latestUpdates, isMobile ? 18 : 24);
+        }
+
+        if (sectionData.latestFollows.length) {
+            $('#lfSection').css('display', 'flex');
+            $('#lfCount').text(sectionData.latestFollows.length);
+            renderItems($('#lfGrid'), sectionData.latestFollows, isMobile ? 18 : 36, makeFollowCard, 'follows');
+        }
+
+        window.requestAnimationFrame(setupRailIndicators);
+    }
+
+    $(window).on('resize', function () {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(function () {
+            setupRailIndicators();
+        }, 140);
+    });
+
+    function getHeroBadgeText(b) {
+        if (!b || typeof b !== 'object') return '';
+
+        var candidates = [
+            b.StatusText,
+            b.BangumiStatusText,
+            b.AnimeStatusText,
+            b.SeriesStatusText,
+            b.PublishStatusText,
+            b.CompletionStatusText,
+            b.AirStatusText
+        ];
+
+        for (var i = 0; i < candidates.length; i++) {
+            var value = candidates[i];
+            if (typeof value === 'string') {
+                value = value.trim();
+                if (value) return value;
+            }
+        }
+
+        return '';
+    }
+
+    function normalizeAnimeTitle(value) {
+        return String(value || '')
+            .normalize('NFKC')
+            .toLowerCase()
+            .replace(/[\s『』「」【】《》·・:：,，.!！?？'"“”‘’\-]/g, '');
+    }
+
+    function getTitleMarker(value) {
+        var text = String(value || '').normalize('NFKC');
+        var match = text.match(/第\s*(\d+)\s*(?:部分|クール)|(?:part|cour|season)\s*(\d+)/i);
+        return match ? Number(match[1] || match[2]) : null;
+    }
+
+    function getBangumiAliases(subject) {
+        var aliases = [subject.name, subject.name_cn];
+        (subject.infobox || []).forEach(function (entry) {
+            if (!/别名|中文名|英文名/.test(entry.key || '')) return;
+            if (typeof entry.value === 'string') aliases.push(entry.value);
+            if (Array.isArray(entry.value)) {
+                entry.value.forEach(function (value) {
+                    if (value && value.v) aliases.push(value.v);
+                });
+            }
+        });
+        return aliases.filter(function (value, index, values) {
+            return value && values.indexOf(value) === index;
+        });
+    }
+
+    function buildAniListSearchTerms(subject) {
+        var aliases = getBangumiAliases(subject);
+        var latin = aliases.filter(function (value) { return /[A-Za-z]/.test(value); });
+        var native = aliases.filter(function (value) { return !/[A-Za-z]/.test(value); });
+        var prefixes = latin.map(function (value) {
+            return value.replace(/[.:!?]$/g, '').split(/\s+/).slice(0, 6).join(' ');
+        }).filter(function (value) {
+            return value.split(/\s+/).length >= 4;
+        });
+
+        return latin.concat(prefixes, [subject.name], native)
+            .map(function (value) { return String(value || '').replace(/第\d+クール/g, '').trim(); })
+            .filter(function (value, index, values) { return value && values.indexOf(value) === index; })
+            .slice(0, 4);
+    }
+
+    function fetchJsonWithTimeout(url, options, timeout) {
+        var controller = new AbortController();
+        var timer = window.setTimeout(function () { controller.abort(); }, timeout || 6500);
+        var requestOptions = $.extend({}, options || {}, { signal: controller.signal });
+        return fetch(url, requestOptions).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }).finally(function () {
+            window.clearTimeout(timer);
+        });
+    }
+
+    function resolveBangumiSubject(title) {
+        var cacheKey = normalizeAnimeTitle(title);
+        if (bangumiSubjectPromises[cacheKey]) return bangumiSubjectPromises[cacheKey];
+        var request = fetchJsonWithTimeout('https://api.bgm.tv/v0/search/subjects?limit=5&offset=0', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ keyword: title, filter: { type: [2] } })
+        }).then(function (payload) {
+            var candidates = payload.data || [];
+            var normalizedTitle = normalizeAnimeTitle(title);
+            var match = candidates.find(function (candidate) {
+                return normalizeAnimeTitle(candidate.name_cn) === normalizedTitle;
+            }) || candidates.find(function (candidate) {
+                return normalizeAnimeTitle(candidate.name) === normalizedTitle;
+            }) || candidates[0];
+            if (!match) throw new Error('Bangumi subject not found');
+            return fetchJsonWithTimeout('https://api.bgm.tv/v0/subjects/' + match.id, {
+                headers: { 'Accept': 'application/json' }
+            });
+        });
+        bangumiSubjectPromises[cacheKey] = request.catch(function (error) {
+            delete bangumiSubjectPromises[cacheKey];
+            throw error;
+        });
+        return bangumiSubjectPromises[cacheKey];
+    }
+
+    function normalizeHeroDescription(value) {
+        if (!value) return '';
+        var text = String(value)
+            .replace(/<br\s*\/?\s*>/gi, ' ')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (text.length <= 180) return text;
+        var preview = text.slice(0, 180);
+        var sentenceEnd = Math.max(
+            preview.lastIndexOf('。'),
+            preview.lastIndexOf('！'),
+            preview.lastIndexOf('？'),
+            preview.lastIndexOf('!'),
+            preview.lastIndexOf('?')
+        );
+        return sentenceEnd >= 90 ? preview.slice(0, sentenceEnd + 1) : preview.slice(0, 176).trim() + '…';
+    }
+
+    function getLocalHeroDescription(bangumi) {
+        var names = [
+            'Summary', 'Description', 'Overview', 'Introduction', 'Intro',
+            'Plot', 'Story', 'AnimeSummary', 'BangumiSummary'
+        ];
+        for (var i = 0; i < names.length; i++) {
+            var text = normalizeHeroDescription(bangumi && bangumi[names[i]]);
+            if (text) return text;
+        }
+        return '';
+    }
+
+    function getHeroDescriptionCacheKey(bangumi) {
+        return HERO_DESCRIPTION_CACHE_PREFIX + String(bangumi.AnimeId || normalizeAnimeTitle(bangumi.Title));
+    }
+
+    function readHeroDescriptionCache(bangumi) {
+        try {
+            var value = JSON.parse(localStorage.getItem(getHeroDescriptionCacheKey(bangumi)) || 'null');
+            if (!value || !value.savedAt) return null;
+            var ttl = value.text ? HERO_DESCRIPTION_CACHE_OK_TTL : HERO_DESCRIPTION_CACHE_MISS_TTL;
+            if (Date.now() - value.savedAt > ttl) {
+                localStorage.removeItem(getHeroDescriptionCacheKey(bangumi));
+                return null;
+            }
+            return value;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function writeHeroDescriptionCache(bangumi, description) {
+        try {
+            localStorage.setItem(getHeroDescriptionCacheKey(bangumi), JSON.stringify($.extend({ savedAt: Date.now() }, description)));
+        } catch (error) {
+            // Storage may be disabled; the description still works for this page view.
+        }
+    }
+
+    function resolveHeroDescription(bangumi) {
+        var localDescription = getLocalHeroDescription(bangumi);
+        if (localDescription) return Promise.resolve({ text: localDescription, source: 'dandanplay' });
+        var cached = readHeroDescriptionCache(bangumi);
+        if (cached) return Promise.resolve(cached);
+        return resolveBangumiSubject(bangumi.Title).then(function (subject) {
+            var description = {
+                text: normalizeHeroDescription(subject && subject.summary),
+                source: 'bangumi'
+            };
+            writeHeroDescriptionCache(bangumi, description);
+            return description;
+        }).catch(function () {
+            var description = { text: '', source: '' };
+            writeHeroDescriptionCache(bangumi, description);
+            return description;
+        });
+    }
+
+    function applyHeroDescription(description, requestId) {
+        if (requestId !== heroArtworkRequestId) return;
+        var text = description && description.text ? description.text : '';
+        $('#heroDescription')
+            .text(text)
+            .attr('data-source', description && description.source ? description.source : '')
+            .prop('hidden', !text);
+        $('.idx-hero__content').toggleClass('has-description', !!text);
+    }
+
+    function resolveAniListArtwork(subject, bangumi) {
+        var terms = buildAniListSearchTerms(subject);
+        var definitions = [];
+        var fields = [];
+        var variables = {};
+        terms.forEach(function (term, index) {
+            definitions.push('$s' + index + ': String');
+            variables['s' + index] = term;
+            fields.push('q' + index + ': Page(perPage: 10) { media(search: $s' + index + ', type: ANIME) { id title { romaji english native } synonyms seasonYear episodes bannerImage coverImage { extraLarge } } }');
+        });
+        var query = 'query (' + definitions.join(', ') + ') { ' + fields.join('\n') + ' }';
+
+        return fetchJsonWithTimeout('https://graphql.anilist.co', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ query: query, variables: variables })
+        }).then(function (payload) {
+            if (payload.errors || !payload.data) throw new Error('AniList query failed');
+            var candidateMap = {};
+            terms.forEach(function (_, index) {
+                var media = (payload.data['q' + index] || {}).media || [];
+                media.forEach(function (candidate) { candidateMap[candidate.id] = candidate; });
+            });
+
+            var expectedNames = [bangumi.Title].concat(getBangumiAliases(subject)).map(normalizeAnimeTitle);
+            var expectedYear = subject.date ? Number(subject.date.slice(0, 4)) : null;
+            var expectedEpisodes = Number(subject.eps || bangumi.EpisodeTotal || 0) || null;
+            var expectedMarker = getTitleMarker(bangumi.Title);
+            if (expectedMarker === null) expectedMarker = getTitleMarker(subject.name);
+
+            var ranked = Object.keys(candidateMap).map(function (id) {
+                var candidate = candidateMap[id];
+                var names = [candidate.title && candidate.title.romaji, candidate.title && candidate.title.english, candidate.title && candidate.title.native]
+                    .concat(candidate.synonyms || []).filter(Boolean);
+                var normalizedNames = names.map(normalizeAnimeTitle);
+                var score = 0;
+                if (expectedNames.some(function (name) { return normalizedNames.indexOf(name) !== -1; })) score += 70;
+                else if (expectedNames.some(function (name) {
+                    return normalizedNames.some(function (other) { return name.indexOf(other) !== -1 || other.indexOf(name) !== -1; });
+                })) score += 35;
+                if (expectedYear && candidate.seasonYear === expectedYear) score += 25;
+                else if (expectedYear && Math.abs((candidate.seasonYear || 0) - expectedYear) === 1) score += 8;
+                if (expectedEpisodes && candidate.episodes === expectedEpisodes) score += 20;
+                var candidateMarker = null;
+                names.some(function (name) {
+                    candidateMarker = getTitleMarker(name);
+                    return candidateMarker !== null;
+                });
+                if (expectedMarker !== null && candidateMarker === expectedMarker) score += 25;
+                else if (expectedMarker !== null && candidateMarker !== null) score -= 35;
+                else if (expectedMarker === null && candidateMarker !== null) score -= 12;
+                return { score: score, candidate: candidate };
+            }).sort(function (a, b) { return b.score - a.score; });
+
+            var best = ranked[0];
+            var runnerUp = ranked[1];
+            if (!best || best.score < 80 || (runnerUp && best.score - runnerUp.score < 20)) {
+                throw new Error('AniList match confidence too low');
+            }
+            return {
+                anilistId: best.candidate.id,
+                banner: best.candidate.bannerImage || '',
+                cover: (best.candidate.coverImage || {}).extraLarge || ''
+            };
+        });
+    }
+
+    function rankExternalMatch(names, bangumi, subject) {
+        var expected = [bangumi.Title].concat(getBangumiAliases(subject)).map(normalizeAnimeTitle).filter(Boolean);
+        var normalizedNames = (names || []).map(normalizeAnimeTitle).filter(Boolean);
+        var score = 0;
+        if (expected.some(function (name) { return normalizedNames.indexOf(name) !== -1; })) score += 80;
+        else if (expected.some(function (name) {
+            return normalizedNames.some(function (other) {
+                return name.length > 4 && other.length > 4 && (name.indexOf(other) !== -1 || other.indexOf(name) !== -1);
+            });
+        })) score += 42;
+        var expectedMarker = getTitleMarker(bangumi.Title) || getTitleMarker(subject.name);
+        var candidateMarker = null;
+        (names || []).some(function (name) {
+            candidateMarker = getTitleMarker(name);
+            return candidateMarker !== null;
+        });
+        if (expectedMarker !== null && candidateMarker === expectedMarker) score += 24;
+        if (expectedMarker !== null && candidateMarker !== null && candidateMarker !== expectedMarker) score -= 40;
+        return score;
+    }
+
+    function resolveKitsuArtwork(subject, bangumi) {
+        var term = (buildAniListSearchTerms(subject)[0] || subject.name || bangumi.Title).trim();
+        var url = 'https://kitsu.io/api/edge/anime?filter[text]=' + encodeURIComponent(term) + '&page[limit]=8';
+        return fetchJsonWithTimeout(url, { headers: { Accept: 'application/vnd.api+json' } }, 6500).then(function (payload) {
+            var ranked = (payload.data || []).map(function (entry) {
+                var attrs = entry.attributes || {};
+                var titles = Object.keys(attrs.titles || {}).map(function (key) { return attrs.titles[key]; });
+                titles.push(attrs.canonicalTitle);
+                return { entry: entry, attrs: attrs, score: rankExternalMatch(titles, bangumi, subject) };
+            }).sort(function (a, b) { return b.score - a.score; });
+            if (!ranked[0] || ranked[0].score < 70) throw new Error('Kitsu match confidence too low');
+            var attrs = ranked[0].attrs;
+            return [
+                attrs.coverImage && attrs.coverImage.original ? { url: attrs.coverImage.original, source: 'kitsu', sourceLabel: 'Kitsu', role: 'banner' } : null,
+                attrs.posterImage && attrs.posterImage.original ? { url: attrs.posterImage.original, source: 'kitsu', sourceLabel: 'Kitsu', role: 'poster' } : null
+            ].filter(Boolean);
+        });
+    }
+
+    function resolveJikanArtwork(subject, bangumi) {
+        var term = (buildAniListSearchTerms(subject)[0] || subject.name || bangumi.Title).trim();
+        var url = 'https://api.jikan.moe/v4/anime?q=' + encodeURIComponent(term) + '&limit=8&sfw=true';
+        return fetchJsonWithTimeout(url, { headers: { Accept: 'application/json' } }, 7000).then(function (payload) {
+            var ranked = (payload.data || []).map(function (entry) {
+                var titles = (entry.titles || []).map(function (title) { return title.title; });
+                titles.push(entry.title, entry.title_english, entry.title_japanese);
+                return { entry: entry, score: rankExternalMatch(titles, bangumi, subject) };
+            }).sort(function (a, b) { return b.score - a.score; });
+            if (!ranked[0] || ranked[0].score < 70) throw new Error('Jikan match confidence too low');
+            var entry = ranked[0].entry;
+            var trailer = entry.trailer && entry.trailer.images;
+            var images = entry.images || {};
+            var poster = (images.webp || {}).large_image_url || (images.jpg || {}).large_image_url || '';
+            return [
+                trailer && (trailer.maximum_image_url || trailer.large_image_url) ? { url: trailer.maximum_image_url || trailer.large_image_url, source: 'jikan', sourceLabel: 'MyAnimeList', role: 'banner' } : null,
+                poster ? { url: poster, source: 'jikan', sourceLabel: 'MyAnimeList', role: 'poster' } : null
+            ].filter(Boolean);
+        });
+    }
+
+    function getHeroArtworkCacheKey(bangumi) {
+        return HERO_ART_CACHE_PREFIX + String(bangumi.AnimeId || normalizeAnimeTitle(bangumi.Title));
+    }
+
+    function readHeroArtworkCache(bangumi) {
+        try {
+            var value = JSON.parse(localStorage.getItem(getHeroArtworkCacheKey(bangumi)) || 'null');
+            if (!value || !value.savedAt) return null;
+            var ttl = value.status === 'miss'
+                ? HERO_ART_CACHE_MISS_TTL
+                : (value.status === 'cover-only' ? HERO_ART_CACHE_COVER_ONLY_TTL : HERO_ART_CACHE_OK_TTL);
+            if (Date.now() - value.savedAt > ttl) {
+                localStorage.removeItem(getHeroArtworkCacheKey(bangumi));
+                return null;
+            }
+            return value;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function writeHeroArtworkCache(bangumi, artwork) {
+        try {
+            localStorage.setItem(getHeroArtworkCacheKey(bangumi), JSON.stringify($.extend({ savedAt: Date.now() }, artwork)));
+        } catch (error) {
+            // Storage may be disabled; artwork still works for the current page view.
+        }
+    }
+
+    function resolveHeroArtwork(bangumi) {
+        var cached = readHeroArtworkCache(bangumi);
+        if (cached && cached.status !== 'miss' && Array.isArray(cached.candidates)) {
+            return rankHeroCandidates(cached.candidates);
+        }
+        return resolveBangumiSubject(bangumi.Title)
+            .then(function (subject) {
+                var candidates = [];
+                if (bangumi.Cover) candidates.push({ url: bangumi.Cover, source: 'dandanplay', sourceLabel: '本地', role: 'poster' });
+                if (subject.images && subject.images.large) {
+                    candidates.push({ url: subject.images.large, source: 'bangumi', sourceLabel: 'Bangumi', role: 'poster' });
+                }
+                return Promise.allSettled([
+                    resolveAniListArtwork(subject, bangumi),
+                    resolveKitsuArtwork(subject, bangumi),
+                    resolveJikanArtwork(subject, bangumi)
+                ]).then(function (results) {
+                    var aniList = results[0].status === 'fulfilled' ? results[0].value : null;
+                    if (aniList && aniList.banner) candidates.push({ url: aniList.banner, source: 'anilist', sourceLabel: 'AniList', role: 'banner' });
+                    if (aniList && aniList.cover) candidates.push({ url: aniList.cover, source: 'anilist', sourceLabel: 'AniList', role: 'poster' });
+                    if (results[1].status === 'fulfilled') candidates = candidates.concat(results[1].value || []);
+                    if (results[2].status === 'fulfilled') candidates = candidates.concat(results[2].value || []);
+                    var seen = {};
+                    candidates = candidates.filter(function (candidate) {
+                        if (!candidate.url || seen[candidate.url]) return false;
+                        seen[candidate.url] = true;
+                        return true;
+                    });
+                    return rankHeroCandidates(candidates).then(function (ranked) {
+                        var hasWideArtwork = ranked.some(function (candidate) { return candidate.kind === 'wide'; });
+                        writeHeroArtworkCache(bangumi, {
+                            status: hasWideArtwork ? 'ok' : (ranked.length ? 'cover-only' : 'miss'),
+                            candidates: ranked
+                        });
+                        return ranked;
+                    });
+                });
+            })
+            .catch(function () {
+                var fallback = bangumi.Cover ? [{ url: bangumi.Cover, source: 'dandanplay', sourceLabel: '本地', role: 'poster' }] : [];
+                writeHeroArtworkCache(bangumi, { status: fallback.length ? 'cover-only' : 'miss', candidates: fallback });
+                return rankHeroCandidates(fallback);
+            });
+    }
+
+    function inspectHeroCandidate(candidate) {
+        if (!candidate || !candidate.url) return Promise.reject(new Error('Missing artwork URL'));
+        return new Promise(function (resolve, reject) {
+            var image = new Image();
+            image.decoding = 'async';
+            image.onload = function () {
+                resolve($.extend({}, candidate, {
+                    width: image.naturalWidth || candidate.width || 0,
+                    height: image.naturalHeight || candidate.height || 0
+                }));
+            };
+            image.onerror = reject;
+            image.src = candidate.url;
+        });
+    }
+
+    function scoreHeroCandidate(candidate) {
+        var mobile = window.matchMedia('(max-width: 768px)').matches;
+        var width = Number(candidate.width || 0);
+        var height = Number(candidate.height || 0);
+        var ratio = height > 0 ? width / height : (candidate.role === 'banner' ? 1.78 : 0.68);
+        var targetRatio = mobile ? 0.68 : Math.max(1.45, Math.min(2.05, window.innerWidth / Math.max(window.innerHeight, 1)));
+        var targetWidth = mobile ? window.innerWidth : window.innerWidth * 0.72;
+        var targetHeight = mobile ? window.innerHeight * 0.69 : window.innerHeight - 64;
+        var ratioPenalty = Math.abs(Math.log(Math.max(ratio, 0.1) / targetRatio)) * (mobile ? 82 : 110);
+        var pixelScore = Math.log2(Math.max(width * height, 90000) / 90000) * 18;
+        var upscalePenalty = Math.max(0, targetWidth - width) / Math.max(targetWidth, 1) * 45 +
+            Math.max(0, targetHeight - height) / Math.max(targetHeight, 1) * 32;
+        var sourceBonus = { anilist: 9, kitsu: 8, jikan: 5, bangumi: 3, dandanplay: 0 }[candidate.source] || 0;
+        return pixelScore + sourceBonus - ratioPenalty - upscalePenalty;
+    }
+
+    function rankHeroCandidates(candidates) {
+        var tasks = (candidates || []).map(function (candidate) {
+            if (candidate.width && candidate.height) return Promise.resolve(candidate);
+            return inspectHeroCandidate(candidate);
+        });
+        return Promise.allSettled(tasks).then(function (results) {
+            return results.filter(function (result) { return result.status === 'fulfilled'; })
+                .map(function (result) {
+                    var candidate = result.value;
+                    candidate.kind = candidate.width / Math.max(candidate.height, 1) >= 1.2 ? 'wide' : 'poster';
+                    candidate.qualityScore = scoreHeroCandidate(candidate);
+                    return candidate;
+                })
+                .sort(function (a, b) { return b.qualityScore - a.qualityScore; });
+        });
+    }
+
+    function applyHeroCandidate(candidate) {
+        if (!candidate || !candidate.url) return;
+        currentHeroArtwork = candidate;
+        var escapedUrl = candidate.url.replace(/"/g, '%22');
+        $('#heroBg').css('background-image', 'url("' + escapedUrl + '")');
+        var $image = $('#heroCover img');
+        if (!$image.length) {
+            $image = $('<img>').attr({ alt: $('#heroTitle').text(), decoding: 'async' }).appendTo('#heroCover');
+        }
+        if ($image.attr('src') !== candidate.url) $image.attr('src', candidate.url);
+        $('#heroBanner')
+            .attr('data-art-source', candidate.source || 'dandanplay')
+            .attr('data-art-kind', candidate.kind || 'poster');
+        $('#heroArtSource').text(candidate.sourceLabel || candidate.source || '本地');
+        updateHeroModeButton();
+    }
+
+    function setHeroCandidates(candidates) {
+        heroArtworkCandidates = candidates || [];
+        heroArtworkIndex = 0;
+        if (heroArtworkCandidates.length) applyHeroCandidate(heroArtworkCandidates[0]);
+        else updateHeroModeButton();
+    }
+
+    /* ── 渲染 Hero ── */
+    function renderHero(b) {
+        var artworkRequestId = ++heroArtworkRequestId;
+        applyHeroDescription(null, artworkRequestId);
+        $('#heroCover').empty();
+        heroArtworkCandidates = [];
+        heroArtworkIndex = 0;
+        if (b.Cover) {
+            inspectHeroCandidate({ url: b.Cover, source: 'dandanplay', sourceLabel: '本地', role: 'poster' })
+                .then(function (candidate) {
+                    if (artworkRequestId !== heroArtworkRequestId || heroArtworkCandidates.length) return;
+                    candidate.kind = candidate.width / Math.max(candidate.height, 1) >= 1.2 ? 'wide' : 'poster';
+                    applyHeroCandidate(candidate);
+                }).catch(function () {});
+        }
+        // 徽章
+        var heroBadgeText = getHeroBadgeText(b);
+        if (heroBadgeText) {
+            $('#heroBadgeText').text(heroBadgeText);
+            $('#heroBadge').show();
+        } else {
+            $('#heroBadgeText').text('');
+            $('#heroBadge').hide();
+        }
+        // 标题
+        $('#heroTitle').text(b.Title);
+        $('#heroCover img').attr('alt', b.Title);
+        // 元信息
+        var metaHtml = '';
+        if (b.Details) metaHtml += '<span>' + $('<span>').text(b.Details).html() + '</span>';
+        if (b.EpisodeTotal > 0) {
+            if (metaHtml) metaHtml += '<span class="idx-hero__meta-dot"></span>';
+            metaHtml += '<span>' + b.EpisodeTotal + '话</span>';
+        }
+        $('#heroMeta').html(metaHtml);
+        resolveHeroDescription(b).then(function (description) {
+            applyHeroDescription(description, artworkRequestId);
+        });
+        $('#heroPlayBtn').off('click').on('click', function (event) {
+            event.preventDefault();
+            playBangumiLatest(String(b.AnimeId), b.Title);
+        });
+        // 显示
+        $('#heroBanner').fadeIn(360, function () {
+            $(this).addClass('is-ready');
+            restoreInitialHeroPosition(false);
+        });
+
+        resolveHeroArtwork(b).then(function (candidates) {
+            if (!candidates || !candidates.length || artworkRequestId !== heroArtworkRequestId) return;
+            setHeroCandidates(candidates);
+        });
+    }
+
+    function fetchLibraryFallback() {
+        if (!libraryFallbackPromise) {
+            libraryFallbackPromise = $.ajax({
+                url: getLibraryFallbackApi(),
+                method: 'GET',
+                timeout: 10000
+            });
+        }
+        return libraryFallbackPromise;
+    }
+
+    function getLibraryFallbackApi() {
+        var tokenMatch = bangumiDetailsApiTemplate.match(/[?&]token=([^&]+)/);
+        var token = tokenMatch ? tokenMatch[1] : '';
+        var apiPrefix = bangumiDetailsApiTemplate.split('/api/v1/library/v2/bangumi/details/')[0];
+        return apiPrefix + '/api/v1/library' + (token ? '?token=' + token : '');
+    }
+
+    function shouldAttemptLibraryFallback(response, bangumiMeta) {
+        var episodes = response && response.Episodes ? response.Episodes : [];
+        if (!episodes.length || !bangumiMeta) {
+            return false;
+        }
+
+        var seasonIds = collectSeasonIds(episodes);
+        var allFilesMissing = episodes.every(function (episode) {
+            return !episode.LocalMatchedFiles || !episode.LocalMatchedFiles.length;
+        });
+
+        return seasonIds.length <= 1 &&
+            (Number(bangumiMeta.EpisodeTotal || 0) > episodes.length ||
+                (Number(bangumiMeta.VideoFileCount || 0) > 0 && allFilesMissing));
+    }
+
+    function loadBangumiState(animeId, onReady) {
+        var bangumiMeta = bangumiMapById[String(animeId)] || null;
+        if (!bangumiDetailsApiTemplate) {
+            return;
+        }
+
+        $.ajax({
+            url: bangumiDetailsApiTemplate.replace('{id}', animeId),
+            method: 'GET',
+            timeout: 10000,
+            success: function (response) {
+                refreshRecentPlayFromDetails(animeId, response);
+                if (shouldAttemptLibraryFallback(response, bangumiMeta)) {
+                    fetchLibraryFallback()
+                        .done(function (libraryResponse) {
+                            onReady(buildModalState(animeId, response, bangumiMeta, libraryResponse));
+                        })
+                        .fail(function () {
+                            onReady(buildModalState(animeId, response, bangumiMeta, []));
+                        });
+                    return;
+                }
+
+                onReady(buildModalState(animeId, response, bangumiMeta, []));
+            },
+            error: function (xhr) {
+                DandanApp.toast(DandanApp.describeError(xhr, '作品详情加载失败。'), 'error');
+                onReady(null);
+            }
+        });
+    }
+
+    function applyRecentPlayItems(items) {
+        recentPlayItems = items || [];
+        bangumiMapById = {};
+        recentPlayItems.forEach(function (bangumi) {
+            bangumiMapById[String(bangumi.AnimeId)] = bangumi;
+        });
+
+        var inProgress = recentPlayItems.filter(function (bangumi) {
+            return Number(bangumi.EpisodeWatched || 0) > 0;
+        });
+        sectionData.continueWatching = inProgress;
+
+        var heroItem = inProgress[0] || recentPlayItems[0] || null;
+        if (heroItem && String(heroItem.AnimeId) !== currentHeroAnimeId) {
+            currentHeroAnimeId = String(heroItem.AnimeId);
+            renderHero(heroItem);
+        }
+        renderDynamicSections();
+    }
+
+    function refreshRecentPlayFromDetails(animeId, response) {
+        if (!window.RecentPlayRefresh) return;
+        var bangumi = bangumiMapById[String(animeId)];
+        if (!bangumi || !RecentPlayRefresh.applyDetails(bangumi, response)) return;
+        recentPlayItems = RecentPlayRefresh.sort(recentPlayItems);
+        sectionData.continueWatching = recentPlayItems.filter(function (item) {
+            return Number(item.EpisodeWatched || 0) > 0;
+        });
+        var progress = getWatchProgress(bangumi);
+        var $card = $('.pc--continue[data-anime-id="' + String(animeId).replace(/"/g, '\\"') + '"]');
+        if ($card.length && progress) {
+            $card.find('.pc__badge').text(progress.watched + '/' + progress.total);
+            $card.find('.pc__ep').text('第' + progress.watched + '话 · ' + progress.percent + '%');
+            $card.find('.pc__bar').attr('aria-valuenow', String(progress.percent));
+            $card.find('.pc__bar-fill').css('width', progress.percent + '%');
+        }
+    }
+
+    function findPlayableFile(modalState) {
+        var preferredEpisode = null;
+
+        if (modalState.lastWatchedEpisodeId) {
+            modalState.seasons.order.some(function (seasonId) {
+                var match = (modalState.seasons.groups[seasonId] || []).find(function (episode) {
+                    return String(episode.EpisodeId) === modalState.lastWatchedEpisodeId;
+                });
+                if (match) {
+                    preferredEpisode = match;
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        if (preferredEpisode && preferredEpisode.LocalMatchedFiles && preferredEpisode.LocalMatchedFiles.length) {
+            return preferredEpisode.LocalMatchedFiles[0];
+        }
+
+        for (var i = 0; i < modalState.seasons.order.length; i++) {
+            var seasonEpisodes = modalState.seasons.groups[modalState.seasons.order[i]] || [];
+            for (var j = 0; j < seasonEpisodes.length; j++) {
+                if (seasonEpisodes[j].LocalMatchedFiles && seasonEpisodes[j].LocalMatchedFiles.length) {
+                    return seasonEpisodes[j].LocalMatchedFiles[0];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    function playBangumiLatest(animeId, title) {
+        loadBangumiState(animeId, function (modalState) {
+            if (!modalState) return;
+            var file = findPlayableFile(modalState);
+            if (file) {
+                window.location.href = 'video.html?id=' + encodeURIComponent(file.Id);
+                return;
+            }
+            showModal(animeId, title);
+        });
+    }
+
+    window.showModal = function (animeId, title) {
+        document.getElementById('bangumiModal').setAttribute('data-anime-id', String(animeId));
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('lastWatchedInfo').innerText = '';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('seasonTabs').style.display = 'none';
+        document.getElementById('seasonTabs').innerHTML = '';
+        document.getElementById('episodeList').style.display = 'none';
+        document.getElementById('episodeList').innerHTML = '';
+        document.getElementById('bangumiModal').style.display = 'block';
+
+        loadBangumiState(animeId, function (modalState) {
+            if (document.getElementById('bangumiModal').getAttribute('data-anime-id') !== String(animeId)) return;
+            if (!modalState) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('episodeList').style.display = 'block';
+                document.getElementById('episodeList').innerHTML = '<li class="episode-item empty-state">作品详情加载失败，请关闭后重试。</li>';
+                return;
+            }
+            currentModalState = modalState;
+            document.getElementById('loading').style.display = 'none';
+            renderSeasonTabs(currentModalState);
+            renderSeasonEpisodes(currentModalState.activeSeasonId);
+        });
+    };
+
+    window.closeModal = function () {
+        document.getElementById('bangumiModal').style.display = 'none';
+        document.getElementById('bangumiModal').removeAttribute('data-anime-id');
+    };
+
+    window.onclick = function (event) {
+        var modal = document.getElementById('bangumiModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    /* ── 主流程：先拿到真实 API 路径再加载数据 ── */
+    var homeBootstrapRequest = null;
+    var homeSectionRequests = [];
+    var homeLoadRun = 0;
+
+    function setHomeStatus(type, title, description) {
+        var $status = $('#homeStatus');
+        var icons = {
+            loading: 'fa-spinner fa-spin',
+            empty: 'fa-folder-open',
+            error: 'fa-triangle-exclamation'
+        };
+        $status.removeClass('is-error').show();
+        if (type === 'error') $status.addClass('is-error');
+        $status.find('.home-status__icon i').attr('class', 'fas ' + (icons[type] || icons.loading));
+        $('#homeStatusTitle').text(title);
+        $('#homeStatusDescription').text(description);
+        $('#homeRetryBtn').toggle(type === 'error');
+    }
+
+    function abortHomeRequests() {
+        if (homeBootstrapRequest) homeBootstrapRequest.abort();
+        homeSectionRequests.forEach(function (request) { if (request) request.abort(); });
+        homeBootstrapRequest = null;
+        homeSectionRequests = [];
+    }
+
+    function loadHomeData() {
+        abortHomeRequests();
+        var runId = ++homeLoadRun;
+        setHomeStatus('loading', '正在整理你的媒体库', '最近播放、更新和关注内容正在同步。');
+
+        homeBootstrapRequest = $.ajax({
+            url: 'bangumi.html?nav=lastplay',
+            method: 'GET',
+            timeout: 6000,
+            success: function (html) {
+                if (runId !== homeLoadRun) return;
+                bangumiListApi = extractApiUrl(html, 'bangumiListApi');
+                bangumiDetailsApiTemplate = extractApiUrl(html, 'bangumiDetailsApiTemplate') || extractApiUrl(html, 'getBangumiDetailsApi');
+                if (!bangumiListApi || !bangumiDetailsApiTemplate) {
+                    setHomeStatus('error', '无法读取媒体库接口', '页面配置不完整，请重试或检查服务器模板。');
+                    return;
+                }
+
+                var endpoints = [
+                    { url: bangumiListApi, apply: function (items) {
+                        applyRecentPlayItems(items);
+                        if (window.RecentPlayRefresh) {
+                            RecentPlayRefresh.hydrate(items, bangumiDetailsApiTemplate, { limit: 16, concurrency: 4, timeout: 3500 })
+                                .then(function (freshItems) { if (runId === homeLoadRun) applyRecentPlayItems(freshItems); });
+                        }
+                    } },
+                    { url: replaceBangumiNav(bangumiListApi, 'lastupdate'), apply: function (items) {
+                        sectionData.latestUpdates = items;
+                        renderDynamicSections();
+                    } },
+                    { url: replaceBangumiNav(bangumiListApi, 'lastadd'), apply: function (items) {
+                        sectionData.latestFollows = items;
+                        renderDynamicSections();
+                    } }
+                ];
+                var remaining = endpoints.length;
+                var loadedSections = 0;
+                var failedSections = 0;
+
+                function settle() {
+                    remaining -= 1;
+                    if (remaining > 0 || runId !== homeLoadRun) return;
+                    window.requestAnimationFrame(function () { restoreInitialHeroPosition(true); });
+                    if (loadedSections > 0) {
+                        $('#homeStatus').slideUp(180);
+                        if (failedSections > 0) DandanApp.toast('部分首页内容暂时未能同步。', 'warning');
+                    } else if (failedSections > 0) {
+                        setHomeStatus('error', '首页内容加载失败', '服务器暂时没有返回媒体库内容，请稍后重试。');
+                    } else {
+                        setHomeStatus('empty', '媒体库还没有最近内容', '你仍然可以通过下方分区和文件夹开始浏览。');
+                    }
+                }
+
+                homeSectionRequests = endpoints.map(function (endpoint) {
+                    return $.ajax({
+                        url: endpoint.url,
+                        method: 'GET',
+                        timeout: 8000,
+                        success: function (data) {
+                            var items = Array.isArray(data) ? data : [];
+                            if (!items.length) return;
+                            loadedSections += 1;
+                            endpoint.apply(items);
+                        },
+                        error: function (xhr, status) { if (status !== 'abort') failedSections += 1; },
+                        complete: settle
+                    });
+                });
+            },
+            error: function (xhr, status) {
+                if (status === 'abort' || runId !== homeLoadRun) return;
+                setHomeStatus('error', '无法连接媒体库', DandanApp.describeError(xhr, '无法加载首页内容，请稍后重试。'));
+            },
+            complete: function () { homeBootstrapRequest = null; }
+        });
+    }
+
+    $('#homeRetryBtn').on('click', loadHomeData);
+    window.addEventListener('pagehide', abortHomeRequests);
+    loadHomeData();
+
+    function renderSeasonTabs(modalState) {
+        var seasonTabs = document.getElementById('seasonTabs');
+        var episodeList = document.getElementById('episodeList');
+
+        document.getElementById('lastWatchedInfo').innerHTML = modalState.lastWatchedInfoHtml;
+
+        if (!modalState.seasons.order.length) {
+            seasonTabs.style.display = 'none';
+            episodeList.style.display = 'block';
+            episodeList.innerHTML = '<li class="episode-item empty-state">未找到剧集信息</li>';
+            return;
+        }
+
+        if (modalState.seasons.order.length <= 1) {
+            seasonTabs.style.display = 'none';
+            return;
+        }
+
+        seasonTabs.innerHTML = '';
+        seasonTabs.style.display = 'flex';
+
+        modalState.seasons.order.forEach(function (seasonId) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'season-tab' + (seasonId === modalState.activeSeasonId ? ' active' : '');
+            button.setAttribute('data-season-id', seasonId);
+            button.innerText = formatSeasonLabel(seasonId);
+            button.onclick = function () {
+                renderSeasonEpisodes(seasonId);
+            };
+            seasonTabs.appendChild(button);
+        });
+    }
+
+    function renderSeasonEpisodes(seasonId) {
+        if (!currentModalState || !currentModalState.seasons.groups[seasonId]) {
+            return;
+        }
+
+        currentModalState.activeSeasonId = seasonId;
+        updateSeasonTabState();
+
+        var episodeList = document.getElementById('episodeList');
+        episodeList.style.display = 'block';
+        episodeList.innerHTML = '';
+
+        var lastWatchedElement = null;
+        currentModalState.seasons.groups[seasonId].forEach(function (episode) {
+            var li = document.createElement('li');
+            li.className = 'episode-item';
+
+            if (currentModalState.lastWatchedEpisodeId && String(episode.EpisodeId) === currentModalState.lastWatchedEpisodeId) {
+                li.classList.add('last-watched-episode');
+                lastWatchedElement = li;
+            }
+
+            li.innerHTML = `
+                <div class="episode-title">
+                    ${buildStatusIcon(episode)}
+                    <i class="fas fa-tv"></i>
+                    ${formatEpisodeHeading(episode)}
+                </div>
+                <div class="episode-details">
+                    <div><i class="fas fa-calendar-alt"></i> 上映日期: ${formatDateValue(episode.AirDate)}</div>
+                    <div><i class="fas fa-clock"></i> 上次观看时间: ${formatDateTimeValue(episode.LastWatched)}</div>
+                    <div><i class="fas fa-cloud"></i> 上次观看时间（云端）: ${formatDateTimeValue(episode.LastWatchedCloud)}</div>
+                </div>
+                <div class="local-files">
+                    ${buildFilesHtml(episode.LocalMatchedFiles || [])}
+                </div>
+            `;
+            episodeList.appendChild(li);
+        });
+
+        if (lastWatchedElement) {
+            setTimeout(function () {
+                lastWatchedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        } else {
+            episodeList.scrollTop = 0;
+        }
+    }
+
+    function updateSeasonTabState() {
+        var seasonTabs = document.getElementById('seasonTabs');
+        Array.prototype.slice.call(seasonTabs.querySelectorAll('.season-tab')).forEach(function (tab) {
+            tab.classList.toggle('active', tab.getAttribute('data-season-id') === String(currentModalState.activeSeasonId));
+        });
+    }
+
+    function buildModalState(animeId, response, bangumiMeta, libraryResponse) {
+        var officialEpisodes = response && response.Episodes ? response.Episodes : [];
+        var officialGroups = buildSeasonGroups(officialEpisodes);
+        var fallbackGroups = buildFallbackSeasonGroups(animeId, libraryResponse);
+        var mergedGroups = mergeSeasonGroups(officialGroups, fallbackGroups);
+        var lastWatchedState = findLastWatchedEpisode(officialEpisodes);
+        var activeSeasonId = determineInitialSeasonId(officialGroups, mergedGroups, lastWatchedState.episode);
+
+        return {
+            animeId: animeId,
+            bangumiMeta: bangumiMeta,
+            seasons: mergedGroups,
+            activeSeasonId: activeSeasonId,
+            lastWatchedEpisodeId: lastWatchedState.episode ? String(lastWatchedState.episode.EpisodeId) : null,
+            lastWatchedInfoHtml: buildLastWatchedInfoHtml(lastWatchedState.episode, lastWatchedState.time, lastWatchedState.isCloudTime)
+        };
+    }
+
+    function buildSeasonGroups(episodes) {
+        var groups = {};
+        var order = [];
+
+        (episodes || []).forEach(function (episode) {
+            var seasonId = normalizeSeasonId(episode.SeasonId);
+            if (!groups[seasonId]) {
+                groups[seasonId] = [];
+                order.push(seasonId);
+            }
+            groups[seasonId].push(episode);
+        });
+
+        order.sort(compareSeasonIds);
+        Object.keys(groups).forEach(function (seasonId) {
+            groups[seasonId].sort(compareEpisodes);
+        });
+
+        return { groups: groups, order: order };
+    }
+
+    function buildFallbackSeasonGroups(animeId, libraryResponse) {
+        var groups = {};
+        var order = [];
+        var episodeMap = {};
+
+        (libraryResponse || []).forEach(function (file) {
+            if (String(file.AnimeId) !== String(animeId)) {
+                return;
+            }
+
+            var seasonId = inferSeasonIdFromFile(file) || 'special';
+            if (!groups[seasonId]) {
+                groups[seasonId] = [];
+                order.push(seasonId);
+            }
+
+            var episodeKey = String(file.EpisodeId);
+            if (!episodeMap[seasonId]) {
+                episodeMap[seasonId] = {};
+            }
+
+            if (!episodeMap[seasonId][episodeKey]) {
+                episodeMap[seasonId][episodeKey] = {
+                    SeasonId: seasonId,
+                    EpisodeId: file.EpisodeId,
+                    EpisodeTitle: normalizeFallbackEpisodeTitle(file.EpisodeTitle),
+                    EpisodeNumber: inferEpisodeNumberFromFile(file),
+                    LastWatched: null,
+                    LastWatchedCloud: null,
+                    AirDate: null,
+                    AirStatus: 0,
+                    LocalMatchedExists: true,
+                    LocalMatchedFiles: []
+                };
+                groups[seasonId].push(episodeMap[seasonId][episodeKey]);
+            }
+
+            episodeMap[seasonId][episodeKey].LocalMatchedFiles.push({
+                Id: file.Id,
+                Name: file.Name
+            });
+        });
+
+        order.sort(compareSeasonIds);
+        Object.keys(groups).forEach(function (seasonId) {
+            groups[seasonId].sort(compareEpisodes);
+        });
+
+        return { groups: groups, order: order };
+    }
+
+    function mergeSeasonGroups(officialGroups, fallbackGroups) {
+        var groups = {};
+        var order = [];
+
+        officialGroups.order.forEach(function (seasonId) {
+            groups[seasonId] = mergeEpisodeArrays(officialGroups.groups[seasonId], fallbackGroups.groups[seasonId] || []);
+            order.push(seasonId);
+        });
+
+        fallbackGroups.order.forEach(function (seasonId) {
+            if (!groups[seasonId]) {
+                groups[seasonId] = fallbackGroups.groups[seasonId];
+                order.push(seasonId);
+            }
+        });
+
+        order.sort(compareSeasonIds);
+        return { groups: groups, order: order };
+    }
+
+    function mergeEpisodeArrays(officialEpisodes, fallbackEpisodes) {
+        var merged = [];
+        var byId = {};
+
+        (officialEpisodes || []).forEach(function (episode) {
+            var copy = Object.assign({}, episode);
+            copy.LocalMatchedFiles = (episode.LocalMatchedFiles || []).slice();
+            byId[String(copy.EpisodeId)] = copy;
+            merged.push(copy);
+        });
+
+        (fallbackEpisodes || []).forEach(function (fallbackEpisode) {
+            var existing = byId[String(fallbackEpisode.EpisodeId)];
+            if (existing) {
+                if (!existing.LocalMatchedFiles || !existing.LocalMatchedFiles.length) {
+                    existing.LocalMatchedFiles = (fallbackEpisode.LocalMatchedFiles || []).slice();
+                    existing.LocalMatchedExists = existing.LocalMatchedFiles.length > 0;
+                }
+                return;
+            }
+            merged.push(fallbackEpisode);
+        });
+
+        merged.sort(compareEpisodes);
+        return merged;
+    }
+
+    function findLastWatchedEpisode(episodes) {
+        var lastWatchedEpisode = null;
+        var lastWatchedTime = null;
+        var isCloudTime = false;
+
+        (episodes || []).forEach(function (episode) {
+            var localTime = episode.LastWatched ? new Date(episode.LastWatched) : null;
+            var cloudTime = episode.LastWatchedCloud ? new Date(episode.LastWatchedCloud) : null;
+            var episodeLastTime = null;
+            var episodeIsCloud = false;
+
+            if (localTime && cloudTime) {
+                if (cloudTime > localTime) {
+                    episodeLastTime = cloudTime;
+                    episodeIsCloud = true;
+                } else {
+                    episodeLastTime = localTime;
+                }
+            } else if (cloudTime) {
+                episodeLastTime = cloudTime;
+                episodeIsCloud = true;
+            } else if (localTime) {
+                episodeLastTime = localTime;
+            }
+
+            if (episodeLastTime && (!lastWatchedTime || episodeLastTime > lastWatchedTime)) {
+                lastWatchedTime = episodeLastTime;
+                lastWatchedEpisode = episode;
+                isCloudTime = episodeIsCloud;
+            }
+        });
+
+        return { episode: lastWatchedEpisode, time: lastWatchedTime, isCloudTime: isCloudTime };
+    }
+
+    function buildLastWatchedInfoHtml(lastWatchedEpisode, lastWatchedTime, isCloudTime) {
+        if (!lastWatchedEpisode || !lastWatchedTime) {
+            return '';
+        }
+        var sourceStr = isCloudTime ? '云端' : '本地';
+        return `<i class="fas fa-history"></i> 上次观看: ${lastWatchedEpisode.EpisodeTitle} (${sourceStr}, ${lastWatchedTime.toLocaleString()})`;
+    }
+
+    function buildFilesHtml(files) {
+        if (!files.length) {
+            return '<div class="no-local-files"><i class="fas fa-folder-open"></i> 当前季暂无匹配到的本地文件</div>';
+        }
+
+        return files.map(function (file) {
+            var thumbnailUrl = `/api/v1/image/id/${file.Id}`;
+            return `
+                <a href="video.html?id=${file.Id}" target="_blank" class="file-item-link">
+                    <img src="${thumbnailUrl}" alt="${file.Name}" class="file-thumbnail"
+                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2214%22%3E无缩略图%3C/text%3E%3C/svg%3E';">
+                    <div class="file-item-info">
+                        <i class="fas fa-file-video"></i> ${file.Name}
+                    </div>
+                </a>
+            `;
+        }).join('');
+    }
+
+    function buildStatusIcon(episode) {
+        if (episode.AirStatus === 1) return '<i class="fas fa-check-circle status-icon watched"></i>';
+        if (episode.AirStatus === 2) return '<i class="fas fa-clock status-icon not-aired"></i>';
+        return '<i class="fas fa-minus-circle status-icon not-watched"></i>';
+    }
+
+    function formatEpisodeHeading(episode) {
+        var prefix = episode.EpisodeNumber ? episode.EpisodeNumber + ' - ' : '';
+        return prefix + (episode.EpisodeTitle || '未知剧集');
+    }
+
+    function formatDateValue(value) {
+        return value ? new Date(value).toLocaleDateString() : 'N/A';
+    }
+
+    function formatDateTimeValue(value) {
+        return value ? new Date(value).toLocaleString() : 'N/A';
+    }
+
+    function collectSeasonIds(episodes) {
+        var seasonMap = {};
+        (episodes || []).forEach(function (episode) {
+            seasonMap[normalizeSeasonId(episode.SeasonId)] = true;
+        });
+        return Object.keys(seasonMap);
+    }
+
+    function normalizeSeasonId(seasonId) {
+        if (seasonId === null || seasonId === undefined || seasonId === '') return 'special';
+        return String(seasonId);
+    }
+
+    function inferSeasonIdFromFile(file) {
+        var titleMatch = (file.EpisodeTitle || '').match(/第\\s*(\\d+)\\s*季/i);
+        if (titleMatch) return String(parseInt(titleMatch[1], 10));
+        var nameMatch = (file.Name || '').match(/S(\\d{1,2})E\\d{1,2}/i);
+        if (nameMatch) return String(parseInt(nameMatch[1], 10));
+        return null;
+    }
+
+    function inferEpisodeNumberFromFile(file) {
+        var titleMatch = (file.EpisodeTitle || '').match(/\\((\\d+)\\)/);
+        if (titleMatch) return String(parseInt(titleMatch[1], 10));
+        var nameMatch = (file.Name || '').match(/S\\d{1,2}E(\\d{1,2})/i);
+        if (nameMatch) return String(parseInt(nameMatch[1], 10));
+        return '';
+    }
+
+    function normalizeFallbackEpisodeTitle(title) {
+        if (!title) return '未知剧集';
+        return title.replace(/^第\\s*\\d+\\s*季\\s*\\(\\d+\\)\\s*/, '');
+    }
+
+    function determineInitialSeasonId(officialGroups, mergedGroups, lastWatchedEpisode) {
+        if (lastWatchedEpisode && lastWatchedEpisode.SeasonId !== undefined && lastWatchedEpisode.SeasonId !== null) {
+            return normalizeSeasonId(lastWatchedEpisode.SeasonId);
+        }
+        if (officialGroups.order.length) return officialGroups.order[0];
+        return mergedGroups.order.length ? mergedGroups.order[0] : null;
+    }
+
+    function compareSeasonIds(a, b) {
+        var aNum = a === 'special' ? Number.MAX_SAFE_INTEGER : parseInt(a, 10);
+        var bNum = b === 'special' ? Number.MAX_SAFE_INTEGER : parseInt(b, 10);
+        return aNum - bNum;
+    }
+
+    function compareEpisodes(a, b) {
+        var aNumber = parseInt(a.EpisodeNumber, 10);
+        var bNumber = parseInt(b.EpisodeNumber, 10);
+        if (!isNaN(aNumber) && !isNaN(bNumber) && aNumber !== bNumber) {
+            return aNumber - bNumber;
+        }
+        return String(a.EpisodeId).localeCompare(String(b.EpisodeId));
+    }
+
+    function formatSeasonLabel(seasonId) {
+        return seasonId === 'special' ? '特别篇' : `第${seasonId}季`;
+    }
+});
+</script>
+</body>
+</html>
+
+

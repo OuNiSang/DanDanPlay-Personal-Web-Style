@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="css/icon.png" type="image/x-icon">
+    <title>@Model.WebSiteName - 文件列表 - @Model.Title</title>
+    <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
+    <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
+    @Partial['style.sshtml'];
+</head>
+<body>
+
+<!-- ── Top Nav ── -->
+<nav class="app-nav app-nav--library" aria-label="媒体库导航">
+    <div class="app-nav__inner">
+        <a class="app-nav__brand" href="index.html">
+            <i class="fas fa-play-circle"></i>
+            <span>@Model.WebSiteName</span>
+        </a>
+        <div class="library-nav__rail" aria-label="媒体库页面">
+            <a class="library-nav__home" href="index.html" data-library-nav="home">
+                <i class="fas fa-house" aria-hidden="true"></i>
+                <span>首页</span>
+            </a>
+            <div class="library-nav__group" aria-label="观看动态">
+                <span class="library-nav__group-label">动态</span>
+                <a class="library-nav__link" href="bangumi.html?nav=lastplay" data-library-nav="lastplay">最近播放</a>
+                <a class="library-nav__link" href="bangumi.html?nav=lastupdate" data-library-nav="lastupdate">最近更新</a>
+                <a class="library-nav__link" href="bangumi.html?nav=lastadd" data-library-nav="lastadd">最近关注</a>
+            </div>
+            <span class="library-nav__divider" aria-hidden="true"></span>
+            <div class="library-nav__group" aria-label="浏览媒体库">
+                <span class="library-nav__group-label">浏览</span>
+                <a class="library-nav__link" href="bangumi.html?nav=season" data-library-nav="season">番剧季度</a>
+                <a class="library-nav__link" href="bangumi.html?nav=name" data-library-nav="name">番剧</a>
+                <a class="library-nav__link" href="bangumi.html?nav=category" data-library-nav="category">分类</a>
+                <a class="library-nav__link" href="bangumi.html?nav=rating" data-library-nav="rating">排行榜</a>
+                <a class="library-nav__link" href="filelist.html?type=nav&amp;name=%E6%9C%80%E8%BF%91%E6%94%B6%E5%BD%95" data-library-nav="recent-files">最近收录</a>
+            </div>
+        </div>
+        <div class="app-nav__end">
+            <div class="app-nav__search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="搜索文件…" autocomplete="off">
+            </div>
+            @IfNot.IsAnonymous
+            <span class="app-nav__user">
+                <i class="fas fa-user-circle"></i> @Model.UserName
+            </span>
+            <a href="/web1/logout" class="app-nav__logout" aria-label="退出登录" title="退出登录">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+            @EndIf
+            <button id="theme-toggle" type="button" class="theme-toggle" title="切换主题">
+                <i class="fas fa-sun" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="app-main">
+    <section class="shelf">
+        <div class="shelf__header">
+            <div class="page-heading">
+                <div class="page-heading__eyebrow"><i class="fas fa-photo-film"></i> 最近收录</div>
+                <h1 class="shelf__title" id="pageTitle">@Model.Title</h1>
+                <p class="page-heading__description" id="pathDescription">按最近收录顺序浏览本机媒体，图片、标题和剧集信息保持一致。</p>
+            </div>
+            <div class="library-summary" id="fileSummary" aria-live="polite">
+                <strong>--</strong>
+                <span>个项目</span>
+            </div>
+        </div>
+
+        <div id="loadingIndicator" class="state-panel" role="status">
+            <span class="state-panel__icon"><i class="fas fa-spinner fa-spin"></i></span>
+            <strong class="state-panel__title">正在读取文件夹</strong>
+            <span class="state-panel__description">正在从媒体库获取目录内容。</span>
+        </div>
+
+        <div id="emptyState" class="state-panel" style="display:none;">
+            <span class="state-panel__icon"><i class="fas fa-folder-open"></i></span>
+            <strong class="state-panel__title">这个文件夹是空的</strong>
+            <span class="state-panel__description">返回上一级目录，或等待媒体库扫描完成后重试。</span>
+        </div>
+
+        <div id="errorState" class="state-panel state-panel--error" style="display:none;" role="alert">
+            <span class="state-panel__icon"><i class="fas fa-triangle-exclamation"></i></span>
+            <strong class="state-panel__title">无法读取文件夹</strong>
+            <span class="state-panel__description" id="errorMessage">服务器暂时没有返回文件列表。</span>
+            <span class="state-panel__actions"><button type="button" class="btn-accent" id="retryLoadBtn"><i class="fas fa-rotate-right"></i> 重试</button></span>
+        </div>
+
+        <div id="fileGrid" class="file-grid" style="display: none;">
+            <!-- 文件列表将通过JavaScript动态加载 -->
+        </div>
+    </section>
+</main>
+
+<footer class="app-footer">
+    <p>@Model.ServerInfo</p>
+</footer>
+
+<script src="js/jquery-3.7.1.min.js"></script>
+<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=2.2"></script>
+<script src="js/bootstrap.bundle-5.3.3.min.js"></script>
+<script src="js/lazysizes-5.3.1.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        var fileListApi = "@Model.FileListApi";
+        var currentPath = decodeURIComponent(new URLSearchParams(window.location.search).get('path') || "");
+        var fileList = [];
+        var fileRequest = null;
+
+        $('#loadingIndicator').show();
+        $('#fileGrid').hide();
+
+        function loadFileList(path) {
+            currentPath = path;
+            var apiUrl = fileListApi.replace("{path}", encodeURIComponent(path));
+            if (fileRequest) fileRequest.abort();
+            $('#loadingIndicator').show();
+            $('#fileGrid, #emptyState, #errorState').hide();
+            $('#searchInput').val('');
+            updatePathDescription();
+
+            fileRequest = $.ajax({
+                url: apiUrl,
+                method: 'GET',
+                timeout: 12000,
+                success: function (response) {
+                    fileList = response && Array.isArray(response.Files) ? response.Files : [];
+                    $('#loadingIndicator, #errorState').hide();
+                    $('#emptyState').toggle(fileList.length === 0);
+                    $('#fileGrid').toggle(fileList.length > 0);
+                    renderFileList(fileList);
+                    updateFileSummary(fileList.length);
+                },
+                error: function (xhr, status) {
+                    if (status === 'abort') return;
+                    $('#loadingIndicator, #fileGrid, #emptyState').hide();
+                    $('#errorMessage').text(DandanApp.describeError(xhr, '读取目录失败，请稍后重试。'));
+                    $('#errorState').show();
+                },
+                complete: function () {
+                    fileRequest = null;
+                }
+            });
+        }
+
+        function updatePathDescription() {
+            var label = currentPath ? '当前位置：' + currentPath : '按收录顺序浏览本机媒体';
+            $('#pathDescription').text(label + '。进入文件夹时会保留当前页面与导航状态。');
+        }
+
+        function navigateToPath(path, replace) {
+            var params = new URLSearchParams(window.location.search);
+            if (path) params.set('path', path); else params.delete('path');
+            var nextUrl = 'filelist.html?' + params.toString();
+            window.history[replace ? 'replaceState' : 'pushState']({ path: path }, '', nextUrl);
+            loadFileList(path);
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+
+        // 初始加载文件列表
+        loadFileList(currentPath);
+        window.history.replaceState({ path: currentPath }, '', window.location.href);
+
+        $('#retryLoadBtn').on('click', function () { loadFileList(currentPath); });
+
+        window.addEventListener('popstate', function () {
+            var path = decodeURIComponent(new URLSearchParams(window.location.search).get('path') || '');
+            loadFileList(path);
+        });
+
+        // 搜索功能
+        $('#searchInput').on('input', function () {
+            var searchQuery = $(this).val().trim().toLowerCase();
+            var filteredList = fileList.filter(function (file) {
+                return String(file.Name || '').toLowerCase().includes(searchQuery);
+            });
+            $('#emptyState').toggle(filteredList.length === 0);
+            $('#fileGrid').toggle(filteredList.length > 0);
+            renderFileList(filteredList);
+            updateFileSummary(filteredList.length);
+        });
+
+        function renderFileList(fileList) {
+            var fileGrid = $('#fileGrid');
+            fileGrid.empty();
+
+            fileList.forEach(function (file, index) {
+                var fileItem = $('<button type="button"></button>')
+                    .addClass('file-item')
+                    .addClass(file.IsShortcut ? 'file-item--shortcut' : (file.IsDirectory ? 'file-item--directory' : 'file-item--media'))
+                    .attr('data-list-index', index)
+                    .attr('aria-label', (file.IsDirectory ? '打开文件夹：' : '播放：') + String(file.Name || '未命名项目'))
+                    .on('click', function () { handleFileClick(file); });
+
+                if (file.IsShortcut) {
+                    var thumbnail = $('<div></div>')
+                        .addClass('thumbnail')
+                        .appendTo(fileItem);
+
+                    $('<i></i>')
+                        .addClass('fas fa-arrow-circle-up')
+                        .css('font-size', '48px')
+                        .appendTo(thumbnail);
+
+                    $('<h3></h3>')
+                        .text(file.Name)
+                        .appendTo(fileItem);
+                } else if (file.IsDirectory) {
+                    var thumbnail = $('<div></div>')
+                        .addClass('thumbnail')
+                        .appendTo(fileItem);
+
+                    $('<i></i>')
+                        .addClass('fas fa-folder')
+                        .css('font-size', '48px')
+                        .appendTo(thumbnail);
+
+                    $('<h3></h3>')
+                        .text(file.Name)
+                        .appendTo(fileItem);
+
+                    $('<p></p>')
+                        .text(file.Description || '')
+                        .appendTo(fileItem);
+                } else {
+                    var thumbnail = $('<div></div>')
+                        .addClass('thumbnail')
+                        .appendTo(fileItem);
+
+                    if (file.ImageUrl) {
+                        $('<img>')
+                            .attr('data-src', file.ImageUrl)
+                            .attr('alt', file.Name)
+                            .addClass('lazyload')
+                            .on('error', function () {
+                                $(this).replaceWith('<i class="fas fa-film" aria-hidden="true"></i>');
+                            })
+                            .appendTo(thumbnail);
+                    } else {
+                        $('<i class="fas fa-film" aria-hidden="true"></i>').appendTo(thumbnail);
+                    }
+
+                    $('<span></span>')
+                        .addClass('file-extension')
+                        .text(file.Extension)
+                        .appendTo(thumbnail);
+
+                    $('<span></span>')
+                        .addClass('file-description')
+                        .text(file.Description || '')
+                        .appendTo(thumbnail);
+
+                    var title = $('<h3></h3>');
+                    if (file.LastPlay) $('<i class="fas fa-check-circle" aria-label="已播放"></i>').css({ color: 'var(--success)', marginRight: '5px' }).appendTo(title);
+                    $('<span></span>').text(file.Name || '未命名视频').appendTo(title);
+                    title
+                        .attr('title', file.Name)
+                        .appendTo(fileItem);
+
+                    $('<p></p>')
+                        .text(file.AnimeTitle ? file.AnimeTitle + ' ' : '')
+                        .appendTo(fileItem);
+
+                    $('<p></p>')
+                        .text(file.EpisodeTitle ? file.EpisodeTitle + ' ' : '')
+                        .appendTo(fileItem);
+                }
+
+                fileGrid.append(fileItem);
+            });
+        }
+
+        function updateFileSummary(itemCount) {
+            $('#fileSummary strong').text(itemCount);
+            $('#fileSummary span').text('个项目');
+        }
+
+        function handleFileClick(file) {
+            var fullPath = String(file.FullPath || '');
+            if (file.IsShortcut && fullPath === '..') {
+                var normalized = currentPath.replace(/[\\/]+$/, '');
+                var separatorIndex = Math.max(normalized.lastIndexOf('\\'), normalized.lastIndexOf('/'));
+                navigateToPath(separatorIndex >= 0 ? normalized.slice(0, separatorIndex) : '');
+            } else if (file.IsDirectory) {
+                navigateToPath(fullPath);
+            } else {
+                var player = window.open('video.html?id=' + encodeURIComponent(file.Id), '_blank', 'noopener');
+                if (!player) DandanApp.toast('浏览器阻止了新窗口，请允许弹出窗口后重试。', 'warning');
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
