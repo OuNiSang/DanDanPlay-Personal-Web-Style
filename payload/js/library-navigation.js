@@ -29,9 +29,55 @@
         });
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeLibraryNavigation, { once: true });
-    } else {
+    function initializeLibrarySearch() {
+        var search = document.querySelector('.app-nav__search');
+        if (!search) return;
+
+        var toggle = search.querySelector('.app-nav__search-toggle');
+        var input = search.querySelector('input');
+        if (!toggle || !input) return;
+
+        function setSearchOpen(open, focusInput) {
+            search.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.setAttribute('aria-label', open ? '收起搜索' : '打开搜索');
+
+            if (focusInput) {
+                window.requestAnimationFrame(function () {
+                    input.focus({ preventScroll: true });
+                    input.select();
+                });
+            }
+        }
+
+        toggle.addEventListener('click', function () {
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                setSearchOpen(!search.classList.contains('is-open'), true);
+                return;
+            }
+
+            input.focus({ preventScroll: true });
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+            setSearchOpen(false, false);
+            toggle.focus({ preventScroll: true });
+        });
+
+        if (new URLSearchParams(window.location.search).get('search') === '1') {
+            setSearchOpen(true, true);
+        }
+    }
+
+    function initializeLibraryPage() {
         initializeLibraryNavigation();
+        initializeLibrarySearch();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeLibraryPage, { once: true });
+    } else {
+        initializeLibraryPage();
     }
 })();
