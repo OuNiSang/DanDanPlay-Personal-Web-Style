@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="css/main.css?v=@Model.StaticResourceVersion&amp;ui=2.2">
+<link rel="stylesheet" href="css/main.css?v=@Model.StaticResourceVersion&amp;ui=2.2.1">
 
 <!-- Theme controller: applies stored theme synchronously before paint
      and injects the toggle button after DOM ready. -->

@@ -41,7 +41,9 @@
         </div>
         <div class="app-nav__end">
             <div class="app-nav__search">
-                <i class="fas fa-search"></i>
+                <button type="button" class="app-nav__search-toggle" aria-label="打开搜索" aria-expanded="false" aria-controls="searchInput">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                </button>
                 <input type="text" id="searchInput" placeholder="搜索番剧…" autocomplete="off">
             </div>
             @IfNot.IsAnonymous
@@ -131,7 +133,7 @@
 </div>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=2.2"></script>
+<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=2.2.1"></script>
 <script src="js/recent-play-refresh.js"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
@@ -161,18 +163,6 @@
         applyViewPresentation();
         $('#loadingIndicator').show();
         $('#posterGrid').hide();
-
-        var searchParams = new URLSearchParams(window.location.search);
-        if (searchParams.get('search') === '1') {
-            window.setTimeout(function () {
-                var searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.focus({ preventScroll: true });
-                    searchInput.select();
-                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 120);
-        }
 
         loadBangumiList();
 
