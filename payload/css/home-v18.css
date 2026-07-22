@@ -1570,6 +1570,16 @@ body.idx-home::before {
   .idx-home .timeline-card__cover { width: 30px; height: 42px; }
   .idx-home .timeline-card__title { white-space: nowrap; text-overflow: ellipsis; -webkit-line-clamp: 1; }
   .idx-home .timeline-card__meta { display: none; }
+
+  .idx-home .idx-section--updates.is-update-armed:not(.is-update-revealed) .timeline-card {
+    opacity: 0;
+    transform: translate3d(-10px, 12px, 0);
+  }
+
+  .idx-home .idx-section--updates.is-update-revealed .timeline-card {
+    animation: update-card-reveal 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(1120ms + (var(--group-index, 0) * 96ms) + (min(var(--card-index, 0), 7) * 42ms));
+  }
 }
 
 /* Desktop update rail: one continuous chronology with alternating programme groups. */
@@ -1581,15 +1591,16 @@ body.idx-home::before {
   }
 
   .idx-home .update-timeline {
-    --update-rail-pad: 10px;
-    --update-rail-beam: clamp(156px, 17vw, 276px);
+    --update-rail-pad: 0px;
+    --update-rail-beam: clamp(220px, 22vw, 380px);
+    --update-card-size: clamp(118px, 6.35vw, 134px);
     position: relative;
     display: grid;
     flex: 1 1 auto;
     min-height: 0;
     grid-auto-flow: column;
-    grid-template-columns: repeat(6, minmax(150px, 1fr));
-    grid-auto-columns: minmax(150px, 1fr);
+    grid-template-columns: repeat(8, minmax(128px, 1fr));
+    grid-auto-columns: minmax(128px, 1fr);
     grid-template-rows: minmax(0, 1fr);
     gap: 0;
     padding: 0 var(--update-rail-pad);
@@ -1613,8 +1624,11 @@ body.idx-home::before {
     z-index: 0;
     height: 2px;
     transform: translateY(-50%);
-    background: linear-gradient(90deg, transparent 0%, rgba(242, 184, 75, 0.28) 8%, rgba(255, 255, 255, 0.14) 50%, rgba(242, 184, 75, 0.28) 92%, transparent 100%);
-    box-shadow: 0 0 18px rgba(242, 184, 75, 0.08);
+    transform-origin: left center;
+    background:
+      linear-gradient(90deg, rgba(242, 184, 75, 0.38), rgba(255, 238, 174, 0.2) 18%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 238, 174, 0.2) 82%, rgba(242, 184, 75, 0.38)),
+      linear-gradient(90deg, rgba(242, 184, 75, 0.32), rgba(242, 184, 75, 0.08));
+    box-shadow: 0 0 20px rgba(242, 184, 75, 0.12), 0 0 72px rgba(242, 184, 75, 0.055);
   }
 
   .idx-home .update-timeline::after {
@@ -1631,8 +1645,29 @@ body.idx-home::before {
     background-repeat: no-repeat;
     background-size: var(--update-rail-beam) 100%;
     background-position: 0% 0;
-    box-shadow: 0 0 14px rgba(242, 184, 75, 0.38);
+    box-shadow: 0 0 16px rgba(242, 184, 75, 0.34), 0 0 42px rgba(242, 184, 75, 0.12);
     animation: update-rail-travel 6.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  .idx-home .idx-section--updates.is-update-armed:not(.is-update-revealed) .update-timeline::before {
+    opacity: 0.16;
+    transform: translateY(-50%) scaleX(0);
+  }
+
+  .idx-home .idx-section--updates.is-update-revealed .update-timeline::before {
+    animation: update-rail-draw 980ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .idx-home .idx-section--updates.is-update-armed:not(.is-update-revealed) .update-timeline::after {
+    opacity: 0;
+    animation: none;
+    background-position: 0% 0;
+  }
+
+  .idx-home .idx-section--updates.is-update-revealed .update-timeline::after {
+    animation:
+      update-rail-reveal-sweep 980ms cubic-bezier(0.16, 1, 0.3, 1) both,
+      update-rail-travel 6.8s 1550ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
   }
 
   .idx-home .schedule-day {
@@ -1644,21 +1679,13 @@ body.idx-home::before {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) 50px minmax(0, 1fr);
     align-items: stretch;
-    padding: 0 7px;
+    padding: 0 5px;
     overflow: visible;
     border: 0;
     border-radius: 0;
     background: transparent;
-    animation: update-group-arrive 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
     scroll-snap-align: center;
   }
-
-  .idx-home .schedule-day:nth-child(1) { animation-delay: 40ms; }
-  .idx-home .schedule-day:nth-child(2) { animation-delay: 90ms; }
-  .idx-home .schedule-day:nth-child(3) { animation-delay: 140ms; }
-  .idx-home .schedule-day:nth-child(4) { animation-delay: 190ms; }
-  .idx-home .schedule-day:nth-child(5) { animation-delay: 240ms; }
-  .idx-home .schedule-day:nth-child(6) { animation-delay: 290ms; }
 
   .idx-home .schedule-day:hover {
     border-color: transparent;
@@ -1679,6 +1706,23 @@ body.idx-home::before {
     background: var(--home-accent-strong);
     box-shadow: 0 0 0 1px rgba(242, 184, 75, 0.38), 0 0 20px rgba(242, 184, 75, 0.3);
     animation: update-node-breathe 2.8s ease-in-out infinite;
+  }
+
+  .idx-home .idx-section--updates.is-update-armed:not(.is-update-revealed) .schedule-day::before,
+  .idx-home .idx-section--updates.is-update-armed:not(.is-update-revealed) .schedule-day::after,
+  .idx-home .idx-section--updates.is-update-armed:not(.is-update-revealed) .schedule-day__header {
+    opacity: 0;
+  }
+
+  .idx-home .idx-section--updates.is-update-revealed .schedule-day::before {
+    animation:
+      update-node-reveal 420ms calc(760ms + (var(--group-index, 0) * 86ms)) cubic-bezier(0.16, 1, 0.3, 1) both,
+      update-node-breathe 2.8s calc(1280ms + (var(--group-index, 0) * 86ms)) ease-in-out infinite;
+  }
+
+  .idx-home .idx-section--updates.is-update-revealed .schedule-day::after,
+  .idx-home .idx-section--updates.is-update-revealed .schedule-day__header {
+    animation: update-node-label-reveal 420ms calc(840ms + (var(--group-index, 0) * 86ms)) cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .idx-home .schedule-day::after {
@@ -1715,7 +1759,7 @@ body.idx-home::before {
 
   .idx-home .schedule-day__label {
     color: rgba(255, 255, 255, 0.94);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 780;
     line-height: 1;
     letter-spacing: -0.035em;
@@ -1725,7 +1769,7 @@ body.idx-home::before {
     display: block;
     margin-top: 5px;
     color: rgba(255, 255, 255, 0.38);
-    font-size: 9px;
+    font-size: 9.5px;
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
@@ -1734,7 +1778,7 @@ body.idx-home::before {
     display: grid;
     min-width: 0;
     min-height: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, var(--update-card-size));
     grid-auto-rows: 52px;
     align-content: end;
     gap: 5px;
@@ -1750,7 +1794,7 @@ body.idx-home::before {
   }
 
   .idx-home .schedule-day.schedule-day--balanced .schedule-day__items {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, var(--update-card-size));
     justify-content: center;
   }
 
@@ -1766,8 +1810,14 @@ body.idx-home::before {
     padding: 18px 0 0;
   }
 
+  .idx-home .schedule-day:nth-child(odd)[data-update-count="3"] .schedule-day__items > .timeline-card:first-child,
+  .idx-home .schedule-day:nth-child(odd)[data-update-count="5"] .schedule-day__items--top > .timeline-card:first-child,
+  .idx-home .schedule-day:nth-child(odd)[data-update-count="6"] .schedule-day__items--top > .timeline-card:first-child {
+    grid-column: 1 / -1;
+  }
+
   .idx-home .schedule-day:has(.timeline-card:only-child) .schedule-day__items {
-    grid-template-columns: minmax(0, 116px);
+    grid-template-columns: var(--update-card-size);
     justify-content: center;
   }
 
@@ -1814,7 +1864,7 @@ body.idx-home::before {
     margin: 0 0 2px;
     overflow: hidden;
     color: rgba(242, 184, 75, 0.86);
-    font-size: 8px;
+    font-size: 9px;
     line-height: 1.1;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1823,7 +1873,7 @@ body.idx-home::before {
   .idx-home .timeline-card__title {
     overflow: hidden;
     color: rgba(255, 255, 255, 0.88);
-    font-size: 10px;
+    font-size: 10.5px;
     line-height: 1.2;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1831,6 +1881,16 @@ body.idx-home::before {
   }
 
   .idx-home .timeline-card__meta { display: none; }
+
+  .idx-home .idx-section--updates.is-update-armed:not(.is-update-revealed) .timeline-card {
+    opacity: 0;
+    transform: translate3d(-10px, 12px, 0);
+  }
+
+  .idx-home .idx-section--updates.is-update-revealed .timeline-card {
+    animation: update-card-reveal 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(1120ms + (var(--group-index, 0) * 96ms) + (min(var(--card-index, 0), 7) * 42ms));
+  }
 }
 
 @media (min-width: 769px) and (max-height: 700px) {
@@ -1850,9 +1910,30 @@ body.idx-home::before {
   100% { background-position: 100% 0; opacity: 0; }
 }
 
+@keyframes update-rail-draw {
+  from { opacity: 0.12; transform: translateY(-50%) scaleX(0); }
+  to { opacity: 1; transform: translateY(-50%) scaleX(1); }
+}
+
+@keyframes update-rail-reveal-sweep {
+  0% { background-position: 0% 0; opacity: 0; }
+  12% { opacity: 0.96; }
+  100% { background-position: 100% 0; opacity: 0.92; }
+}
+
 @keyframes update-node-breathe {
   0%, 100% { box-shadow: 0 0 0 1px rgba(242, 184, 75, 0.34), 0 0 12px rgba(242, 184, 75, 0.16); }
   50% { box-shadow: 0 0 0 4px rgba(242, 184, 75, 0.06), 0 0 24px rgba(242, 184, 75, 0.38); }
+}
+
+@keyframes update-node-reveal {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.58); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes update-node-label-reveal {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: blur(0); }
 }
 
 @keyframes update-group-arrive {
@@ -1860,11 +1941,22 @@ body.idx-home::before {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes update-card-reveal {
+  from { opacity: 0; transform: translate3d(-10px, 12px, 0); filter: saturate(0.78) brightness(0.8); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); filter: saturate(1) brightness(1); }
+}
+
 /* Wide desktop timeline: spend the full canvas and promote artwork to the primary signal. */
 @media (min-width: 769px) {
   .idx-home .idx-body > .idx-section--updates {
-    padding-right: clamp(28px, 4vw, 80px);
-    padding-left: clamp(28px, 4vw, 80px);
+    --updates-edge-pad: clamp(28px, 4vw, 80px);
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .idx-home .idx-section--updates .sec-hd {
+    margin-right: var(--updates-edge-pad);
+    margin-left: var(--updates-edge-pad);
   }
 
   .idx-home .schedule-day { container-type: inline-size; }
@@ -1886,23 +1978,88 @@ body.idx-home::before {
     width: 32px;
     height: 46px;
   }
-}
 
-@container (min-width: 240px) {
   .idx-home .schedule-day__items,
   .idx-home .schedule-day:has(.timeline-card:only-child) .schedule-day__items {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, var(--update-card-size));
     grid-auto-rows: auto;
-    justify-content: stretch;
-    gap: 6px;
+    justify-content: center;
+  }
+
+  .idx-home .timeline-card {
+    position: relative;
+    display: block;
+    width: var(--update-card-size);
+    justify-self: center;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    grid-template-columns: none;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 9px;
+    background: #17191d;
+  }
+
+  .idx-home .timeline-card__cover {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+
+  .idx-home .timeline-card__body {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    min-width: 0;
+    justify-content: flex-end;
+    padding: 28px 6px 6px;
+    overflow: hidden;
+    background: linear-gradient(180deg, transparent 34%, rgba(5, 6, 8, 0.22) 54%, rgba(5, 6, 8, 0.96) 100%);
+  }
+
+  .idx-home .timeline-card__time {
+    margin-bottom: 4px;
+    color: rgba(255, 214, 123, 0.94);
+    font-size: 9.5px;
+    font-weight: 760;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  }
+
+  .idx-home .timeline-card__title {
+    display: -webkit-box;
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.18;
+    white-space: normal;
+    text-overflow: clip;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.92);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+@container (min-width: 140px) {
+  .idx-home .schedule-day__items,
+  .idx-home .schedule-day:has(.timeline-card:only-child) .schedule-day__items {
+    grid-template-columns: repeat(2, var(--update-card-size));
+    grid-auto-rows: auto;
+    justify-content: center;
+    gap: 7px;
     padding-bottom: 18px;
   }
 
   .idx-home .schedule-day:nth-child(even) .schedule-day__items { padding-top: 18px; }
 
   .idx-home .schedule-day.schedule-day--balanced .schedule-day__items {
-    grid-template-columns: repeat(2, minmax(0, 116px));
+    grid-template-columns: repeat(2, var(--update-card-size));
     justify-content: center;
+  }
+
+  .idx-home .schedule-day[data-group-type="archive"].schedule-day--balanced .schedule-day__items,
+  .idx-home .schedule-day[data-group-type="archive"] .schedule-day__items {
+    grid-template-columns: repeat(2, var(--update-card-size));
   }
 
   .idx-home .schedule-day.schedule-day--balanced .schedule-day__items--top {
@@ -1916,13 +2073,74 @@ body.idx-home::before {
   .idx-home .timeline-card {
     position: relative;
     display: block;
-    width: 100%;
+    width: var(--update-card-size);
+    justify-self: center;
     height: auto;
     aspect-ratio: 2 / 3;
     padding: 0;
     overflow: hidden;
     border-radius: 9px;
     background: #17191d;
+  }
+
+  .idx-home .timeline-card--in-progress,
+  .idx-home .timeline-card--unwatched {
+    border-color: rgba(242, 184, 75, 0.26);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(242, 184, 75, 0.06);
+  }
+
+  .idx-home .timeline-card--in-progress {
+    border-color: rgba(242, 184, 75, 0.38);
+  }
+
+  .idx-home .timeline-card--complete {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .idx-home .timeline-card__watch-badge {
+    position: absolute;
+    top: 7px;
+    left: 7px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 19px;
+    padding: 0 7px;
+    border: 1px solid rgba(255, 223, 153, 0.42);
+    border-radius: 999px;
+    color: rgba(255, 239, 204, 0.96);
+    background: linear-gradient(180deg, rgba(33, 24, 12, 0.84), rgba(13, 13, 15, 0.74));
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.36), 0 0 12px rgba(242, 184, 75, 0.12);
+    font-size: 9.5px;
+    font-weight: 780;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.72);
+  }
+
+  .idx-home .timeline-card--unwatched .timeline-card__watch-badge {
+    border-color: rgba(255, 223, 153, 0.32);
+    color: rgba(255, 234, 196, 0.86);
+    background: linear-gradient(180deg, rgba(27, 24, 18, 0.72), rgba(11, 12, 14, 0.68));
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 10px rgba(242, 184, 75, 0.08);
+  }
+
+  .idx-home .timeline-card__watch-dot {
+    position: absolute;
+    top: 9px;
+    left: 9px;
+    z-index: 4;
+    width: 9px;
+    height: 9px;
+    border: 1px solid rgba(255, 239, 189, 0.72);
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 32%, rgba(255, 248, 218, 0.98), rgba(255, 207, 105, 0.96) 44%, rgba(126, 82, 22, 0.96) 100%);
+    box-shadow:
+      0 0 0 3px rgba(5, 6, 8, 0.58),
+      0 0 11px rgba(242, 184, 75, 0.46),
+      0 0 24px rgba(242, 184, 75, 0.18);
   }
 
   .idx-home .timeline-card__cover {
@@ -1953,16 +2171,17 @@ body.idx-home::before {
   }
 
   .idx-home .timeline-card__time {
-    margin-bottom: 3px;
+    margin-bottom: 4px;
     color: rgba(255, 214, 123, 0.94);
-    font-size: 8px;
+    font-size: 9.5px;
+    font-weight: 760;
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
   }
 
   .idx-home .timeline-card__title {
     display: -webkit-box;
     color: #fff;
-    font-size: 10px;
+    font-size: 11.5px;
     line-height: 1.18;
     white-space: normal;
     text-overflow: clip;
@@ -1970,6 +2189,36 @@ body.idx-home::before {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
+
+  .idx-home .timeline-card__meta {
+    display: none;
+  }
+
+  .idx-home .timeline-card__bar {
+    display: none;
+    position: absolute;
+    right: 6px;
+    bottom: 5px;
+    left: 6px;
+    z-index: 3;
+    height: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .idx-home .timeline-card--in-progress .timeline-card__bar {
+    display: block;
+  }
+
+  .idx-home .timeline-card__bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(164, 111, 35, 0.78), rgba(255, 220, 144, 0.92));
+    box-shadow: 0 0 10px rgba(242, 184, 75, 0.26);
+  }
+
 }
 
 @media (min-width: 769px) and (max-height: 700px) {
@@ -1980,7 +2229,7 @@ body.idx-home::before {
 }
 
 @media (min-width: 769px) and (max-height: 700px) {
-  @container (min-width: 240px) {
+  @container (min-width: 140px) {
     .idx-home .schedule-day__items,
     .idx-home .schedule-day:has(.timeline-card:only-child) .schedule-day__items {
       grid-auto-rows: auto;
@@ -1994,53 +2243,58 @@ body.idx-home::before {
 }
 
 @media (min-width: 769px) and (min-height: 850px) {
-  @container (min-width: 240px) {
+  @container (min-width: 140px) {
     .idx-home .schedule-day__items,
     .idx-home .schedule-day:has(.timeline-card:only-child) .schedule-day__items {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, var(--update-card-size));
     }
 
     .idx-home .schedule-day.schedule-day--balanced .schedule-day__items {
-      grid-template-columns: repeat(2, minmax(0, 116px));
+      grid-template-columns: repeat(2, var(--update-card-size));
+    }
+
+    .idx-home .schedule-day[data-group-type="archive"].schedule-day--balanced .schedule-day__items,
+    .idx-home .schedule-day[data-group-type="archive"] .schedule-day__items {
+      grid-template-columns: repeat(2, var(--update-card-size));
     }
   }
 }
 
 @media (min-width: 769px) {
   .idx-home .schedule-day[data-update-count="1"] .schedule-day__items {
-    grid-template-columns: minmax(0, min(116px, 100%));
+    grid-template-columns: var(--update-card-size);
     justify-content: center;
   }
 
   .idx-home .schedule-day[data-update-count="1"]:has(.timeline-card:only-child) .schedule-day__items {
-    grid-template-columns: minmax(0, min(116px, 100%));
+    grid-template-columns: var(--update-card-size);
     justify-content: center;
   }
 
   .idx-home .schedule-day[data-update-count="3"] .schedule-day__items {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, var(--update-card-size));
     justify-content: center;
   }
 }
 
-@container (min-width: 240px) {
+@container (min-width: 140px) {
   .idx-home .schedule-day[data-update-count="1"] .schedule-day__items {
-    grid-template-columns: minmax(0, 116px);
+    grid-template-columns: var(--update-card-size);
     justify-content: center;
   }
 
   .idx-home .schedule-day[data-update-count="1"]:has(.timeline-card:only-child) .schedule-day__items {
-    grid-template-columns: minmax(0, 116px);
+    grid-template-columns: var(--update-card-size);
     justify-content: center;
   }
 
   .idx-home .schedule-day[data-update-count="2"] .schedule-day__items {
-    grid-template-columns: repeat(2, minmax(0, 116px));
+    grid-template-columns: repeat(2, var(--update-card-size));
     justify-content: center;
   }
 
   .idx-home .schedule-day[data-update-count="3"] .schedule-day__items {
-    grid-template-columns: repeat(3, minmax(0, 116px));
+    grid-template-columns: repeat(2, var(--update-card-size));
     justify-content: center;
   }
 }
