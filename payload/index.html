@@ -1475,7 +1475,7 @@
         .follow-card { animation: none !important; }
     }
     </style>
-    <link href="css/home-v18.css?v=home18-r32" rel="stylesheet">
+    <link href="css/home-v18.css?v=home18-r40" rel="stylesheet">
 </head>
 <body class="idx-home">
 
@@ -2100,17 +2100,42 @@ $(function () {
     function makeUpdateCard(b, index) {
         var progress = getWatchProgress(b);
         var pct = progress ? progress.percent : 0;
+        var watched = Number(b.EpisodeWatched || 0);
+        var total = Number(b.EpisodeTotal || 0);
+        var isTrackable = total > 0;
+        var isInProgress = isTrackable && watched > 0 && watched < total;
+        var isUnwatched = isTrackable && watched <= 0;
+        var isComplete = isTrackable && watched >= total;
         var $card = bindBangumiCard($('<a class="timeline-card"></a>'), b)
             .css('--card-index', String(index || 0));
+        if (isInProgress) {
+            $card
+                .attr('data-watch-progress', String(pct))
+                .addClass('timeline-card--in-progress')
+                .attr('title', '已看 ' + progress.watched + '/' + progress.total + ' · ' + pct + '%');
+        } else if (isUnwatched) {
+            $card
+                .addClass('timeline-card--unwatched')
+                .attr('title', '尚未观看 · 共' + total + '话');
+        } else if (isComplete) {
+            $card
+                .addClass('timeline-card--complete')
+                .attr('title', '已看完 · 共' + total + '话');
+        }
         if (b.Cover) {
             $('<img class="timeline-card__cover">').attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' }).appendTo($card);
         } else {
             $('<div class="timeline-card__cover pc__placeholder"><i class="fas fa-play-circle"></i></div>').appendTo($card);
         }
+        if (isInProgress || isUnwatched) {
+            $('<div class="timeline-card__watch-badge"></div>').text(watched + '/' + total).appendTo($card);
+        } else if (isComplete) {
+            $('<div class="timeline-card__watch-dot" aria-hidden="true"></div>').appendTo($card);
+        }
         var $body = $('<div class="timeline-card__body"></div>');
         $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($body);
         $('<div class="timeline-card__title"></div>').text(b.Title).appendTo($body);
-        $('<div class="timeline-card__meta"></div>').text(progress ? ('第' + progress.watched + '话 · ' + pct + '%') : getEpisodeText(b)).appendTo($body);
+        $('<div class="timeline-card__meta"></div>').text(getEpisodeText(b)).appendTo($body);
         var $bar = $('<div class="timeline-card__bar"></div>');
         $('<span></span>').css('width', (progress ? pct : 0) + '%').appendTo($bar);
         $bar.appendTo($body);
@@ -2140,6 +2165,21 @@ $(function () {
         return Math.max(1, Math.floor((width + gap) / (minWidth + gap)));
     }
 
+    function getRenderedGridColumnCount($grid) {
+        var el = $grid && $grid[0];
+        if (!el || !window.getComputedStyle) return 0;
+        var columns = window.getComputedStyle(el).gridTemplateColumns;
+        if (!columns || columns === 'none') return 0;
+        return columns.trim().split(/\s+/).filter(Boolean).length;
+    }
+
+    function getFollowRenderCount($grid, total, isMobile) {
+        if (isMobile) return Math.min(total, 18);
+        var columns = getRenderedGridColumnCount($grid) || estimateColumns($grid, 104, 12);
+        var rows = window.matchMedia('(max-height: 700px)').matches ? 2 : 3;
+        return Math.min(total, columns * rows);
+    }
+
     function renderItems($grid, items, count, cardFactory, signatureKey) {
         var visibleItems = items.slice(0, count);
         var signature = visibleItems.map(function (item) {
@@ -2153,18 +2193,22 @@ $(function () {
         });
     }
 
-    function getScheduleGroupLabel(item, index) {
+    function getScheduleGroupMeta(item, index) {
         var date = getUpdateDateCandidate(item);
         if (date) {
             var diffDays = Math.round((getTimelineDayStamp(new Date()) - getTimelineDayStamp(date)) / 86400000);
-            if (diffDays <= 0) return '今天';
-            if (diffDays === 1) return '昨天';
-            if (diffDays === 2 || diffDays === 3) return formatTimelineWeekday(date);
-            if (diffDays < 7) return '本周';
-            return '更早';
+            if (diffDays <= 0) return { key: 'day-0', label: '今天', type: 'recent', age: 0 };
+            if (diffDays === 1) return { key: 'day-1', label: '昨天', type: 'recent', age: 1 };
+            if (diffDays < 7) return { key: 'day-' + diffDays, label: formatTimelineWeekday(date), type: 'recent', age: diffDays };
+            return { key: 'archive', label: '更早', type: 'archive', age: 7 };
         }
         var groupIndex = Math.floor(index / 8);
-        return ['最新一批', '近期更新', '稍早更新'][groupIndex] || '更新归档';
+        var fallbackLabel = ['最新一批', '近期更新', '稍早更新'][groupIndex] || '更新归档';
+        return { key: 'fallback-' + groupIndex, label: fallbackLabel, type: 'fallback', age: groupIndex };
+    }
+
+    function getScheduleGroupLabel(item, index) {
+        return getScheduleGroupMeta(item, index).label;
     }
 
     function formatTimelineWeekday(date) {
@@ -2173,10 +2217,75 @@ $(function () {
         return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][day];
     }
 
+    function buildUpdateTimelineColumns(groups) {
+        if (window.matchMedia('(max-width: 768px)').matches) return '';
+        return groups.map(function (group, index) {
+            var visibleCount = Math.min(group.items.length, 8);
+            if (group.type === 'archive') {
+                var archiveWidth = visibleCount >= 7 ? 'clamp(286px, 15vw, 330px)' : 'clamp(190px, 12vw, 286px)';
+                var archiveFlex = Math.min(1.18, 0.88 + visibleCount * 0.035);
+                return 'minmax(' + archiveWidth + ', ' + archiveFlex.toFixed(2) + 'fr)';
+            }
+            if (group.type === 'fallback') {
+                return 'minmax(clamp(180px, 16vw, 300px), ' + (1 + Math.min(index, 2) * 0.18).toFixed(2) + 'fr)';
+            }
+            var age = typeof group.age === 'number' ? group.age : index;
+            var minWidth = visibleCount <= 1 ? 156 : (visibleCount <= 4 ? 286 : 318);
+            var flex = age <= 1 ? 0.58 : (age <= 4 ? 0.68 : 0.82);
+            if (visibleCount >= 3) {
+                flex += 0.18;
+            }
+            if (visibleCount >= 5) {
+                flex += 0.18;
+            }
+            return 'minmax(' + minWidth + 'px, ' + flex.toFixed(2) + 'fr)';
+        }).join(' ');
+    }
+
+    var updateRevealObserver = null;
+    var updateRevealTimer = 0;
+    function armUpdateReveal($grid) {
+        var section = $grid.closest('.idx-section--updates')[0];
+        if (!section) return;
+        section.classList.remove('is-update-revealed');
+        section.classList.add('is-update-armed');
+        window.clearTimeout(updateRevealTimer);
+
+        if (updateRevealObserver) {
+            updateRevealObserver.disconnect();
+            updateRevealObserver = null;
+        }
+
+        var reveal = function () {
+            window.clearTimeout(updateRevealTimer);
+            section.classList.add('is-update-revealed');
+        };
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+            reveal();
+            return;
+        }
+
+        updateRevealObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                if (entry.intersectionRatio < 0.68) return;
+                window.clearTimeout(updateRevealTimer);
+                updateRevealTimer = window.setTimeout(reveal, 180);
+                if (updateRevealObserver) {
+                    updateRevealObserver.disconnect();
+                    updateRevealObserver = null;
+                }
+            });
+        }, { threshold: [0.28, 0.5, 0.68, 0.82], rootMargin: '0px' });
+        updateRevealObserver.observe(section);
+    }
+
     function renderUpdateSchedule($grid, items, count) {
         var visibleItems = items.slice(0, count);
         var signature = visibleItems.map(function (item) {
-            return [item.AnimeId, item.Cover || '', getScheduleGroupLabel(item, 0)].join(':');
+            var meta = getScheduleGroupMeta(item, 0);
+            return [item.AnimeId, item.Cover || '', meta.key, meta.label].join(':');
         }).join('|');
         if (renderedSectionSignatures.updates === signature) return;
         renderedSectionSignatures.updates = signature;
@@ -2185,20 +2294,27 @@ $(function () {
         var groups = [];
         var groupMap = {};
         visibleItems.forEach(function (item, index) {
-            var label = getScheduleGroupLabel(item, index);
-            if (!groupMap[label]) {
-                groupMap[label] = { label: label, items: [] };
-                groups.push(groupMap[label]);
+            var meta = getScheduleGroupMeta(item, index);
+            if (!groupMap[meta.key]) {
+                groupMap[meta.key] = { key: meta.key, label: meta.label, type: meta.type, age: meta.age, items: [] };
+                groups.push(groupMap[meta.key]);
             }
-            groupMap[label].items.push(item);
+            groupMap[meta.key].items.push(item);
         });
 
-        var maxVisibleGroups = window.matchMedia('(max-width: 768px)').matches ? groups.length : 6;
-        groups.slice(0, maxVisibleGroups).forEach(function (group, groupIndex) {
+        var maxVisibleGroups = window.matchMedia('(max-width: 768px)').matches ? groups.length : 8;
+        var visibleGroups = groups.slice(0, maxVisibleGroups);
+        var timelineColumns = buildUpdateTimelineColumns(visibleGroups);
+        if (timelineColumns) $grid.css('grid-template-columns', timelineColumns);
+        else $grid.css('grid-template-columns', '');
+
+        visibleGroups.forEach(function (group, groupIndex) {
             var visibleGroupItems = group.items.slice(0, 8);
             var shouldBalanceGroup = visibleGroupItems.length >= 5 && !window.matchMedia('(max-width: 768px)').matches;
             var $day = $('<section class="schedule-day"></section>')
                 .attr('data-update-count', String(visibleGroupItems.length))
+                .attr('data-group-type', group.type)
+                .css('--group-index', String(groupIndex))
                 .toggleClass('schedule-day--balanced', shouldBalanceGroup);
             var $header = $('<header class="schedule-day__header"></header>');
             $('<h3 class="schedule-day__label"></h3>').text(group.label).appendTo($header);
@@ -2211,16 +2327,17 @@ $(function () {
                 var $bottomItems = $('<div class="schedule-day__items schedule-day__items--bottom"></div>').appendTo($day);
                 visibleGroupItems.forEach(function (item, itemIndex) {
                     var $target = itemIndex < splitIndex ? $topItems : $bottomItems;
-                    $target.append(makeUpdateCard(item, groupIndex * 8 + itemIndex));
+                    $target.append(makeUpdateCard(item, itemIndex));
                 });
             } else {
                 var $items = $('<div class="schedule-day__items"></div>').appendTo($day);
                 visibleGroupItems.forEach(function (item, itemIndex) {
-                    $items.append(makeUpdateCard(item, groupIndex * 8 + itemIndex));
+                    $items.append(makeUpdateCard(item, itemIndex));
                 });
             }
             $day.appendTo($grid);
         });
+        armUpdateReveal($grid);
     }
 
     function setupRailIndicator(rail) {
@@ -2284,6 +2401,14 @@ $(function () {
         });
     }
 
+    function renderLatestFollows(isMobile) {
+        if (!sectionData.latestFollows.length) return;
+        var $grid = $('#lfGrid');
+        $('#lfSection').css('display', 'flex');
+        $('#lfCount').text(sectionData.latestFollows.length);
+        renderItems($grid, sectionData.latestFollows, getFollowRenderCount($grid, sectionData.latestFollows.length, isMobile), makeFollowCard, 'follows');
+    }
+
     function renderDynamicSections() {
         var isMobile = window.matchMedia('(max-width: 768px)').matches;
 
@@ -2296,14 +2421,10 @@ $(function () {
         if (sectionData.latestUpdates.length) {
             $('#luSection').css('display', 'flex');
             $('#luCount').text(sectionData.latestUpdates.length);
-            renderUpdateSchedule($('#luGrid'), sectionData.latestUpdates, isMobile ? 18 : 24);
+            renderUpdateSchedule($('#luGrid'), sectionData.latestUpdates, isMobile ? 18 : sectionData.latestUpdates.length);
         }
 
-        if (sectionData.latestFollows.length) {
-            $('#lfSection').css('display', 'flex');
-            $('#lfCount').text(sectionData.latestFollows.length);
-            renderItems($('#lfGrid'), sectionData.latestFollows, isMobile ? 18 : 36, makeFollowCard, 'follows');
-        }
+        renderLatestFollows(isMobile);
 
         window.requestAnimationFrame(setupRailIndicators);
     }
@@ -2311,6 +2432,7 @@ $(function () {
     $(window).on('resize', function () {
         window.clearTimeout(resizeTimer);
         resizeTimer = window.setTimeout(function () {
+            renderLatestFollows(window.matchMedia('(max-width: 768px)').matches);
             setupRailIndicators();
         }, 140);
     });
