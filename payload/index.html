@@ -1475,7 +1475,7 @@
         .follow-card { animation: none !important; }
     }
     </style>
-    <link href="css/home-v18.css?v=home18-r29" rel="stylesheet">
+    <link href="css/home-v18.css?v=home18-r32" rel="stylesheet">
 </head>
 <body class="idx-home">
 
@@ -2159,17 +2159,18 @@ $(function () {
             var diffDays = Math.round((getTimelineDayStamp(new Date()) - getTimelineDayStamp(date)) / 86400000);
             if (diffDays <= 0) return '今天';
             if (diffDays === 1) return '昨天';
+            if (diffDays === 2 || diffDays === 3) return formatTimelineWeekday(date);
             if (diffDays < 7) return '本周';
-            if (diffDays < 14) return '上周';
-            if (diffDays < 21) return '上上周';
-            var dateParts = getTimelineDateParts(date);
-            var todayParts = getTimelineDateParts(new Date());
-            return dateParts.year === todayParts.year
-                ? (dateParts.month + '月')
-                : (dateParts.year + '年' + dateParts.month + '月');
+            return '更早';
         }
         var groupIndex = Math.floor(index / 8);
         return ['最新一批', '近期更新', '稍早更新'][groupIndex] || '更新归档';
+    }
+
+    function formatTimelineWeekday(date) {
+        var parts = getTimelineDateParts(date);
+        var day = new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay();
+        return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][day];
     }
 
     function renderUpdateSchedule($grid, items, count) {
@@ -2192,16 +2193,32 @@ $(function () {
             groupMap[label].items.push(item);
         });
 
-        groups.forEach(function (group, groupIndex) {
-            var $day = $('<section class="schedule-day"></section>');
+        var maxVisibleGroups = window.matchMedia('(max-width: 768px)').matches ? groups.length : 6;
+        groups.slice(0, maxVisibleGroups).forEach(function (group, groupIndex) {
+            var visibleGroupItems = group.items.slice(0, 8);
+            var shouldBalanceGroup = visibleGroupItems.length >= 5 && !window.matchMedia('(max-width: 768px)').matches;
+            var $day = $('<section class="schedule-day"></section>')
+                .attr('data-update-count', String(visibleGroupItems.length))
+                .toggleClass('schedule-day--balanced', shouldBalanceGroup);
             var $header = $('<header class="schedule-day__header"></header>');
             $('<h3 class="schedule-day__label"></h3>').text(group.label).appendTo($header);
             $('<span class="schedule-day__count"></span>').text(group.items.length + ' 部').appendTo($header);
             $header.appendTo($day);
-            var $items = $('<div class="schedule-day__items"></div>').appendTo($day);
-            group.items.slice(0, 8).forEach(function (item, itemIndex) {
-                $items.append(makeUpdateCard(item, groupIndex * 8 + itemIndex));
-            });
+
+            if (shouldBalanceGroup) {
+                var splitIndex = Math.ceil(visibleGroupItems.length / 2);
+                var $topItems = $('<div class="schedule-day__items schedule-day__items--top"></div>').appendTo($day);
+                var $bottomItems = $('<div class="schedule-day__items schedule-day__items--bottom"></div>').appendTo($day);
+                visibleGroupItems.forEach(function (item, itemIndex) {
+                    var $target = itemIndex < splitIndex ? $topItems : $bottomItems;
+                    $target.append(makeUpdateCard(item, groupIndex * 8 + itemIndex));
+                });
+            } else {
+                var $items = $('<div class="schedule-day__items"></div>').appendTo($day);
+                visibleGroupItems.forEach(function (item, itemIndex) {
+                    $items.append(makeUpdateCard(item, groupIndex * 8 + itemIndex));
+                });
+            }
             $day.appendTo($grid);
         });
     }
