@@ -8,8 +8,10 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     @Partial['style.sshtml'];
+    <link data-web1-v3 href="css/web1-v3-filelist-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-filelist-r2" rel="stylesheet" media="(min-width: 769px)">
+    <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
 </head>
-<body>
+<body class="filelist-page--v3">
 
 <!-- ── Top Nav ── -->
 <nav class="app-nav app-nav--library" aria-label="媒体库导航">
@@ -54,8 +56,8 @@
                 <i class="fas fa-sign-out-alt"></i>
             </a>
             @EndIf
-            <button id="theme-toggle" type="button" class="theme-toggle" title="切换主题">
-                <i class="fas fa-sun" aria-hidden="true"></i>
+            <button id="theme-toggle" type="button" class="theme-toggle" data-ui-version-toggle title="切换到稳定版">
+                <i class="fas fa-clock-rotate-left" aria-hidden="true"></i><span>稳定版</span>
             </button>
         </div>
     </div>
@@ -105,7 +107,7 @@
 </footer>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=2.2.1"></script>
+<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r3"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
 

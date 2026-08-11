@@ -1,0 +1,915 @@
+/*
+ * Web1 3.0 / file-library desktop layer
+ * filelist.html loads this file only at >= 769px. Existing mobile CSS remains
+ * untouched and authoritative below that breakpoint.
+ */
+
+body.filelist-page--v3 {
+  --files-ink: #080b08;
+  --files-ink-soft: #0d110c;
+  --files-panel: #11170f;
+  --files-panel-raised: #182016;
+  --files-paper: #eef2e8;
+  --files-paper-muted: #a7b09f;
+  --files-paper-dim: #687261;
+  --files-line: rgba(238, 242, 232, 0.14);
+  --files-line-strong: rgba(238, 242, 232, 0.3);
+  --files-acid: #d9f45b;
+  --files-acid-ink: #111508;
+  --files-danger: #ff6d57;
+  --files-shadow: #020302;
+  --files-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --bg: var(--files-ink);
+  --surface-1: var(--files-ink-soft);
+  --surface-2: var(--files-panel);
+  --surface-3: var(--files-panel-raised);
+  --surface-4: #20291d;
+  --text-1: var(--files-paper);
+  --text-2: var(--files-paper-muted);
+  --text-3: var(--files-paper-dim);
+  --text-4: #4f584a;
+  --border: var(--files-line);
+  --border-md: var(--files-line-strong);
+  --accent: var(--files-acid);
+  --accent-h: #e6ff77;
+  --accent-dim: rgba(217, 244, 91, 0.12);
+  --accent-txt: var(--files-acid-ink);
+
+  min-width: 769px;
+  background-color: var(--files-ink);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(238, 242, 232, 0.018) 0 1px, transparent 1px 5px),
+    radial-gradient(circle at 8% 0%, rgba(217, 244, 91, 0.065), transparent 28rem),
+    linear-gradient(90deg, transparent 0 80px, rgba(217, 244, 91, 0.035) 80px 81px, transparent 81px);
+}
+
+[data-theme="light"] body.filelist-page--v3 {
+  --files-ink: #e9e9e0;
+  --files-ink-soft: #f3f2e9;
+  --files-panel: #dedfd5;
+  --files-panel-raised: #f8f7ee;
+  --files-paper: #11150f;
+  --files-paper-muted: #41493d;
+  --files-paper-dim: #687063;
+  --files-line: rgba(17, 21, 15, 0.17);
+  --files-line-strong: rgba(17, 21, 15, 0.35);
+  --files-acid: #b8d82f;
+  --files-acid-ink: #0e1208;
+  --files-shadow: #adb0a4;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(17, 21, 15, 0.025) 0 1px, transparent 1px 5px),
+    radial-gradient(circle at 8% 0%, rgba(184, 216, 47, 0.16), transparent 28rem),
+    linear-gradient(90deg, transparent 0 80px, rgba(17, 21, 15, 0.045) 80px 81px, transparent 81px);
+}
+
+/* Navigation */
+
+.filelist-page--v3 .app-nav.app-nav--library {
+  height: 68px;
+  padding-inline: clamp(18px, 2.2vw, 40px);
+  border-bottom: 1px solid var(--files-line-strong);
+  background: color-mix(in srgb, var(--files-ink) 96%, transparent);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.filelist-page--v3 .app-nav.app-nav--library::after {
+  content: "";
+  position: absolute;
+  right: clamp(18px, 2.2vw, 40px);
+  bottom: -1px;
+  width: clamp(72px, 8vw, 150px);
+  height: 3px;
+  background: var(--files-acid);
+}
+
+.filelist-page--v3 .app-nav--library .app-nav__inner {
+  width: 100%;
+  max-width: 1920px;
+  gap: clamp(12px, 1.35vw, 24px);
+}
+
+.filelist-page--v3 .app-nav__brand {
+  min-height: 44px;
+  gap: 10px;
+  padding-right: clamp(14px, 1.4vw, 24px);
+  border-right: 1px solid var(--files-line-strong);
+  color: var(--files-paper);
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.filelist-page--v3 .app-nav__brand i {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--files-acid);
+  border-radius: 0;
+  color: var(--files-acid-ink);
+  background: var(--files-acid);
+  box-shadow: 5px 5px 0 rgba(217, 244, 91, 0.13);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  font-size: 13px;
+}
+
+.filelist-page--v3 .library-nav__rail {
+  gap: 5px;
+}
+
+.filelist-page--v3 .library-nav__group {
+  min-height: 40px;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.filelist-page--v3 .library-nav__group-label {
+  margin: 0 7px 0 4px;
+  padding: 0;
+  color: var(--files-paper-dim);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.filelist-page--v3 .library-nav__home,
+.filelist-page--v3 .library-nav__link {
+  position: relative;
+  min-height: 35px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: var(--files-paper-muted);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  box-shadow: none;
+}
+
+.filelist-page--v3 .library-nav__home {
+  padding-inline: 11px;
+  border-color: var(--files-line-strong);
+  color: var(--files-paper);
+}
+
+.filelist-page--v3 .library-nav__home::after,
+.filelist-page--v3 .library-nav__link::after {
+  content: "";
+  position: absolute;
+  right: 9px;
+  bottom: 4px;
+  left: 9px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms var(--files-ease);
+}
+
+.filelist-page--v3 .library-nav__home:hover,
+.filelist-page--v3 .library-nav__home:focus-visible,
+.filelist-page--v3 .library-nav__link:hover,
+.filelist-page--v3 .library-nav__link:focus-visible {
+  border-color: var(--files-line-strong);
+  color: var(--files-paper);
+  background: var(--files-panel);
+  transform: none;
+}
+
+.filelist-page--v3 .library-nav__home:hover::after,
+.filelist-page--v3 .library-nav__home:focus-visible::after,
+.filelist-page--v3 .library-nav__link:hover::after,
+.filelist-page--v3 .library-nav__link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.filelist-page--v3 .library-nav__link.is-active {
+  border-color: var(--files-acid);
+  color: var(--files-acid-ink);
+  background: var(--files-acid);
+  box-shadow: 4px 4px 0 rgba(217, 244, 91, 0.13);
+}
+
+.filelist-page--v3 .library-nav__link.is-active::after {
+  display: none;
+}
+
+.filelist-page--v3 .library-nav__home:focus-visible,
+.filelist-page--v3 .library-nav__link:focus-visible,
+.filelist-page--v3 .app-nav__search-toggle:focus-visible,
+.filelist-page--v3 .theme-toggle:focus-visible,
+.filelist-page--v3 .app-nav__logout:focus-visible {
+  outline: 2px solid var(--files-acid);
+  outline-offset: 2px;
+}
+
+.filelist-page--v3 .app-nav__search {
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--files-line-strong);
+  border-radius: 0;
+  background: var(--files-panel);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+}
+
+.filelist-page--v3 .app-nav__search:focus-within {
+  border-color: var(--files-acid);
+  box-shadow: inset 3px 0 0 var(--files-acid);
+}
+
+.filelist-page--v3 .app-nav__search input {
+  width: clamp(116px, 9vw, 178px);
+  color: var(--files-paper);
+  caret-color: var(--files-acid);
+}
+
+.filelist-page--v3 .app-nav__search input::placeholder {
+  color: var(--files-paper-dim);
+}
+
+.filelist-page--v3 .app-nav__search-toggle,
+.filelist-page--v3 .app-nav__search-toggle i {
+  color: var(--files-paper-muted);
+}
+
+.filelist-page--v3 .app-nav__end {
+  gap: 7px;
+}
+
+.filelist-page--v3 .app-nav__user {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--files-paper-dim);
+  text-overflow: ellipsis;
+}
+
+.filelist-page--v3 .app-nav__logout,
+.filelist-page--v3 .theme-toggle {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--files-line);
+  border-radius: 0;
+  color: var(--files-paper-muted);
+  background: transparent;
+}
+
+.filelist-page--v3 .app-nav__logout:hover,
+.filelist-page--v3 .theme-toggle:hover {
+  border-color: var(--files-acid);
+  color: var(--files-acid);
+  background: var(--files-panel);
+}
+
+/* Page register */
+
+.filelist-page--v3 .app-main {
+  width: 100%;
+  max-width: 1920px;
+  padding: clamp(28px, 3.5vw, 64px) clamp(22px, 3.7vw, 68px) 96px;
+}
+
+.filelist-page--v3 .shelf {
+  min-width: 0;
+}
+
+.filelist-page--v3 .shelf__header {
+  position: relative;
+  min-height: 184px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 32px;
+  margin-bottom: clamp(32px, 3.2vw, 52px);
+  padding: clamp(30px, 3vw, 50px) clamp(28px, 3.3vw, 58px) clamp(27px, 2.5vw, 42px);
+  overflow: hidden;
+  border: 1px solid var(--files-line-strong);
+  border-left: 5px solid var(--files-acid);
+  border-radius: 0;
+  background:
+    linear-gradient(106deg, rgba(217, 244, 91, 0.09), transparent 35%),
+    repeating-linear-gradient(0deg, transparent 0 7px, rgba(238, 242, 232, 0.022) 7px 8px),
+    var(--files-ink-soft);
+  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+.filelist-page--v3 .shelf__header::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: clamp(120px, 15vw, 280px);
+  width: 1px;
+  height: 54px;
+  background: var(--files-acid);
+  box-shadow: 8px 0 0 rgba(217, 244, 91, 0.22), 16px 0 0 rgba(217, 244, 91, 0.08);
+}
+
+.filelist-page--v3 .page-heading {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+}
+
+.filelist-page--v3 .page-heading__eyebrow {
+  display: none;
+  margin-bottom: 13px;
+  color: var(--files-acid);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.filelist-page--v3[data-library-view="recent-files"] .page-heading__eyebrow {
+  display: flex;
+}
+
+.filelist-page--v3 .shelf__title {
+  max-width: 22ch;
+  color: var(--files-paper);
+  font-size: clamp(34px, 4.1vw, 66px);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.filelist-page--v3 .page-heading__description {
+  max-width: 72ch;
+  margin-top: 17px;
+  padding-left: 13px;
+  border-left: 1px solid var(--files-acid);
+  color: var(--files-paper-muted);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.filelist-page--v3 .library-summary {
+  position: relative;
+  z-index: 1;
+  min-width: 132px;
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  margin: 0;
+  padding: 0 0 3px 28px;
+  border-left: 1px solid var(--files-line-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.filelist-page--v3 .library-summary strong {
+  color: var(--files-acid);
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(44px, 4.5vw, 68px);
+  font-weight: 800;
+  line-height: 0.82;
+  letter-spacing: -0.035em;
+}
+
+.filelist-page--v3 .library-summary span {
+  color: var(--files-paper-muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
+}
+
+/* Media contact sheet */
+
+.filelist-page--v3 #fileGrid.file-grid,
+.filelist-page--v3[data-library-view="recent-files"] #fileGrid.file-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  align-items: start;
+  gap: clamp(30px, 2.6vw, 46px) clamp(18px, 2vw, 32px);
+}
+
+.filelist-page--v3 .file-item,
+.filelist-page--v3[data-library-view="recent-files"] .file-item {
+  position: relative;
+  isolation: isolate;
+  grid-column: span 3;
+  min-width: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  overflow: visible;
+  padding: 0 0 15px;
+  border: 0;
+  border-left: 1px solid var(--files-line-strong);
+  border-radius: 0;
+  color: var(--files-paper);
+  background: transparent;
+  box-shadow: none;
+  transform-origin: 50% 80%;
+  transition: transform 260ms var(--files-ease), border-color 170ms ease, background-color 170ms ease;
+}
+
+.filelist-page--v3 .file-item::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 7px;
+  right: -7px;
+  bottom: 8px;
+  left: 7px;
+  border: 1px solid var(--files-line);
+  background: var(--files-panel);
+  box-shadow: 12px 15px 0 var(--files-shadow);
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+  transition: transform 260ms var(--files-ease), border-color 170ms ease, box-shadow 260ms var(--files-ease);
+}
+
+.filelist-page--v3 .file-item::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  inset: -4px -4px 8px -4px;
+  border: 1px solid var(--files-acid);
+  opacity: 0;
+  clip-path: polygon(0 0, 30px 0, 30px 2px, calc(100% - 12px) 2px, calc(100% - 2px) 12px, calc(100% - 2px) 38px, 100% 38px, 100% 100%, calc(100% - 28px) 100%, calc(100% - 28px) calc(100% - 2px), 0 calc(100% - 2px));
+  pointer-events: none;
+  transition: opacity 170ms ease;
+}
+
+.filelist-page--v3 .file-item--directory,
+.filelist-page--v3 .file-item--shortcut {
+  grid-column: span 4;
+  min-height: 156px;
+  display: grid;
+  grid-template-columns: clamp(108px, 9vw, 146px) minmax(0, 1fr);
+  grid-template-rows: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 16px 0 0;
+  border-top: 1px solid var(--files-line-strong);
+  border-bottom: 1px solid var(--files-line);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 10px, rgba(217, 244, 91, 0.027) 10px 11px),
+    transparent;
+}
+
+.filelist-page--v3 .file-item--shortcut {
+  border-color: rgba(217, 244, 91, 0.44);
+}
+
+.filelist-page--v3 .thumbnail {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  flex: 0 0 auto;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(238, 242, 232, 0.2);
+  background: var(--files-panel-raised);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+.filelist-page--v3 .thumbnail::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  border-top: 5px solid rgba(8, 11, 8, 0.84);
+  border-bottom: 5px solid rgba(8, 11, 8, 0.84);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 10px, rgba(238, 242, 232, 0.2) 10px 12px, transparent 12px 21px) top / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 10px, rgba(238, 242, 232, 0.2) 10px 12px, transparent 12px 21px) bottom / 100% 3px no-repeat;
+  pointer-events: none;
+}
+
+.filelist-page--v3 .thumbnail::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 0;
+  width: 38px;
+  height: 3px;
+  background: var(--files-acid);
+  pointer-events: none;
+}
+
+.filelist-page--v3 .thumbnail img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: none;
+  transform: scale(1.002);
+  transition: transform 360ms var(--files-ease), filter 200ms ease;
+}
+
+.filelist-page--v3 .thumbnail > i {
+  color: var(--files-acid);
+  font-size: clamp(34px, 3.2vw, 52px);
+  text-shadow: 7px 8px 0 rgba(2, 3, 2, 0.42);
+}
+
+.filelist-page--v3 .file-item--directory .thumbnail,
+.filelist-page--v3 .file-item--shortcut .thumbnail {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  align-self: stretch;
+  aspect-ratio: auto;
+  min-height: 154px;
+  border: 0;
+  border-right: 1px solid var(--files-line-strong);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(217, 244, 91, 0.12), transparent 44%),
+    var(--files-ink-soft);
+  clip-path: none;
+}
+
+.filelist-page--v3 .file-item--directory .thumbnail::before,
+.filelist-page--v3 .file-item--shortcut .thumbnail::before {
+  border: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 10px, rgba(238, 242, 232, 0.03) 10px 11px);
+}
+
+.filelist-page--v3 .file-item--directory .thumbnail::after,
+.filelist-page--v3 .file-item--shortcut .thumbnail::after {
+  top: 18px;
+  right: -1px;
+  bottom: auto;
+  width: 3px;
+  height: 44px;
+}
+
+.filelist-page--v3 .file-item--directory .thumbnail > i,
+.filelist-page--v3 .file-item--shortcut .thumbnail > i {
+  font-size: clamp(38px, 3.8vw, 58px) !important;
+}
+
+.filelist-page--v3 .file-item h3,
+.filelist-page--v3[data-library-view="recent-files"] .file-item h3 {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  margin: 0;
+  padding: 15px 12px 3px 14px;
+  color: var(--files-paper);
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.42;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filelist-page--v3 .file-item h3::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 38px;
+  height: 2px;
+  background: var(--files-acid);
+}
+
+.filelist-page--v3 .file-item h3 .fa-check-circle {
+  color: var(--files-acid) !important;
+  margin-right: 6px !important;
+}
+
+.filelist-page--v3 .file-item p,
+.filelist-page--v3[data-library-view="recent-files"] .file-item p {
+  min-width: 0;
+  margin: 0;
+  padding: 1px 12px 0 14px;
+  color: var(--files-paper-dim);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 9px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filelist-page--v3 .file-item p:last-child,
+.filelist-page--v3[data-library-view="recent-files"] .file-item p:last-child {
+  padding-bottom: 0;
+}
+
+.filelist-page--v3 .file-item--directory h3,
+.filelist-page--v3 .file-item--shortcut h3 {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+  padding: 9px 0 5px 18px;
+  font-size: clamp(14px, 1.2vw, 18px);
+  line-height: 1.3;
+}
+
+.filelist-page--v3 .file-item--directory h3::before,
+.filelist-page--v3 .file-item--shortcut h3::before {
+  left: 18px;
+  width: 44px;
+}
+
+.filelist-page--v3 .file-item--directory p {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: start;
+  padding: 0 0 10px 18px;
+}
+
+.filelist-page--v3 .file-extension,
+.filelist-page--v3 .file-description {
+  z-index: 5;
+  border: 1px solid rgba(238, 242, 232, 0.25);
+  border-radius: 0;
+  color: #eef2e8;
+  background: rgba(5, 8, 5, 0.88);
+  box-shadow: 3px 3px 0 rgba(2, 3, 2, 0.34);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.filelist-page--v3 .file-extension {
+  right: 7px;
+  bottom: 7px;
+  padding: 3px 6px;
+  font-size: 8px;
+}
+
+.filelist-page--v3 .file-description {
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  max-width: calc(100% - 16px);
+  padding: 4px 7px;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filelist-page--v3 .file-item:hover,
+.filelist-page--v3 .file-item:focus-visible {
+  z-index: 6;
+  border-color: var(--files-acid);
+  background: rgba(217, 244, 91, 0.025);
+  box-shadow: none;
+  transform: perspective(900px) translate3d(0, -8px, 18px) rotateX(1.5deg);
+}
+
+.filelist-page--v3 .file-item:hover::before,
+.filelist-page--v3 .file-item:focus-visible::before {
+  border-color: rgba(217, 244, 91, 0.5);
+  box-shadow: 17px 21px 0 rgba(2, 3, 2, 0.76);
+  transform: translate3d(2px, 3px, -8px);
+}
+
+.filelist-page--v3 .file-item:hover::after,
+.filelist-page--v3 .file-item:focus-visible::after {
+  opacity: 0.95;
+}
+
+.filelist-page--v3 .file-item:hover .thumbnail img,
+.filelist-page--v3 .file-item:focus-visible .thumbnail img {
+  filter: none;
+  transform: scale(1.026);
+}
+
+.filelist-page--v3 .file-item:focus-visible {
+  outline: 3px solid var(--files-acid);
+  outline-offset: 7px;
+}
+
+.filelist-page--v3 .file-item:active {
+  transform: translateY(-3px) scale(0.99);
+}
+
+/* Loading, empty, and failure trays */
+
+.filelist-page--v3 .state-panel {
+  position: relative;
+  min-height: 360px;
+  padding: 72px 28px;
+  overflow: hidden;
+  border: 1px solid var(--files-line-strong);
+  border-radius: 0;
+  color: var(--files-paper-muted);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 12px, rgba(217, 244, 91, 0.025) 12px 13px),
+    var(--files-ink-soft);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+
+.filelist-page--v3 .state-panel__icon {
+  width: 62px;
+  height: 62px;
+  margin-bottom: 20px;
+  border: 1px solid var(--files-acid);
+  border-radius: 0;
+  color: var(--files-acid);
+  background: transparent;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.filelist-page--v3 .state-panel__title {
+  color: var(--files-paper);
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.filelist-page--v3 .state-panel__description {
+  color: var(--files-paper-muted);
+  line-height: 1.7;
+}
+
+.filelist-page--v3 .state-panel--error .state-panel__icon {
+  border-color: var(--files-danger);
+  color: var(--files-danger);
+  background: rgba(255, 109, 87, 0.08);
+}
+
+.filelist-page--v3 .btn-accent {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid var(--files-acid);
+  border-radius: 0;
+  color: var(--files-acid-ink);
+  background: var(--files-acid);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.filelist-page--v3 .btn-accent:hover,
+.filelist-page--v3 .btn-accent:focus-visible {
+  color: var(--files-acid-ink);
+  background: #e6ff77;
+  transform: translateY(-2px);
+}
+
+.filelist-page--v3 .btn-accent:focus-visible {
+  outline: 2px solid var(--files-paper);
+  outline-offset: 3px;
+}
+
+/* Footer */
+
+.filelist-page--v3 .app-footer {
+  width: calc(100% - clamp(44px, 7.4vw, 136px));
+  max-width: 1784px;
+  margin: 0 auto;
+  padding: 24px 0 34px;
+  border-top: 1px solid var(--files-line);
+  color: var(--files-paper-dim);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+/* Desktop breakpoints. The stylesheet is absent below 769px. */
+
+@media (max-width: 1480px) {
+  .filelist-page--v3 .library-nav__group-label {
+    display: none;
+  }
+
+  .filelist-page--v3 .file-item,
+  .filelist-page--v3[data-library-view="recent-files"] .file-item {
+    grid-column: span 4;
+  }
+
+  .filelist-page--v3 .file-item--directory,
+  .filelist-page--v3 .file-item--shortcut {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 1180px) {
+  .filelist-page--v3 .app-nav.app-nav--library {
+    height: auto;
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .filelist-page--v3 .app-nav--library .app-nav__inner {
+    max-width: none;
+    gap: 0;
+  }
+
+  .filelist-page--v3 .app-nav--library .app-nav__brand {
+    min-height: 58px;
+    margin-left: clamp(18px, 3vw, 30px);
+    border-right: 0;
+  }
+
+  .filelist-page--v3 .app-nav--library .app-nav__end {
+    margin-right: clamp(18px, 3vw, 30px);
+  }
+
+  .filelist-page--v3 .library-nav__rail {
+    gap: 3px;
+    padding: 7px clamp(18px, 3vw, 30px) 9px;
+    border-top: 1px solid var(--files-line);
+    background: var(--files-ink-soft);
+  }
+
+  .filelist-page--v3 .app-nav--library .library-nav__home {
+    background: var(--files-panel);
+    box-shadow: 12px 0 0 var(--files-ink-soft);
+  }
+
+  .filelist-page--v3 .file-item,
+  .filelist-page--v3[data-library-view="recent-files"] .file-item {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 980px) {
+  .filelist-page--v3 .app-main {
+    padding-inline: 24px;
+  }
+
+  .filelist-page--v3 .shelf__header {
+    min-height: 170px;
+    padding: 28px;
+  }
+
+  .filelist-page--v3 .shelf__title {
+    font-size: clamp(32px, 6vw, 50px);
+  }
+
+  .filelist-page--v3 .file-item--directory,
+  .filelist-page--v3 .file-item--shortcut {
+    min-height: 142px;
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .filelist-page--v3 .file-item--directory .thumbnail,
+  .filelist-page--v3 .file-item--shortcut .thumbnail {
+    min-height: 140px;
+  }
+}
+
+@media (max-width: 840px) {
+  .filelist-page--v3 .app-nav__user {
+    display: none;
+  }
+
+  .filelist-page--v3 .app-nav__search input {
+    width: 120px;
+  }
+
+  .filelist-page--v3 .shelf__header {
+    grid-template-columns: minmax(0, 1fr) 102px;
+    gap: 18px;
+  }
+
+  .filelist-page--v3 .library-summary {
+    min-width: 102px;
+    padding-left: 16px;
+  }
+
+  .filelist-page--v3 .library-summary strong {
+    font-size: 46px;
+  }
+
+  .filelist-page--v3 .file-item--directory,
+  .filelist-page--v3 .file-item--shortcut {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filelist-page--v3 *,
+  .filelist-page--v3 *::before,
+  .filelist-page--v3 *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .filelist-page--v3 .file-item:hover,
+  .filelist-page--v3 .file-item:focus-visible,
+  .filelist-page--v3 .file-item:hover::before,
+  .filelist-page--v3 .file-item:focus-visible::before,
+  .filelist-page--v3 .file-item:hover .thumbnail img,
+  .filelist-page--v3 .file-item:focus-visible .thumbnail img,
+  .filelist-page--v3 .file-item:active,
+  .filelist-page--v3 .btn-accent:hover {
+    transform: none !important;
+  }
+}

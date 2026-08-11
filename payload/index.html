@@ -1475,7 +1475,13 @@
         .follow-card { animation: none !important; }
     }
     </style>
-    <link href="css/home-v18.css?v=home18-r40" rel="stylesheet">
+    <link href="css/home-v18.css?v=home18-r41" rel="stylesheet">
+    <link href="css/home-stable-mobile.css?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3" rel="stylesheet">
+    <link data-web1-v3 href="css/home-v3-hero.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.0-content-r7" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3" rel="stylesheet" media="(min-width: 769px)">
+    <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
 </head>
 <body class="idx-home">
 
@@ -1490,8 +1496,8 @@
         <div class="idx-nav__group idx-nav__group--sections" aria-label="页内分区">
             <span class="idx-nav__group-label" aria-hidden="true">页内</span>
             <a href="#heroBanner" class="idx-nav__link idx-nav__link--section active" data-home-section="heroBanner" aria-current="location" title="返回 Hero">首页</a>
-            <a href="#cwSection" class="idx-nav__link idx-nav__link--section" data-home-section="cwSection">继续观看</a>
             <a href="#luSection" class="idx-nav__link idx-nav__link--section" data-home-section="luSection">最近更新</a>
+            <a href="#cwSection" class="idx-nav__link idx-nav__link--section" data-home-section="cwSection">继续观看</a>
             <a href="#lfSection" class="idx-nav__link idx-nav__link--section" data-home-section="lfSection">最近关注</a>
             <a href="#mediaSection" class="idx-nav__link idx-nav__link--section" data-home-section="mediaSection">所有分区</a>
         </div>
@@ -1523,41 +1529,150 @@
             <i class="fas fa-user"></i>
         </a>
         @EndIf
-        <button id="theme-toggle" type="button" class="theme-toggle" title="切换主题">
-            <i class="fas fa-sun" aria-hidden="true"></i>
+        <button id="theme-toggle" type="button" class="theme-toggle" data-ui-version-toggle title="切换到稳定版">
+            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i><span>稳定版</span>
         </button>
     </div>
 </nav>
 
-<!-- ══ Hero (动态加载) ══ -->
-<section class="idx-hero" id="heroBanner">
-    <div class="idx-hero__bg"  id="heroBg"></div>
-    <div class="idx-hero__overlay"></div>
-    <div class="idx-hero__inner">
-        <div class="idx-hero__content">
-            <div class="idx-hero__badge" id="heroBadge">
-                <i class="fas fa-star"></i>
-                <span id="heroBadgeText">连载中</span>
-            </div>
-            <h1 class="idx-hero__title" id="heroTitle"></h1>
-            <div class="idx-hero__meta" id="heroMeta"></div>
-            <p class="idx-hero__description" id="heroDescription" hidden></p>
-            <div class="idx-hero__actions">
-                <a class="btn-hero-play" id="heroPlayBtn" href="#">
-                    <i class="fas fa-play"></i> 继续观看
-                </a>
-                <button class="btn-hero-mode" id="heroModeToggle" type="button" title="按画质切换下一张 Hero 图片">
-                    <i class="fas fa-shuffle"></i>
-                    <span id="heroModeText">换一张</span>
-                    <small id="heroArtSource">本地</small>
-                </button>
-            </div>
-        </div>
-        <div class="idx-hero__cover" id="heroCover">
-            <i class="fas fa-play-circle"></i>
-        </div>
+<!-- ══ Web1 3.0 Hero (真实媒体库数据驱动) ══ -->
+<section class="idx-hero hero3" id="heroBanner" aria-labelledby="heroTitle" data-hero-state="loading">
+    <div class="hero3__backdrop" id="hero3Backdrop" aria-hidden="true">
+        <img class="hero3__backdrop-image is-active" id="hero3BackdropA" alt="">
+        <img class="hero3__backdrop-image" id="hero3BackdropB" alt="">
+        <span class="hero3__backdrop-scrim"></span>
+        <span class="hero3__backdrop-blocks"></span>
     </div>
-    <div class="idx-hero__scroll-cue" aria-hidden="true"></div>
+
+    <!-- 稳定版图片解析继续写入这两个节点，新 Hero 通过受控接口同步结果。 -->
+    <div class="hero3__source" id="heroBg" aria-hidden="true"></div>
+    <div class="hero3__source" id="heroCover" aria-hidden="true"></div>
+
+    <div class="hero3__frame" aria-hidden="true"></div>
+    <div class="hero3__register" aria-label="当前作品索引">
+        <span>CHANNEL</span>
+        <strong id="hero3Index">01</strong>
+        <small id="hero3Code">LOCAL LIBRARY</small>
+    </div>
+
+    <div class="hero3__stage">
+        <div class="hero3__status" id="hero3Status" role="status">
+            <span>LOCAL MEDIA / SYNC</span>
+            <strong id="hero3StatusTitle">正在读取最近播放</strong>
+            <small id="hero3StatusDescription">连接本地媒体库并整理封面。</small>
+        </div>
+        <div class="hero3__carousel-shell" id="hero3Shell" aria-label="最近播放作品">
+            <div class="hero3__entry-cloud" id="hero3EntryCloud" aria-hidden="true"></div>
+            <span class="hero3__entry-spark" id="hero3EntrySpark" aria-hidden="true"></span>
+            <div class="hero3__orbit" id="hero3Orbit" role="listbox" aria-label="选择最近播放的作品"></div>
+
+            <span class="hero3__lift-guide" id="hero3LiftGuide" aria-hidden="true">
+                <span class="hero3__lift-rail hero3__lift-rail--left"></span>
+                <span class="hero3__lift-rail hero3__lift-rail--right"></span>
+                <span class="hero3__lift-coupler"><i></i><i></i><b>MAG / LOCK</b></span>
+            </span>
+
+            <span class="hero3__disc hero3__flight-disc" id="hero3Disc" aria-hidden="true">
+                <span class="hero3__disc-art" id="hero3DiscArt"></span>
+                <span class="hero3__disc-spectrum"></span>
+                <span class="hero3__disc-label"><b>DDP</b><small>LOCAL / MEDIA</small></span>
+            </span>
+
+            <div class="hero3__device-zone" id="hero3DeviceZone">
+                <a class="hero3__machine-action btn-hero-play" id="heroPlayBtn" href="#" aria-label="继续播放当前作品">
+                    <span class="hero3__player" aria-hidden="true">
+                        <span class="hero3__deck-well" id="hero3Tray">
+                            <span class="hero3__dock-orbit"></span>
+                            <span class="hero3__loaded-disc" id="hero3LoadedDisc">
+                                <span class="hero3__disc-art" id="hero3LoadedDiscArt"></span>
+                                <span class="hero3__disc-spectrum"></span>
+                            </span>
+                            <span class="hero3__spindle"></span>
+                            <span class="hero3__tray-lip"><b>MEDIA CARRIAGE</b><i></i></span>
+                        </span>
+                        <span class="hero3__deck-lid" id="hero3DeckLid">
+                            <span class="hero3__dock-clamp hero3__dock-clamp--left"></span>
+                            <span class="hero3__dock-clamp hero3__dock-clamp--right"></span>
+                            <span class="hero3__deck-mark">RECEIVE GATE / OPEN</span>
+                        </span>
+                        <svg class="hero3__machine" viewBox="0 0 760 230" focusable="false" preserveAspectRatio="xMidYMid meet">
+                            <path class="hero3__machine-floor" d="M18 202 H742 M52 214 H708"></path>
+                            <path class="hero3__machine-frame" d="M34 202 V66 H154 L184 38 H270 L282 20 H478 L490 38 H576 L606 66 H726 V202 Z"></path>
+                            <path class="hero3__machine-bay" d="M258 42 L282 20 H478 L502 42 M236 66 H524 M236 66 V150 H524 V66"></path>
+                            <path class="hero3__machine-block hero3__machine-block--blue" d="M34 66 H154 L184 38 H232 V82 H34 Z"></path>
+                            <path class="hero3__machine-block hero3__machine-block--mint" d="M528 38 H576 L606 66 H726 V82 H528 Z"></path>
+                            <path class="hero3__machine-strut" d="M88 82 V178 H208 M672 82 V178 H552 M34 132 H118 M726 132 H642"></path>
+                            <path class="hero3__machine-console" d="M224 154 H536 L552 174 V210 H208 V174 Z"></path>
+                            <path class="hero3__machine-led" d="M244 186 H318 M442 186 H516"></path>
+                            <g class="hero3__machine-copy">
+                                <text x="64" y="108">DDP</text>
+                                <text x="64" y="124">LOCAL MEDIA</text>
+                                <text x="620" y="108">LOAD</text>
+                                <text x="620" y="124">READY</text>
+                            </g>
+                            <circle class="hero3__machine-node" cx="88" cy="178" r="6"></circle>
+                            <circle class="hero3__machine-node" cx="672" cy="178" r="6"></circle>
+                        </svg>
+                    </span>
+                    <span class="hero3__mechanical-button">
+                        <span class="hero3__load-symbol" aria-hidden="true"><i class="fas fa-compact-disc"></i><em>↓</em></span>
+                        <span class="hero3__load-copy"><b>装载碟片并继续</b><small id="hero3MechMeta">LOAD / RESUME</small></span>
+                        <span class="hero3__load-state" aria-hidden="true">READY</span>
+                    </span>
+                </a>
+                <p class="hero3__keyhint" aria-label="键盘操作提示">← / → 切换 · Enter 播放</p>
+            </div>
+        </div>
+
+        <button class="btn-hero-mode hero3__art-switch" id="heroModeToggle" type="button" title="按画质切换下一张 Hero 图片">
+            <i class="fas fa-shuffle" aria-hidden="true"></i>
+            <span id="heroModeText">当前图片</span>
+            <small id="heroArtSource">本地</small>
+        </button>
+
+        <aside class="hero3__info" aria-live="polite">
+            <div class="hero3__info-copy">
+            <div class="idx-hero__badge hero3__badge" id="heroBadge">
+                <span id="heroBadgeText"></span>
+            </div>
+            <h1 class="idx-hero__title hero3__title" id="heroTitle"></h1>
+            <div class="idx-hero__meta hero3__meta" id="heroMeta"></div>
+            <p class="idx-hero__description hero3__description" id="heroDescription" hidden></p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- <=768px keeps the last stable Web1 2.4 Hero.  Its data is mirrored
+         from the existing source nodes so API and artwork logic stay shared. -->
+    <div class="hero-stable-mobile">
+        <div class="idx-hero__bg" id="heroMobileBg"></div>
+        <div class="idx-hero__overlay"></div>
+        <div class="idx-hero__inner">
+            <div class="idx-hero__content">
+                <div class="idx-hero__badge" id="heroMobileBadge">
+                    <i class="fas fa-star" aria-hidden="true"></i>
+                    <span id="heroMobileBadgeText"></span>
+                </div>
+                <h1 class="idx-hero__title" id="heroMobileTitle"></h1>
+                <div class="idx-hero__meta" id="heroMobileMeta"></div>
+                <p class="idx-hero__description" id="heroMobileDescription" hidden></p>
+                <div class="idx-hero__actions">
+                    <a class="btn-hero-play" id="heroMobilePlayBtn" href="#">
+                        <i class="fas fa-play" aria-hidden="true"></i> 继续观看
+                    </a>
+                    <button class="btn-hero-mode" id="heroMobileModeToggle" type="button" title="按画质切换下一张 Hero 图片">
+                        <i class="fas fa-shuffle" aria-hidden="true"></i>
+                        <span id="heroMobileModeText">当前图片</span>
+                        <small id="heroMobileArtSource">本地</small>
+                    </button>
+                </div>
+            </div>
+            <div class="idx-hero__cover" id="heroMobileCover">
+                <i class="fas fa-play-circle" aria-hidden="true"></i>
+            </div>
+        </div>
+        <div class="idx-hero__scroll-cue" aria-hidden="true"></div>
+    </div>
 </section>
 
 <!-- ══ 主体内容 ══ -->
@@ -1567,6 +1682,20 @@
         <span class="home-status__icon"><i class="fas fa-spinner fa-spin"></i></span>
         <span><strong id="homeStatusTitle">正在整理你的媒体库</strong><small id="homeStatusDescription">最近播放、更新和关注内容正在同步。</small></span>
         <button type="button" class="btn-ghost" id="homeRetryBtn" style="display:none;"><i class="fas fa-rotate-right"></i> 重试</button>
+    </div>
+
+    <!-- 最近更新 -->
+    <div class="idx-section idx-section--updates" id="luSection" style="display:none;">
+        <div class="sec-hd">
+            <div>
+                <h2 class="sec-hd__title">最近更新</h2>
+                <p class="sec-hd__summary"><span id="luCount">0</span> 部作品按更新日期编排</p>
+            </div>
+            <a href="bangumi.html?nav=lastupdate" class="sec-hd__more">
+                查看全部 <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+        <div class="update-timeline" id="luGrid"></div>
     </div>
 
     <!-- 继续观看 -->
@@ -1581,19 +1710,6 @@
             </a>
         </div>
         <div class="continue-row" id="cwGrid"></div>
-    </div>
-    <!-- 最近更新 -->
-    <div class="idx-section idx-section--updates" id="luSection" style="display:none;">
-        <div class="sec-hd">
-            <div>
-                <h2 class="sec-hd__title">最近更新</h2>
-                <p class="sec-hd__summary"><span id="luCount">0</span> 部作品按更新日期编排</p>
-            </div>
-            <a href="bangumi.html?nav=lastupdate" class="sec-hd__more">
-                查看全部 <i class="fas fa-chevron-right"></i>
-            </a>
-        </div>
-        <div class="update-timeline" id="luGrid"></div>
     </div>
 
     <!-- 最近关注 -->
@@ -1611,11 +1727,135 @@
     </div>
 
     <!-- 媒体库 (静态快捷入口，始终显示) -->
-    <div class="idx-section" id="mediaSection">
-        <div class="sec-hd">
+    <div class="idx-section idx-section--routes" id="mediaSection">
+        <div class="sec-hd sec-hd--routes-v3 d-none">
+            <div>
+                <span class="sec-hd__eyebrow">LIBRARY SWITCHBOARD / 10 ROUTES</span>
+                <h2 class="sec-hd__title">所有分区</h2>
+                <p class="sec-hd__summary">从播放状态、番剧目录或文件入口进入你的媒体库</p>
+            </div>
+        </div>
+        <div class="sec-hd media-route-stable">
             <h2 class="sec-hd__title">所有分区</h2>
         </div>
-        <div class="tool-list">
+        <div class="tool-list tool-list--routes media-route-map d-none" aria-label="媒体库分区">
+            <section class="media-route-group media-route-group--activity" aria-labelledby="mediaActivityTitle">
+                <header class="media-route-group__header">
+                    <span class="media-route-group__mark" aria-hidden="true"><i class="fas fa-play"></i></span>
+                    <div>
+                        <h3 id="mediaActivityTitle">播放与动态</h3>
+                        <p>从观看进度和最近变化继续</p>
+                    </div>
+                </header>
+                <div class="media-route-group__items">
+                    <a href="bangumi.html?nav=lastplay" class="tool-item" data-route-group="activity" data-route-label="播放与动态" data-route-seq="01">
+                        <div class="tool-item__icon"><i class="fas fa-clock"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">最近播放</div>
+                            <div class="tool-item__desc">继续上次观看的内容</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                    <a href="bangumi.html?nav=lastupdate" class="tool-item" data-route-group="activity" data-route-seq="02">
+                        <div class="tool-item__icon"><i class="fas fa-sync-alt"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">最近更新</div>
+                            <div class="tool-item__desc">最新收录的番剧</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                    <a href="bangumi.html?nav=lastadd" class="tool-item" data-route-group="activity" data-route-seq="03">
+                        <div class="tool-item__icon"><i class="fas fa-heart"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">最近关注</div>
+                            <div class="tool-item__desc">你最近添加的番剧</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                </div>
+            </section>
+
+            <section class="media-route-group media-route-group--catalog" aria-labelledby="mediaCatalogTitle">
+                <header class="media-route-group__header">
+                    <span class="media-route-group__mark" aria-hidden="true"><i class="fas fa-layer-group"></i></span>
+                    <div>
+                        <h3 id="mediaCatalogTitle">番剧目录</h3>
+                        <p>按季度、名称、分类或评分定位作品</p>
+                    </div>
+                </header>
+                <div class="media-route-group__items">
+                    <a href="bangumi.html?nav=season" class="tool-item" data-route-group="catalog" data-route-label="番剧目录" data-route-seq="04">
+                        <div class="tool-item__icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">番剧季度</div>
+                            <div class="tool-item__desc">按季度浏览</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                    <a href="bangumi.html?nav=name" class="tool-item" data-route-group="catalog" data-route-seq="05">
+                        <div class="tool-item__icon"><i class="fas fa-font"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">按名称</div>
+                            <div class="tool-item__desc">字母顺序浏览</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                    <a href="bangumi.html?nav=category" class="tool-item" data-route-group="catalog" data-route-seq="06">
+                        <div class="tool-item__icon"><i class="fas fa-tags"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">分类</div>
+                            <div class="tool-item__desc">按分类浏览</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                    <a href="bangumi.html?nav=rating" class="tool-item" data-route-group="catalog" data-route-seq="07">
+                        <div class="tool-item__icon"><i class="fas fa-star"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">排行榜</div>
+                            <div class="tool-item__desc">浏览热门分类与高分作品</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                </div>
+            </section>
+
+            <section class="media-route-group media-route-group--files" aria-labelledby="mediaFilesTitle">
+                <header class="media-route-group__header">
+                    <span class="media-route-group__mark" aria-hidden="true"><i class="fas fa-folder-tree"></i></span>
+                    <div>
+                        <h3 id="mediaFilesTitle">文件入口</h3>
+                        <p>检查新文件、未识别内容和独立视频</p>
+                    </div>
+                </header>
+                <div class="media-route-group__items">
+                    <a href="filelist.html?type=nav&name=最近收录" class="tool-item" data-route-group="files" data-route-label="文件入口" data-route-seq="08">
+                        <div class="tool-item__icon"><i class="fas fa-file-import"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">最近收录</div>
+                            <div class="tool-item__desc">查看刚进入媒体库的文件</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                    <a href="filelist.html?type=nav&name=未识别" class="tool-item" data-route-group="files" data-route-seq="09">
+                        <div class="tool-item__icon"><i class="fas fa-circle-question"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">未识别</div>
+                            <div class="tool-item__desc">处理尚未匹配作品的文件</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                    <a href="filelist.html?type=nav&name=独立文件" class="tool-item" data-route-group="files" data-route-seq="10">
+                        <div class="tool-item__icon"><i class="fas fa-file-video"></i></div>
+                        <div class="tool-item__body">
+                            <div class="tool-item__name">独立文件</div>
+                            <div class="tool-item__desc">浏览未归入番剧的媒体</div>
+                        </div>
+                        <i class="fas fa-chevron-right tool-item__arrow"></i>
+                    </a>
+                </div>
+            </section>
+        </div>
+        <div class="tool-list media-route-stable" aria-label="媒体库分区">
             <a href="bangumi.html?nav=lastplay" class="tool-item">
                 <div class="tool-item__icon"><i class="fas fa-clock"></i></div>
                 <div class="tool-item__body">
@@ -1767,8 +2007,17 @@
 
 </div><!-- /idx-body -->
 
-<div id="bangumiModal" class="modal">
-    <div class="modal-content">
+<div id="bangumiModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal-content" tabindex="-1">
+        <div class="modal-visual">
+            <img id="modalCover" class="modal-visual__cover" alt="" decoding="async">
+            <div class="modal-visual__scrim" aria-hidden="true"></div>
+            <div class="modal-visual__register" aria-hidden="true">
+                <span>DDP / LIBRARY DETAIL</span>
+                <span id="modalRegisterId">MEDIA / 00000</span>
+            </div>
+            <div class="modal-visual__progress" id="modalProgress"></div>
+        </div>
         <div class="modal-header">
             <div>
                 <h3 id="modalTitle"></h3>
@@ -1789,9 +2038,14 @@
 </footer>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/recent-play-refresh.js"></script>
+<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.0-recent-r1"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
+<script src="js/gsap.min.js"></script>
+<script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3"></script>
+<script src="js/home-v3-hero.js?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6"></script>
+<script src="js/home-v3-content.js?v=@Model.StaticResourceVersion&amp;ui=3.0-content-r7"></script>
+<script src="js/home-stable-mobile.js?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3"></script>
 <script>
 $(function () {
     var bangumiListApi = null;
@@ -1804,7 +2058,7 @@ $(function () {
     var currentHeroAnimeId = null;
     var resizeTimer = null;
     var heroArtworkRequestId = 0;
-    var HERO_ART_CACHE_PREFIX = 'dandanplay.hero-art.v3.';
+    var HERO_ART_CACHE_PREFIX = 'dandanplay.hero-art.v5.';
     var HERO_ART_CACHE_OK_TTL = 30 * 24 * 60 * 60 * 1000;
     var HERO_ART_CACHE_COVER_ONLY_TTL = 30 * 60 * 1000;
     var HERO_ART_CACHE_MISS_TTL = 6 * 60 * 60 * 1000;
@@ -1815,9 +2069,23 @@ $(function () {
     var currentHeroArtwork = null;
     var heroArtworkCandidates = [];
     var heroArtworkIndex = 0;
+    var heroArtworkSwitching = false;
+    var heroArtworkSwitchRequest = 0;
     var bangumiSubjectPromises = {};
+    var hero3PrimePromises = {};
+    var hero3SyncRequestId = 0;
+    var hero3UserSelected = false;
     var renderedSectionSignatures = {};
     var shouldStartAtHero = !window.location.hash;
+    var lastSectionMobile = null;
+    var web3DesktopQuery = window.matchMedia('(min-width: 769px)');
+    var modalCloseTimer = 0;
+    var modalReturnFocus = null;
+    var modalRequestId = 0;
+
+    function useWeb3Desktop() {
+        return web3DesktopQuery.matches && (!window.Web1UiVersion || window.Web1UiVersion.isV3Desktop());
+    }
 
     $(window).one('wheel.homeHeroStart touchstart.homeHeroStart keydown.homeHeroStart pointerdown.homeHeroStart', function () {
         shouldStartAtHero = false;
@@ -1854,10 +2122,15 @@ $(function () {
 
         var marker = window.scrollY + Math.min(window.innerHeight * 0.46, 460);
         var activeItem = sectionNavTargets[0];
+        var activeTop = -Infinity;
 
         sectionNavTargets.forEach(function (item) {
             if (item.section.offsetParent === null) return;
-            if (getStepTop(item.section) <= marker) activeItem = item;
+            var sectionTop = getStepTop(item.section);
+            if (sectionTop <= marker && sectionTop > activeTop) {
+                activeItem = item;
+                activeTop = sectionTop;
+            }
         });
 
         sectionNavTargets.forEach(function (item) {
@@ -1921,23 +2194,68 @@ $(function () {
     });
 
     $('#heroModeToggle').on('click', function () {
-        if (heroArtworkCandidates.length < 2) return;
-        heroArtworkIndex = (heroArtworkIndex + 1) % heroArtworkCandidates.length;
-        applyHeroCandidate(heroArtworkCandidates[heroArtworkIndex]);
+        requestHeroCandidateSwitch();
     });
 
     updateHeroModeButton();
 
     function updateHeroModeButton() {
         var hasAlternates = heroArtworkCandidates.length > 1;
-        $('#heroModeText').text(hasAlternates ? '换一张' : '当前图片');
+        var label = heroArtworkSwitching
+            ? '正在切换'
+            : (hasAlternates ? '换一张 ' + (heroArtworkIndex + 1) + '/' + heroArtworkCandidates.length : '当前图片');
+        $('#heroModeText').text(label);
         $('#heroModeToggle')
-            .prop('disabled', !hasAlternates)
-            .attr('aria-disabled', hasAlternates ? 'false' : 'true')
+            .toggleClass('is-switching', heroArtworkSwitching)
+            .prop('disabled', !hasAlternates || heroArtworkSwitching)
+            .attr('aria-disabled', hasAlternates && !heroArtworkSwitching ? 'false' : 'true')
+            .attr('aria-busy', heroArtworkSwitching ? 'true' : 'false')
             .attr('title', hasAlternates ? '按当前屏幕的构图与画质排序切换图片' : '暂时只有一张可用图片');
     }
 
-    // Scroll behavior is fully native. CSS proximity snapping only guides section alignment.
+    function finishHeroCandidateSwitch(requestId) {
+        if (requestId !== heroArtworkSwitchRequest) return;
+        heroArtworkSwitching = false;
+        updateHeroModeButton();
+    }
+
+    function requestHeroCandidateSwitch() {
+        if (heroArtworkSwitching || heroArtworkCandidates.length < 2) return;
+        var requestId = ++heroArtworkSwitchRequest;
+        heroArtworkSwitching = true;
+        updateHeroModeButton();
+
+        function tryCandidate(index, remaining) {
+            if (requestId !== heroArtworkSwitchRequest) return;
+            if (!heroArtworkCandidates.length || remaining <= 0) {
+                finishHeroCandidateSwitch(requestId);
+                return;
+            }
+            index = ((index % heroArtworkCandidates.length) + heroArtworkCandidates.length) % heroArtworkCandidates.length;
+            var candidate = heroArtworkCandidates[index];
+            inspectHeroCandidate(candidate).then(function (loadedCandidate) {
+                if (requestId !== heroArtworkSwitchRequest) return;
+                heroArtworkCandidates[index] = loadedCandidate;
+                heroArtworkIndex = index;
+                applyHeroCandidate(loadedCandidate);
+                finishHeroCandidateSwitch(requestId);
+            }).catch(function () {
+                if (requestId !== heroArtworkSwitchRequest) return;
+                heroArtworkCandidates.splice(index, 1);
+                if (index < heroArtworkIndex) heroArtworkIndex -= 1;
+                if (heroArtworkIndex >= heroArtworkCandidates.length) heroArtworkIndex = 0;
+                if (heroArtworkCandidates.length < 2) {
+                    finishHeroCandidateSwitch(requestId);
+                    return;
+                }
+                tryCandidate(index, remaining - 1);
+            });
+        }
+
+        tryCandidate((heroArtworkIndex + 1) % heroArtworkCandidates.length, heroArtworkCandidates.length - 1);
+    }
+
+    // Scroll behavior is fully native. CSS snapping guides section alignment.
 
     /* ── 从 bangumi.html 页面提取真实的 API 地址 ── */
     function extractApiUrl(html, varName) {
@@ -1961,7 +2279,10 @@ $(function () {
         return $card.attr({
             href: '#',
             'data-anime-id': String(b.AnimeId),
-            'data-cover-url': b.Cover || ''
+            'data-cover-url': b.Cover || '',
+            'aria-haspopup': 'dialog',
+            'aria-controls': 'bangumiModal',
+            'aria-label': '查看 ' + b.Title + ' 的剧集详情'
         }).on('click', function (event) {
             event.preventDefault();
             showModal(String(b.AnimeId), b.Title);
@@ -1975,7 +2296,9 @@ $(function () {
                 .attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' })
                 .appendTo($frame);
         } else {
-            $('<div class="pc__placeholder"><i class="fas fa-play-circle"></i></div>').appendTo($frame);
+            $('<div class="pc__placeholder"><i class="fas fa-play-circle"></i></div>')
+                .addClass(className)
+                .appendTo($frame);
         }
     }
 
@@ -2007,14 +2330,49 @@ $(function () {
         $bar.appendTo($frame);
     }
 
+    function createMediaCase($card, variant, legacyFrameClass) {
+        $card.addClass('media-case media-case--' + variant);
+        var $shadow = $('<span class="media-case__shadow" aria-hidden="true"></span>');
+        var $surface = $('<div class="media-case__surface"></div>');
+        var $frame = $('<div class="media-case__frame"></div>').addClass(legacyFrameClass || '');
+        $('<span class="media-case__edge" aria-hidden="true"></span>').appendTo($surface);
+        $('<span class="media-case__sheen" aria-hidden="true"></span>').appendTo($frame);
+        $frame.appendTo($surface);
+        $card.append($shadow, $surface);
+        return { frame: $frame, surface: $surface };
+    }
+
+    function getCardEpisodeTitle(b) {
+        var value = String((b && (b.LastEpisodeTitle || b.EpisodeTitle)) || '').trim();
+        if (!value || value === String((b && b.Title) || '').trim()) return '';
+        return value;
+    }
+
     /* ── 继续观看：完整竖版海报进度卡 ── */
     function makeContinueCard(b, index) {
         var progress = getWatchProgress(b);
         var pct = progress ? progress.percent : 0;
         var $card = bindBangumiCard($('<a class="pc pc--continue"></a>'), b)
             .css('--card-index', String(index || 0));
-        var $frame = $('<div class="pc__frame"></div>');
-        appendCover($frame, b, 'pc__img');
+        if (!useWeb3Desktop()) {
+            var $stableFrame = $('<div class="pc__frame"></div>');
+            appendCover($stableFrame, b, 'pc__img');
+            if (b.EpisodeWatched > 0) {
+                $('<div class="pc__badge">' + b.EpisodeWatched + '/' + b.EpisodeTotal + '</div>').appendTo($stableFrame);
+            }
+            var stableEpisodeText = '第' + b.EpisodeWatched + '话 · ' + pct + '%';
+            var $stableOverlay = $('<div class="pc__overlay"></div>');
+            $('<div class="pc__ep"></div>').text(stableEpisodeText).appendTo($stableOverlay);
+            $stableOverlay.appendTo($stableFrame);
+            $('<span class="pc__play"><i class="fas fa-play"></i></span>').appendTo($stableFrame);
+            appendWatchProgress($stableFrame, progress);
+            $card.append($stableFrame);
+            $card.append($('<div class="pc__title"></div>').text(b.Title));
+            return $card;
+        }
+        var mediaCase = createMediaCase($card, 'continue', 'pc__frame');
+        var $frame = mediaCase.frame;
+        appendCover($frame, b, 'pc__img media-case__cover');
         if (b.EpisodeWatched > 0) {
             $('<div class="pc__badge">' + b.EpisodeWatched + '/' + b.EpisodeTotal + '</div>').appendTo($frame);
         }
@@ -2024,8 +2382,14 @@ $(function () {
         $ov.appendTo($frame);
         $('<span class="pc__play"><i class="fas fa-play"></i></span>').appendTo($frame);
         appendWatchProgress($frame, progress);
-        $card.append($frame);
-        $card.append($('<div class="pc__title"></div>').text(b.Title));
+        var $info = $('<div class="media-case__info pc__info"></div>');
+        $('<div class="media-case__kicker"></div>').text('RESUME / ' + String(b.EpisodeWatched || 0).padStart(2, '0')).appendTo($info);
+        $('<div class="pc__title media-case__title"></div>').text(b.Title).appendTo($info);
+        var episodeTitle = getCardEpisodeTitle(b);
+        $('<div class="media-case__meta pc__episode-title"></div>')
+            .text(episodeTitle || ('下一站 · 第' + String(Math.max(1, Number(b.EpisodeWatched || 0))) + '话'))
+            .appendTo($info);
+        $info.appendTo(mediaCase.surface);
         return $card;
     }
 
@@ -2106,7 +2470,7 @@ $(function () {
         var isInProgress = isTrackable && watched > 0 && watched < total;
         var isUnwatched = isTrackable && watched <= 0;
         var isComplete = isTrackable && watched >= total;
-        var $card = bindBangumiCard($('<a class="timeline-card"></a>'), b)
+        var $card = bindBangumiCard($('<a class="timeline-card pc pc--update"></a>'), b)
             .css('--card-index', String(index || 0));
         if (isInProgress) {
             $card
@@ -2122,41 +2486,62 @@ $(function () {
                 .addClass('timeline-card--complete')
                 .attr('title', '已看完 · 共' + total + '话');
         }
-        if (b.Cover) {
-            $('<img class="timeline-card__cover">').attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' }).appendTo($card);
-        } else {
-            $('<div class="timeline-card__cover pc__placeholder"><i class="fas fa-play-circle"></i></div>').appendTo($card);
+        if (!useWeb3Desktop()) {
+            appendCover($card, b, 'timeline-card__cover');
+            if (isInProgress || isUnwatched) {
+                $('<div class="timeline-card__watch-badge"></div>').text(watched + '/' + total).appendTo($card);
+            } else if (isComplete) {
+                $('<div class="timeline-card__watch-dot" aria-hidden="true"></div>').appendTo($card);
+            }
+            var $stableBody = $('<div class="timeline-card__body"></div>');
+            $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($stableBody);
+            $('<div class="timeline-card__title"></div>').text(b.Title).appendTo($stableBody);
+            $('<div class="timeline-card__meta"></div>').text(getEpisodeText(b)).appendTo($stableBody);
+            var $stableBar = $('<div class="timeline-card__bar"></div>');
+            $('<span></span>').css('width', (progress ? pct : 0) + '%').appendTo($stableBar);
+            $stableBar.appendTo($stableBody);
+            $stableBody.appendTo($card);
+            return $card;
         }
+        var mediaCase = createMediaCase($card, 'update', 'timeline-card__frame');
+        var $frame = mediaCase.frame;
+        appendCover($frame, b, 'timeline-card__cover media-case__cover');
         if (isInProgress || isUnwatched) {
-            $('<div class="timeline-card__watch-badge"></div>').text(watched + '/' + total).appendTo($card);
+            $('<div class="timeline-card__watch-badge"></div>').text(watched + '/' + total).appendTo($frame);
         } else if (isComplete) {
-            $('<div class="timeline-card__watch-dot" aria-hidden="true"></div>').appendTo($card);
+            $('<div class="timeline-card__watch-dot" aria-hidden="true"></div>').appendTo($frame);
         }
-        var $body = $('<div class="timeline-card__body"></div>');
+        var $body = $('<div class="timeline-card__body media-case__info"></div>');
         $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($body);
-        $('<div class="timeline-card__title"></div>').text(b.Title).appendTo($body);
-        $('<div class="timeline-card__meta"></div>').text(getEpisodeText(b)).appendTo($body);
+        $('<div class="timeline-card__title media-case__title"></div>').text(b.Title).appendTo($body);
+        $('<div class="timeline-card__meta media-case__meta"></div>').text(getCardEpisodeTitle(b) || getEpisodeText(b)).appendTo($body);
         var $bar = $('<div class="timeline-card__bar"></div>');
         $('<span></span>').css('width', (progress ? pct : 0) + '%').appendTo($bar);
         $bar.appendTo($body);
-        $body.appendTo($card);
+        $body.appendTo(mediaCase.surface);
         return $card;
     }
 
     /* ── 最近关注：收藏海报墙 ── */
     function makeFollowCard(b, index) {
-        var $card = bindBangumiCard($('<a class="follow-card"></a>'), b)
+        var $card = bindBangumiCard($('<a class="follow-card pc pc--follow"></a>'), b)
             .css('--card-index', String(index || 0));
-        if (b.Cover) {
-            $('<img class="follow-card__cover">').attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' }).appendTo($card);
-        } else {
-            $('<div class="follow-card__cover pc__placeholder"><i class="fas fa-play-circle"></i></div>').appendTo($card);
+        if (!useWeb3Desktop()) {
+            appendCover($card, b, 'follow-card__cover');
+            var $stableBody = $('<div class="follow-card__body"></div>');
+            $('<div class="follow-card__title"></div>').text(b.Title).appendTo($stableBody);
+            $('<div class="follow-card__meta"></div>').text(getEpisodeText(b)).appendTo($stableBody);
+            $stableBody.appendTo($card);
+            $('<i class="fas fa-chevron-right follow-card__arrow" aria-hidden="true"></i>').appendTo($card);
+            return $card;
         }
-        var $body = $('<div class="follow-card__body"></div>');
-        $('<div class="follow-card__title"></div>').text(b.Title).appendTo($body);
-        $('<div class="follow-card__meta"></div>').text(getEpisodeText(b)).appendTo($body);
-        $body.appendTo($card);
-        $('<i class="fas fa-chevron-right follow-card__arrow" aria-hidden="true"></i>').appendTo($card);
+        var mediaCase = createMediaCase($card, 'follow', 'follow-card__frame');
+        appendCover(mediaCase.frame, b, 'follow-card__cover media-case__cover');
+        var $body = $('<div class="follow-card__body media-case__info"></div>');
+        $('<div class="follow-card__title media-case__title"></div>').text(b.Title).appendTo($body);
+        $('<div class="follow-card__meta media-case__meta"></div>').text(getCardEpisodeTitle(b) || getEpisodeText(b)).appendTo($body);
+        $body.appendTo(mediaCase.surface);
+        $('<i class="fas fa-chevron-right follow-card__arrow" aria-hidden="true"></i>').appendTo(mediaCase.surface);
         return $card;
     }
 
@@ -2176,14 +2561,22 @@ $(function () {
     function getFollowRenderCount($grid, total, isMobile) {
         if (isMobile) return Math.min(total, 18);
         var columns = getRenderedGridColumnCount($grid) || estimateColumns($grid, 104, 12);
-        var rows = window.matchMedia('(max-height: 700px)').matches ? 2 : 3;
+        var rows = 2;
         return Math.min(total, columns * rows);
     }
 
     function renderItems($grid, items, count, cardFactory, signatureKey) {
         var visibleItems = items.slice(0, count);
         var signature = visibleItems.map(function (item) {
-            return [item.AnimeId, item.Cover || '', item.EpisodeWatched || 0, item.EpisodeTotal || 0].join(':');
+            return [
+                item.AnimeId,
+                item.Cover || '',
+                item.Title || '',
+                item.EpisodeWatched || 0,
+                item.EpisodeTotal || 0,
+                item.LastEpisodeTitle || item.EpisodeTitle || '',
+                item.Details || ''
+            ].join(':');
         }).join('|');
         if (signatureKey && renderedSectionSignatures[signatureKey] === signature) return;
         if (signatureKey) renderedSectionSignatures[signatureKey] = signature;
@@ -2202,13 +2595,12 @@ $(function () {
             if (diffDays < 7) return { key: 'day-' + diffDays, label: formatTimelineWeekday(date), type: 'recent', age: diffDays };
             return { key: 'archive', label: '更早', type: 'archive', age: 7 };
         }
-        var groupIndex = Math.floor(index / 8);
-        var fallbackLabel = ['最新一批', '近期更新', '稍早更新'][groupIndex] || '更新归档';
-        return { key: 'fallback-' + groupIndex, label: fallbackLabel, type: 'fallback', age: groupIndex };
+        return null;
     }
 
     function getScheduleGroupLabel(item, index) {
-        return getScheduleGroupMeta(item, index).label;
+        var meta = getScheduleGroupMeta(item, index);
+        return meta ? meta.label : '';
     }
 
     function formatTimelineWeekday(date) {
@@ -2220,10 +2612,10 @@ $(function () {
     function buildUpdateTimelineColumns(groups) {
         if (window.matchMedia('(max-width: 768px)').matches) return '';
         return groups.map(function (group, index) {
-            var visibleCount = Math.min(group.items.length, 8);
+            var visibleCount = Math.min(group.items.length, group.type === 'archive' ? 8 : 4);
             if (group.type === 'archive') {
                 var archiveWidth = visibleCount >= 7 ? 'clamp(286px, 15vw, 330px)' : 'clamp(190px, 12vw, 286px)';
-                var archiveFlex = Math.min(1.18, 0.88 + visibleCount * 0.035);
+                var archiveFlex = 1.36;
                 return 'minmax(' + archiveWidth + ', ' + archiveFlex.toFixed(2) + 'fr)';
             }
             if (group.type === 'fallback') {
@@ -2238,8 +2630,24 @@ $(function () {
             if (visibleCount >= 5) {
                 flex += 0.18;
             }
+            if (index === 0) {
+                flex = 1.46;
+            }
             return 'minmax(' + minWidth + 'px, ' + flex.toFixed(2) + 'fr)';
         }).join(' ');
+    }
+
+    function getUpdateTimelineSlot(group, groupIndex) {
+        if (group.type === 'archive') return 92;
+        var slots = [7, 19, 31, 43, 56, 69, 80];
+        var age = typeof group.age === 'number' ? group.age : groupIndex;
+        return slots[Math.max(0, Math.min(slots.length - 1, age))];
+    }
+
+    function getUpdateTimelineLane(group, groupIndex) {
+        if (group.type === 'archive') return 'split';
+        var age = typeof group.age === 'number' ? group.age : groupIndex;
+        return age % 2 === 0 ? 'upper' : 'lower';
     }
 
     var updateRevealObserver = null;
@@ -2271,7 +2679,7 @@ $(function () {
                 if (!entry.isIntersecting) return;
                 if (entry.intersectionRatio < 0.68) return;
                 window.clearTimeout(updateRevealTimer);
-                updateRevealTimer = window.setTimeout(reveal, 180);
+                updateRevealTimer = window.setTimeout(reveal, 80);
                 if (updateRevealObserver) {
                     updateRevealObserver.disconnect();
                     updateRevealObserver = null;
@@ -2282,19 +2690,34 @@ $(function () {
     }
 
     function renderUpdateSchedule($grid, items, count) {
-        var visibleItems = items.slice(0, count);
-        var signature = visibleItems.map(function (item) {
+        var isMobileLayout = !useWeb3Desktop();
+        var visibleItems = items.filter(function (item) {
+            return !!getUpdateDateCandidate(item);
+        }).slice(0, count);
+        var todayStamp = getTimelineDayStamp(new Date());
+        var signature = (isMobileLayout ? 'mobile|' : 'desktop|') + todayStamp + '|' + visibleItems.map(function (item) {
             var meta = getScheduleGroupMeta(item, 0);
-            return [item.AnimeId, item.Cover || '', meta.key, meta.label].join(':');
+            if (!meta) return '';
+            return [
+                item.AnimeId,
+                item.Cover || '',
+                item.Title || '',
+                item.LastEpisodeTitle || item.EpisodeTitle || '',
+                item.EpisodeWatched || 0,
+                item.EpisodeTotal || 0,
+                meta.key,
+                meta.label
+            ].join(':');
         }).join('|');
         if (renderedSectionSignatures.updates === signature) return;
         renderedSectionSignatures.updates = signature;
-        $grid.empty();
+        $grid.empty().removeAttr('data-page-count');
 
         var groups = [];
         var groupMap = {};
         visibleItems.forEach(function (item, index) {
             var meta = getScheduleGroupMeta(item, index);
+            if (!meta) return;
             if (!groupMap[meta.key]) {
                 groupMap[meta.key] = { key: meta.key, label: meta.label, type: meta.type, age: meta.age, items: [] };
                 groups.push(groupMap[meta.key]);
@@ -2302,26 +2725,32 @@ $(function () {
             groupMap[meta.key].items.push(item);
         });
 
-        var maxVisibleGroups = window.matchMedia('(max-width: 768px)').matches ? groups.length : 8;
-        var visibleGroups = groups.slice(0, maxVisibleGroups);
-        var timelineColumns = buildUpdateTimelineColumns(visibleGroups);
-        if (timelineColumns) $grid.css('grid-template-columns', timelineColumns);
-        else $grid.css('grid-template-columns', '');
-
-        visibleGroups.forEach(function (group, groupIndex) {
-            var visibleGroupItems = group.items.slice(0, 8);
-            var shouldBalanceGroup = visibleGroupItems.length >= 5 && !window.matchMedia('(max-width: 768px)').matches;
+        function createScheduleDay(group, groupIndex, limit, options) {
+            options = options || {};
+            var visibleGroupItems = group.items.slice(0, limit);
+            var shouldBalanceGroup = Boolean(options.balance && visibleGroupItems.length >= 5);
             var $day = $('<section class="schedule-day"></section>')
                 .attr('data-update-count', String(visibleGroupItems.length))
                 .attr('data-group-type', group.type)
+                .attr('data-age', String(group.age))
+                .attr('data-lane', getUpdateTimelineLane(group, groupIndex))
+                .attr('data-timeline-slot', String(getUpdateTimelineSlot(group, groupIndex)))
                 .css('--group-index', String(groupIndex))
+                .css('--timeline-slot', getUpdateTimelineSlot(group, groupIndex) + '%')
                 .toggleClass('schedule-day--balanced', shouldBalanceGroup);
+            if (options.className) $day.addClass(options.className);
+            if (options.label) $day.attr('aria-label', options.label);
             var $header = $('<header class="schedule-day__header"></header>');
             $('<h3 class="schedule-day__label"></h3>').text(group.label).appendTo($header);
             $('<span class="schedule-day__count"></span>').text(group.items.length + ' 部').appendTo($header);
             $header.appendTo($day);
 
-            if (shouldBalanceGroup) {
+            if (!visibleGroupItems.length) {
+                var $emptyItems = $('<div class="schedule-day__items schedule-day__items--empty"></div>').appendTo($day);
+                $('<p class="schedule-day__empty"></p>')
+                    .text(options.emptyText || '此日暂无更新')
+                    .appendTo($emptyItems);
+            } else if (shouldBalanceGroup) {
                 var splitIndex = Math.ceil(visibleGroupItems.length / 2);
                 var $topItems = $('<div class="schedule-day__items schedule-day__items--top"></div>').appendTo($day);
                 var $bottomItems = $('<div class="schedule-day__items schedule-day__items--bottom"></div>').appendTo($day);
@@ -2335,8 +2764,65 @@ $(function () {
                     $items.append(makeUpdateCard(item, itemIndex));
                 });
             }
-            $day.appendTo($grid);
+            return $day;
+        }
+
+        if (isMobileLayout) {
+            $grid.css('grid-template-columns', '');
+            groups.forEach(function (group, groupIndex) {
+                createScheduleDay(group, groupIndex, group.type === 'archive' ? 8 : 4, {
+                    label: group.label + '，' + group.items.length + ' 部作品'
+                }).appendTo($grid);
+            });
+            armUpdateReveal($grid);
+            return;
+        }
+
+        var compactWeek = window.innerWidth < 880;
+        var recentLimit = compactWeek ? 2 : 4;
+        var recentGroups = [];
+        for (var age = 0; age < 7; age++) {
+            var key = 'day-' + age;
+            var dayDate = new Date(todayStamp - age * 86400000);
+            recentGroups.push({
+                key: key,
+                label: age === 0 ? '今天' : (age === 1 ? '昨天' : formatTimelineWeekday(dayDate)),
+                type: 'recent',
+                age: age,
+                items: groupMap[key] ? groupMap[key].items : []
+            });
+        }
+
+        var archiveGroup = groupMap.archive || {
+            key: 'archive',
+            label: '更早',
+            type: 'archive',
+            age: 7,
+            items: []
+        };
+
+        $grid.attr('data-page-count', '2').css('grid-template-columns', '');
+        var $weekPage = $('<div class="update-timeline__page update-timeline__page--week"></div>')
+            .attr('data-timeline-page', 'week')
+            .attr('aria-label', '最近七天更新');
+        var $weekGrid = $('<div class="update-week-grid"></div>').appendTo($weekPage);
+        recentGroups.forEach(function (group, groupIndex) {
+            createScheduleDay(group, groupIndex, recentLimit, {
+                className: 'schedule-day--recent',
+                label: group.label + '，' + group.items.length + ' 部作品'
+            }).appendTo($weekGrid);
         });
+        $weekPage.appendTo($grid);
+
+        var $archivePage = $('<div class="update-timeline__page update-timeline__page--archive"></div>')
+            .attr('data-timeline-page', 'archive')
+            .attr('aria-label', '更早更新');
+        createScheduleDay(archiveGroup, 7, 8, {
+            className: 'schedule-day--archive',
+            label: '更早，' + archiveGroup.items.length + ' 部作品',
+            emptyText: '暂无更早更新'
+        }).appendTo($archivePage);
+        $archivePage.appendTo($grid);
         armUpdateReveal($grid);
     }
 
@@ -2347,7 +2833,10 @@ $(function () {
         $rail.attr('id', id);
 
         var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
-        var pageCount = maxScroll > 24 ? Math.min(12, Math.ceil(rail.scrollWidth / Math.max(1, rail.clientWidth))) : 1;
+        var explicitPageCount = Number($rail.attr('data-page-count') || 0);
+        var pageCount = explicitPageCount > 0
+            ? explicitPageCount
+            : (maxScroll > 24 ? Math.min(12, Math.ceil(rail.scrollWidth / Math.max(1, rail.clientWidth))) : 1);
         var $dots = $rail.next('.rail-dots');
         if (!$dots.length) {
             $dots = $('<div class="rail-dots" aria-hidden="true"></div>').insertAfter($rail);
@@ -2409,13 +2898,20 @@ $(function () {
         renderItems($grid, sectionData.latestFollows, getFollowRenderCount($grid, sectionData.latestFollows.length, isMobile), makeFollowCard, 'follows');
     }
 
-    function renderDynamicSections() {
+    function renderDynamicSections(options) {
+        options = options || {};
         var isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (lastSectionMobile !== null && lastSectionMobile !== isMobile) {
+            delete renderedSectionSignatures.continue;
+            delete renderedSectionSignatures.updates;
+            delete renderedSectionSignatures.follows;
+        }
+        lastSectionMobile = isMobile;
 
         if (sectionData.continueWatching.length) {
             $('#cwSection').css('display', 'flex');
             $('#cwCount').text(sectionData.continueWatching.length);
-            renderItems($('#cwGrid'), sectionData.continueWatching, isMobile ? 12 : 30, makeContinueCard, 'continue');
+            renderItems($('#cwGrid'), sectionData.continueWatching, 12, makeContinueCard, 'continue');
         }
 
         if (sectionData.latestUpdates.length) {
@@ -2426,14 +2922,16 @@ $(function () {
 
         renderLatestFollows(isMobile);
 
-        window.requestAnimationFrame(setupRailIndicators);
+        window.requestAnimationFrame(function () {
+            setupRailIndicators();
+            if (!options.skipHeroSync) syncCurrentHero3();
+        });
     }
 
     $(window).on('resize', function () {
         window.clearTimeout(resizeTimer);
         resizeTimer = window.setTimeout(function () {
-            renderLatestFollows(window.matchMedia('(max-width: 768px)').matches);
-            setupRailIndicators();
+            renderDynamicSections({ skipHeroSync: true });
         }, 140);
     });
 
@@ -2631,6 +3129,9 @@ $(function () {
             .attr('data-source', description && description.source ? description.source : '')
             .prop('hidden', !text);
         $('.idx-hero__content').toggleClass('has-description', !!text);
+        if (window.DandanHero3 && currentHeroAnimeId && text) {
+            DandanHero3.updateSynopsis(currentHeroAnimeId, text);
+        }
     }
 
     function resolveAniListArtwork(subject, bangumi) {
@@ -2790,6 +3291,46 @@ $(function () {
         }
     }
 
+    function getHeroCoverUpgradeCandidates(coverUrl) {
+        if (!coverUrl || typeof coverUrl !== 'string') return [];
+        var seen = {};
+        var result = [];
+
+        function add(url, source, sourceLabel) {
+            if (!url || seen[url]) return;
+            seen[url] = true;
+            result.push({
+                url: url,
+                source: source,
+                sourceLabel: sourceLabel,
+                role: 'poster'
+            });
+        }
+
+        var upgrades = [
+            coverUrl.replace(/%2Fposter%2Fmedium%2F/ig, '%2Fposter%2Flarge%2F'),
+            coverUrl.replace(/\/poster\/medium\//ig, '/poster/large/'),
+            coverUrl.replace(/%2Fpic%2Fcover%2Fm%2F/ig, '%2Fpic%2Fcover%2Fl%2F'),
+            coverUrl.replace(/\/pic\/cover\/m\//ig, '/pic/cover/l/')
+        ];
+        upgrades.forEach(function (url) {
+            if (url !== coverUrl) add(url, 'dandanplay-cover', '本地高清');
+        });
+        add(coverUrl, 'dandanplay', '本地');
+        return result;
+    }
+
+    function resolveInitialHeroCover(coverUrl) {
+        var candidates = getHeroCoverUpgradeCandidates(coverUrl);
+        function inspectAt(index) {
+            if (index >= candidates.length) return Promise.reject(new Error('No usable local cover'));
+            return inspectHeroCandidate(candidates[index]).catch(function () {
+                return inspectAt(index + 1);
+            });
+        }
+        return inspectAt(0);
+    }
+
     function resolveHeroArtwork(bangumi) {
         var cached = readHeroArtworkCache(bangumi);
         if (cached && cached.status !== 'miss' && Array.isArray(cached.candidates)) {
@@ -2797,8 +3338,7 @@ $(function () {
         }
         return resolveBangumiSubject(bangumi.Title)
             .then(function (subject) {
-                var candidates = [];
-                if (bangumi.Cover) candidates.push({ url: bangumi.Cover, source: 'dandanplay', sourceLabel: '本地', role: 'poster' });
+                var candidates = getHeroCoverUpgradeCandidates(bangumi.Cover);
                 if (subject.images && subject.images.large) {
                     candidates.push({ url: subject.images.large, source: 'bangumi', sourceLabel: 'Bangumi', role: 'poster' });
                 }
@@ -2829,7 +3369,7 @@ $(function () {
                 });
             })
             .catch(function () {
-                var fallback = bangumi.Cover ? [{ url: bangumi.Cover, source: 'dandanplay', sourceLabel: '本地', role: 'poster' }] : [];
+                var fallback = getHeroCoverUpgradeCandidates(bangumi.Cover);
                 writeHeroArtworkCache(bangumi, { status: fallback.length ? 'cover-only' : 'miss', candidates: fallback });
                 return rankHeroCandidates(fallback);
             });
@@ -2839,15 +3379,27 @@ $(function () {
         if (!candidate || !candidate.url) return Promise.reject(new Error('Missing artwork URL'));
         return new Promise(function (resolve, reject) {
             var image = new Image();
+            var settled = false;
             image.decoding = 'async';
-            image.onload = function () {
+            function finish() {
+                if (settled) return;
+                settled = true;
                 resolve($.extend({}, candidate, {
                     width: image.naturalWidth || candidate.width || 0,
                     height: image.naturalHeight || candidate.height || 0
                 }));
+            }
+            image.onload = function () {
+                if (image.decode) image.decode().catch(function () {}).then(finish);
+                else finish();
             };
-            image.onerror = reject;
+            image.onerror = function (error) {
+                if (settled) return;
+                settled = true;
+                reject(error);
+            };
             image.src = candidate.url;
+            if (image.complete && image.naturalWidth) image.onload();
         });
     }
 
@@ -2863,12 +3415,19 @@ $(function () {
         var pixelScore = Math.log2(Math.max(width * height, 90000) / 90000) * 18;
         var upscalePenalty = Math.max(0, targetWidth - width) / Math.max(targetWidth, 1) * 45 +
             Math.max(0, targetHeight - height) / Math.max(targetHeight, 1) * 32;
-        var sourceBonus = { anilist: 9, kitsu: 8, jikan: 5, bangumi: 3, dandanplay: 0 }[candidate.source] || 0;
+        var sourceBonus = { anilist: 9, kitsu: 8, jikan: 5, 'dandanplay-cover': 4, bangumi: 3, dandanplay: 0 }[candidate.source] || 0;
         return pixelScore + sourceBonus - ratioPenalty - upscalePenalty;
     }
 
     function rankHeroCandidates(candidates) {
-        var tasks = (candidates || []).map(function (candidate) {
+        var seen = {};
+        var uniqueCandidates = (candidates || []).filter(function (candidate) {
+            var key = candidate && candidate.url ? String(candidate.url).trim() : '';
+            if (!key || seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
+        var tasks = uniqueCandidates.map(function (candidate) {
             if (candidate.width && candidate.height) return Promise.resolve(candidate);
             return inspectHeroCandidate(candidate);
         });
@@ -2899,24 +3458,40 @@ $(function () {
             .attr('data-art-kind', candidate.kind || 'poster');
         $('#heroArtSource').text(candidate.sourceLabel || candidate.source || '本地');
         updateHeroModeButton();
+        if (window.DandanHero3 && currentHeroAnimeId) {
+            DandanHero3.updateArtwork(currentHeroAnimeId, candidate.url, candidate.kind === 'wide' ? 'wide' : 'poster-backdrop');
+        }
     }
 
     function setHeroCandidates(candidates) {
-        heroArtworkCandidates = candidates || [];
+        var seen = {};
+        heroArtworkCandidates = (candidates || []).filter(function (candidate) {
+            var key = candidate && candidate.url ? String(candidate.url).trim() : '';
+            if (!key || seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
+        heroArtworkSwitchRequest += 1;
+        heroArtworkSwitching = false;
         heroArtworkIndex = 0;
+        syncHero3ArtworkCandidates(currentHeroAnimeId, heroArtworkCandidates);
         if (heroArtworkCandidates.length) applyHeroCandidate(heroArtworkCandidates[0]);
         else updateHeroModeButton();
     }
 
     /* ── 渲染 Hero ── */
-    function renderHero(b) {
+    function renderHero(b, renderOptions) {
+        renderOptions = renderOptions || {};
         var artworkRequestId = ++heroArtworkRequestId;
         applyHeroDescription(null, artworkRequestId);
         $('#heroCover').empty();
+        heroArtworkSwitchRequest += 1;
+        heroArtworkSwitching = false;
         heroArtworkCandidates = [];
         heroArtworkIndex = 0;
-        if (b.Cover) {
-            inspectHeroCandidate({ url: b.Cover, source: 'dandanplay', sourceLabel: '本地', role: 'poster' })
+        updateHeroModeButton();
+        if (b.Cover && !renderOptions.fromHero3) {
+            resolveInitialHeroCover(b.Cover)
                 .then(function (candidate) {
                     if (artworkRequestId !== heroArtworkRequestId || heroArtworkCandidates.length) return;
                     candidate.kind = candidate.width / Math.max(candidate.height, 1) >= 1.2 ? 'wide' : 'poster';
@@ -2946,7 +3521,14 @@ $(function () {
         resolveHeroDescription(b).then(function (description) {
             applyHeroDescription(description, artworkRequestId);
         });
-        $('#heroPlayBtn').off('click').on('click', function (event) {
+        $('#heroPlayBtn').off('click');
+        if (!window.DandanHero3) {
+            $('#heroPlayBtn').on('click', function (event) {
+                event.preventDefault();
+                playBangumiLatest(String(b.AnimeId), b.Title);
+            });
+        }
+        $('#heroMobilePlayBtn').off('click.stableMobilePlay').on('click.stableMobilePlay', function (event) {
             event.preventDefault();
             playBangumiLatest(String(b.AnimeId), b.Title);
         });
@@ -2960,6 +3542,131 @@ $(function () {
             if (!candidates || !candidates.length || artworkRequestId !== heroArtworkRequestId) return;
             setHeroCandidates(candidates);
         });
+        if (!renderOptions.fromHero3) syncHero3(b, false);
+    }
+
+    function syncHero3ArtworkCandidates(animeId, candidates) {
+        if (!window.DandanHero3 || !animeId || !Array.isArray(candidates)) return;
+        var poster = candidates.find(function (candidate) { return candidate.kind !== 'wide'; });
+        var wide = candidates.find(function (candidate) { return candidate.kind === 'wide'; });
+        if (poster) DandanHero3.updateArtwork(String(animeId), poster.url, 'poster');
+        if (wide) DandanHero3.updateArtwork(String(animeId), wide.url, 'wide');
+        else if (poster) DandanHero3.updateArtwork(String(animeId), poster.url, 'poster-backdrop');
+    }
+
+    function enrichHero3Item(item) {
+        var enriched = $.extend({}, item);
+        var cachedArtwork = readHeroArtworkCache(item);
+        var candidates = cachedArtwork && Array.isArray(cachedArtwork.candidates) ? cachedArtwork.candidates : [];
+        var poster = candidates.find(function (candidate) { return candidate.kind !== 'wide'; });
+        var wide = candidates.find(function (candidate) { return candidate.kind === 'wide'; });
+        var cachedDescription = readHeroDescriptionCache(item);
+        if (poster && poster.url) enriched.PosterLarge = poster.url;
+        if (wide && wide.url) enriched.HeroArtwork = wide.url;
+        if (cachedDescription && cachedDescription.text) enriched.HeroSynopsis = cachedDescription.text;
+        return enriched;
+    }
+
+    function getHero3SourceItems(activeItem) {
+        var result = [];
+        var seen = {};
+        function append(items) {
+            (items || []).forEach(function (item) {
+                if (!item || typeof item !== 'object') return;
+                var key = String(item.AnimeId || item.Title || '');
+                if (!key || seen[key]) return;
+                seen[key] = true;
+                result.push(item);
+            });
+        }
+        append(recentPlayItems);
+        append(sectionData.continueWatching);
+        append(sectionData.latestUpdates);
+        append(sectionData.latestFollows);
+        if (activeItem) {
+            var activeKey = String(activeItem.AnimeId || activeItem.Title || '');
+            if (activeKey && !seen[activeKey]) result.unshift(activeItem);
+        }
+        return result;
+    }
+
+    function primeHero3Artwork(items, activeAnimeId) {
+        var targets = (items || []).slice(0, 7);
+        var active = (items || []).find(function (item) {
+            return String(item.AnimeId || '') === String(activeAnimeId || '');
+        });
+        if (active && !targets.some(function (item) { return String(item.AnimeId || '') === String(activeAnimeId || ''); })) {
+            targets.push(active);
+        }
+        var tasks = targets.map(function (item) {
+            var id = String(item.AnimeId || '');
+            if (!id || !item.Cover) return Promise.resolve(null);
+            if (!hero3PrimePromises[id]) {
+                hero3PrimePromises[id] = resolveHeroArtwork(item).then(function (candidates) {
+                    candidates = candidates || [];
+                    return {
+                        poster: candidates.find(function (candidate) { return candidate.kind !== 'wide'; }) || null,
+                        wide: candidates.find(function (candidate) { return candidate.kind === 'wide'; }) || null
+                    };
+                }).catch(function () {
+                    return resolveInitialHeroCover(item.Cover).then(function (candidate) {
+                        return { poster: candidate, wide: null };
+                    }).catch(function () { return null; });
+                });
+            }
+            return hero3PrimePromises[id].then(function (artwork) {
+                return artwork ? { id: id, artwork: artwork } : null;
+            });
+        });
+        return Promise.all(tasks).then(function (results) {
+            var prepared = {};
+            results.forEach(function (result) {
+                if (result) prepared[result.id] = result.artwork;
+            });
+            return (items || []).map(function (item) {
+                var artwork = prepared[String(item.AnimeId || '')];
+                if (!artwork) return item;
+                var enriched = $.extend({}, item);
+                if (artwork.poster && artwork.poster.url) enriched.PosterLarge = artwork.poster.url;
+                if (artwork.wide && artwork.wide.url) enriched.HeroArtwork = artwork.wide.url;
+                return enriched;
+            });
+        });
+    }
+
+    function syncHero3(activeItem, preservePosition) {
+        if (!window.DandanHero3 || !activeItem) return;
+        var sourceItems = getHero3SourceItems(activeItem);
+        var activeAnimeId = String(activeItem.AnimeId || '');
+        var syncRequestId = ++hero3SyncRequestId;
+        primeHero3Artwork(sourceItems, activeAnimeId).then(function (preparedItems) {
+            if (syncRequestId !== hero3SyncRequestId || !window.DandanHero3) return;
+            var enrichedItems = preparedItems.map(enrichHero3Item);
+            DandanHero3.hydrate(enrichedItems, {
+                activeAnimeId: activeAnimeId,
+                preservePosition: Boolean(preservePosition),
+                getProgress: getWatchProgress,
+                onSelect: function (rawItem) {
+                    var nextId = String(rawItem.AnimeId || '');
+                    if (!nextId || nextId === currentHeroAnimeId) return;
+                    hero3UserSelected = true;
+                    currentHeroAnimeId = nextId;
+                    renderHero(rawItem, { fromHero3: true });
+                },
+                onPlay: function (rawItem) {
+                    return prepareBangumiLatest(String(rawItem.AnimeId), rawItem.Title);
+                }
+            });
+        });
+    }
+
+    function syncCurrentHero3() {
+        if (!window.DandanHero3 || !currentHeroAnimeId) return;
+        var sourceItems = getHero3SourceItems(null);
+        var activeItem = sourceItems.find(function (item) {
+            return String(item.AnimeId) === currentHeroAnimeId;
+        });
+        if (activeItem) syncHero3(activeItem, true);
     }
 
     function fetchLibraryFallback() {
@@ -3041,9 +3748,17 @@ $(function () {
         sectionData.continueWatching = inProgress;
 
         var heroItem = inProgress[0] || recentPlayItems[0] || null;
-        if (heroItem && String(heroItem.AnimeId) !== currentHeroAnimeId) {
+        var selectedItem = hero3UserSelected ? recentPlayItems.find(function (item) {
+            return String(item.AnimeId) === currentHeroAnimeId;
+        }) : null;
+        if (hero3UserSelected && selectedItem) {
+            syncHero3(selectedItem, true);
+        } else if (heroItem && String(heroItem.AnimeId) !== currentHeroAnimeId) {
+            hero3UserSelected = false;
             currentHeroAnimeId = String(heroItem.AnimeId);
             renderHero(heroItem);
+        } else if (heroItem) {
+            syncHero3(heroItem, true);
         }
         renderDynamicSections();
     }
@@ -3063,6 +3778,12 @@ $(function () {
             $card.find('.pc__ep').text('第' + progress.watched + '话 · ' + progress.percent + '%');
             $card.find('.pc__bar').attr('aria-valuenow', String(progress.percent));
             $card.find('.pc__bar-fill').css('width', progress.percent + '%');
+            $card.find('.media-case__kicker').text('RESUME / ' + String(progress.watched).padStart(2, '0'));
+            $card.find('.pc__episode-title').text(getCardEpisodeTitle(bangumi) || ('下一站 · 第' + progress.watched + '话'));
+        }
+        var modal = document.getElementById('bangumiModal');
+        if (modal && modal.getAttribute('data-anime-id') === String(animeId)) {
+            hydrateModalVisual(animeId, bangumi.Title);
         }
     }
 
@@ -3098,20 +3819,106 @@ $(function () {
         return null;
     }
 
-    function playBangumiLatest(animeId, title) {
-        loadBangumiState(animeId, function (modalState) {
-            if (!modalState) return;
-            var file = findPlayableFile(modalState);
-            if (file) {
-                window.location.href = 'video.html?id=' + encodeURIComponent(file.Id);
+    function prepareBangumiLatest(animeId, title) {
+        return new Promise(function (resolve) {
+            if (!bangumiDetailsApiTemplate) {
+                resolve({
+                    transition: false,
+                    commit: function () {
+                        if (window.DandanHero3) DandanHero3.reset(false);
+                        DandanApp.toast('播放信息尚未准备好，请稍后重试。', 'warning');
+                    }
+                });
                 return;
             }
-            showModal(animeId, title);
+            loadBangumiState(animeId, function (modalState) {
+                if (!modalState) {
+                    resolve({
+                        transition: false,
+                        commit: function () {
+                            if (window.DandanHero3) DandanHero3.reset(false);
+                        }
+                    });
+                    return;
+                }
+                var file = findPlayableFile(modalState);
+                if (file) {
+                    var videoHref = 'video.html?id=' + encodeURIComponent(file.Id);
+                    resolve({
+                        transition: true,
+                        destination: {
+                            href: videoHref,
+                            pathname: 'video.html',
+                            fileId: String(file.Id),
+                            animeId: String(animeId || ''),
+                            title: String(title || '')
+                        },
+                        commit: function () {
+                            try { sessionStorage.setItem('dandanplay.hero-arrival', String(Date.now())); }
+                            catch (error) {}
+                            window.location.href = videoHref;
+                        }
+                    });
+                    return;
+                }
+                resolve({
+                    transition: false,
+                    commit: function () {
+                        if (window.DandanHero3) DandanHero3.reset(false);
+                        showModal(animeId, title);
+                    }
+                });
+            });
         });
     }
 
+    function playBangumiLatest(animeId, title) {
+        return prepareBangumiLatest(animeId, title).then(function (intent) {
+            intent.commit();
+            return intent;
+        });
+    }
+
+    function findBangumiForModal(animeId) {
+        var key = String(animeId);
+        if (bangumiMapById[key]) return bangumiMapById[key];
+        var pools = [sectionData.continueWatching, sectionData.latestUpdates, sectionData.latestFollows];
+        for (var poolIndex = 0; poolIndex < pools.length; poolIndex++) {
+            var match = (pools[poolIndex] || []).find(function (item) {
+                return String(item.AnimeId) === key;
+            });
+            if (match) return match;
+        }
+        return null;
+    }
+
+    function hydrateModalVisual(animeId, title) {
+        var bangumi = findBangumiForModal(animeId);
+        var cover = document.getElementById('modalCover');
+        var progress = document.getElementById('modalProgress');
+        var register = document.getElementById('modalRegisterId');
+        register.textContent = 'MEDIA / ' + String(animeId).padStart(5, '0');
+        cover.alt = title ? title + ' 封面' : '番剧封面';
+        if (bangumi && bangumi.Cover) {
+            cover.src = bangumi.Cover;
+            cover.hidden = false;
+        } else {
+            cover.removeAttribute('src');
+            cover.hidden = true;
+        }
+        var watchProgress = bangumi ? getWatchProgress(bangumi) : null;
+        progress.textContent = watchProgress
+            ? '已看 ' + watchProgress.watched + ' / ' + watchProgress.total + ' · ' + watchProgress.percent + '%'
+            : (bangumi ? getEpisodeText(bangumi) : '读取剧集档案');
+    }
+
     window.showModal = function (animeId, title) {
-        document.getElementById('bangumiModal').setAttribute('data-anime-id', String(animeId));
+        var modal = document.getElementById('bangumiModal');
+        var requestId = ++modalRequestId;
+        window.clearTimeout(modalCloseTimer);
+        modalReturnFocus = document.activeElement;
+        modal.setAttribute('data-anime-id', String(animeId));
+        modal.setAttribute('aria-hidden', 'false');
         document.getElementById('modalTitle').innerText = title;
         document.getElementById('lastWatchedInfo').innerText = '';
         document.getElementById('loading').style.display = 'block';
@@ -3119,10 +3926,19 @@ $(function () {
         document.getElementById('seasonTabs').innerHTML = '';
         document.getElementById('episodeList').style.display = 'none';
         document.getElementById('episodeList').innerHTML = '';
-        document.getElementById('bangumiModal').style.display = 'block';
+        hydrateModalVisual(animeId, title);
+        modal.classList.remove('is-closing');
+        modal.style.display = 'block';
+        document.body.classList.add('is-modal-open');
+        window.requestAnimationFrame(function () {
+            if (requestId !== modalRequestId || modal.getAttribute('aria-hidden') !== 'false') return;
+            modal.classList.add('is-open');
+            var closeButton = modal.querySelector('.close');
+            if (closeButton) closeButton.focus({ preventScroll: true });
+        });
 
         loadBangumiState(animeId, function (modalState) {
-            if (document.getElementById('bangumiModal').getAttribute('data-anime-id') !== String(animeId)) return;
+            if (requestId !== modalRequestId || document.getElementById('bangumiModal').getAttribute('data-anime-id') !== String(animeId)) return;
             if (!modalState) {
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('episodeList').style.display = 'block';
@@ -3137,16 +3953,59 @@ $(function () {
     };
 
     window.closeModal = function () {
-        document.getElementById('bangumiModal').style.display = 'none';
-        document.getElementById('bangumiModal').removeAttribute('data-anime-id');
+        var modal = document.getElementById('bangumiModal');
+        if (modal.style.display === 'none' || modal.getAttribute('aria-hidden') === 'true') return;
+        modalRequestId += 1;
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeAttribute('data-anime-id');
+        modal.classList.remove('is-open');
+        modal.classList.add('is-closing');
+        document.body.classList.remove('is-modal-open');
+        if (modalReturnFocus && typeof modalReturnFocus.focus === 'function') {
+            modalReturnFocus.focus({ preventScroll: true });
+        }
+        var delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 480;
+        window.clearTimeout(modalCloseTimer);
+        modalCloseTimer = window.setTimeout(function () {
+            if (modal.getAttribute('aria-hidden') !== 'true') return;
+            modal.style.display = 'none';
+            modal.classList.remove('is-closing');
+        }, delay);
     };
 
     window.onclick = function (event) {
         var modal = document.getElementById('bangumiModal');
         if (event.target === modal) {
-            modal.style.display = 'none';
+            closeModal();
         }
     };
+
+    $(document).on('keydown.bangumiModal', function (event) {
+        var modal = document.getElementById('bangumiModal');
+        if (modal.getAttribute('aria-hidden') !== 'false') return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeModal();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        var focusable = Array.from(modal.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+            .filter(function (element) { return element.offsetParent !== null; });
+        if (!focusable.length) {
+            event.preventDefault();
+            modal.querySelector('.modal-content').focus();
+            return;
+        }
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
 
     /* ── 主流程：先拿到真实 API 路径再加载数据 ── */
     var homeBootstrapRequest = null;
@@ -3166,6 +4025,15 @@ $(function () {
         $('#homeStatusTitle').text(title);
         $('#homeStatusDescription').text(description);
         $('#homeRetryBtn').toggle(type === 'error');
+        setHero3Status(type, title, description);
+    }
+
+    function setHero3Status(type, title, description) {
+        var $hero = $('#heroBanner');
+        if ($hero.attr('data-hero-state') === 'ready') return;
+        $hero.attr('data-hero-state', type || 'loading');
+        $('#hero3StatusTitle').text(title || '正在读取最近播放');
+        $('#hero3StatusDescription').text(description || '连接本地媒体库并整理封面。');
     }
 
     function abortHomeRequests() {
@@ -3220,6 +4088,9 @@ $(function () {
                     window.requestAnimationFrame(function () { restoreInitialHeroPosition(true); });
                     if (loadedSections > 0) {
                         $('#homeStatus').slideUp(180);
+                        if (!window.DandanHero3 || !DandanHero3.debugState().itemCount) {
+                            setHero3Status('empty', '最近播放暂时为空', '可以从下方分区进入媒体库。');
+                        }
                         if (failedSections > 0) DandanApp.toast('部分首页内容暂时未能同步。', 'warning');
                     } else if (failedSections > 0) {
                         setHomeStatus('error', '首页内容加载失败', '服务器暂时没有返回媒体库内容，请稍后重试。');

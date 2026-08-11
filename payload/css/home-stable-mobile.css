@@ -1,0 +1,198 @@
+/* Web1 stable presentation adapter.
+ * Mobile always uses this view; desktop uses it only when the persisted UI
+ * preference is stable. Hero3 remains the hidden data source in either case.
+ */
+
+.idx-home .hero-stable-mobile {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero3__backdrop,
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero3__source,
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero3__frame,
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero3__register,
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero3__stage {
+    display: none !important;
+  }
+
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero-stable-mobile {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: block !important;
+    overflow: hidden;
+    color: var(--home-text);
+    font-family: "Segoe UI Variable Display", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  }
+
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero-stable-mobile[hidden],
+  html[data-ui-version="stable"] body.idx-home #heroBanner .hero-stable-mobile[aria-hidden="true"] {
+    display: none !important;
+  }
+
+  html[data-ui-version="stable"] body.idx-home .modal-visual,
+  html[data-ui-version="stable"] body.idx-home .ddp-route-morph {
+    display: none !important;
+  }
+
+  html[data-ui-version="stable"] body.idx-home .idx-body {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  html[data-ui-version="stable"] body.idx-home .idx-body > * { order: 50; }
+  html[data-ui-version="stable"] body.idx-home .idx-body > .home-status { order: 0; }
+  html[data-ui-version="stable"] body.idx-home .idx-body > #cwSection { order: 10; }
+  html[data-ui-version="stable"] body.idx-home .idx-body > #luSection { order: 20; }
+  html[data-ui-version="stable"] body.idx-home .idx-body > #lfSection { order: 30; }
+  html[data-ui-version="stable"] body.idx-home .idx-body > #mediaSection { order: 40; }
+}
+
+@media (max-width: 768px) {
+  html {
+    scroll-snap-type: y mandatory !important;
+  }
+
+  body.idx-home #heroBanner.hero3 {
+    width: 100%;
+    height: 100vh !important;
+    height: 100svh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100svh !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow: hidden;
+    color: var(--home-text);
+    background: #090a0d;
+    font-family: "Segoe UI Variable Display", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* Hero3 paints its texture on the shared section. The stable view owns the
+     complete mobile paint stack, so those shared pseudo-elements must not sit
+     above its title and controls. */
+  body.idx-home #heroBanner.hero3::before,
+  body.idx-home #heroBanner.hero3::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  /* Keep the desktop stage laid out so its existing controller and forwarded
+     controls remain functional, but remove it from paint, hit testing and the
+     accessibility presentation. */
+  body.idx-home #heroBanner .hero3__backdrop,
+  body.idx-home #heroBanner .hero3__source,
+  body.idx-home #heroBanner .hero3__frame,
+  body.idx-home #heroBanner .hero3__register,
+  body.idx-home #heroBanner .hero3__status,
+  body.idx-home #heroBanner .hero3__carousel-shell,
+  body.idx-home #heroBanner .hero3__art-switch,
+  body.idx-home #heroBanner .hero3__info {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  body.idx-home #heroBanner .hero3__source {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+  }
+
+  body.idx-home #heroBanner .hero-stable-mobile {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: block !important;
+    overflow: hidden;
+    color: var(--home-text);
+    font-family: "Segoe UI Variable Display", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  }
+
+  body.idx-home #heroBanner .hero-stable-mobile[hidden],
+  body.idx-home #heroBanner .hero-stable-mobile[aria-hidden="true"] {
+    display: none !important;
+  }
+
+  body.idx-home #heroBanner .hero-stable-mobile::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+    height: 30%;
+    pointer-events: none;
+    background: linear-gradient(transparent, var(--home-bg));
+  }
+
+  body.idx-home #heroBanner .hero-stable-mobile .idx-hero__inner {
+    width: 100%;
+    height: 100%;
+    padding: var(--home-nav-height) 0 0;
+  }
+
+  body.idx-home #heroBanner .hero-stable-mobile .idx-hero__badge {
+    display: none !important;
+  }
+
+  body.idx-home #heroBanner .hero-stable-mobile .idx-hero__badge.is-populated {
+    display: inline-flex !important;
+  }
+
+  body.idx-home #heroBanner .hero-stable-mobile .btn-hero-play[aria-disabled="true"],
+  body.idx-home #heroBanner .hero-stable-mobile .btn-hero-mode[aria-disabled="true"] {
+    cursor: default;
+    pointer-events: none;
+    opacity: 0.56;
+    transform: none;
+  }
+
+  /* The 3.0 drawer artwork and route-morph stylesheet are desktop-only. Keep
+     their still-mounted DOM from leaking into the stable mobile presentation. */
+  body.idx-home .modal-visual,
+  body.idx-home .ddp-route-morph {
+    display: none !important;
+  }
+
+  body.idx-home #bangumiModal[aria-hidden="true"] {
+    display: none !important;
+  }
+
+  /* Desktop puts updates before continue-watching. Mobile deliberately keeps
+     the last stable reading order without moving or cloning section nodes. */
+  body.idx-home .idx-body {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  body.idx-home .idx-body > * {
+    order: 50;
+  }
+
+  body.idx-home .idx-body > .home-status {
+    order: 0;
+  }
+
+  body.idx-home .idx-body > #cwSection {
+    order: 10;
+  }
+
+  body.idx-home .idx-body > #luSection {
+    order: 20;
+  }
+
+  body.idx-home .idx-body > #lfSection {
+    order: 30;
+  }
+
+  body.idx-home .idx-body > #mediaSection {
+    order: 40;
+  }
+}

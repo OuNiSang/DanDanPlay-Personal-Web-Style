@@ -1,43 +1,68 @@
 # DanDanPlay Personal Web Style
 
-弹弹play Web1 的非官方影视化界面改版。保留原有媒体库、播放记录和 API 行为，重新组织首页 Hero、分区导航、更新时间轴、媒体库列表，并适配桌面端、手机竖屏以及明暗主题。
+弹弹play Web1 的非官方视觉与交互改版。3.0 将桌面端重构为一套围绕个人动画媒体库的“放映控制台”：保留现有 NancyFx 模板、媒体库 API、播放记录和文件路由，同时统一首页、番剧库、文件列表与播放页的构图、深度和动效。
 
-![桌面端 Hero](screenshots/hero-desktop-2.4.png)
+> Web1 3.0 默认用于宽度大于 768px 的电脑端。手机与窄屏会自动使用 2.4 稳定布局；电脑端右上角可在 3.0 与稳定版间切换，选择会保存在浏览器中。
+
+![Web1 3.0 首页 Hero](screenshots/hero-desktop-3.0.webp)
 
 ## 界面预览
 
-### 最近更新时间轴
+### 蓝光盒 Hero 与播放转场
 
-![最近更新时间轴](screenshots/recent-updates-desktop-2.4.png)
+当前作品以可交互蓝光盒呈现。打开后可阅读当前集、上次观看和上映信息；确认继续播放后，碟片装载到播放器，并通过项目定制的媒体闸门转场进入播放页。
 
-### 最近关注
+![展开的蓝光盒](screenshots/hero-case-open-desktop-3.0.webp)
 
-![最近关注](screenshots/recent-follows-desktop-2.4.png)
+### 七天更新与更早归档
 
-### 媒体库罗列
+首屏固定展示完整七天记录，时间线、节点与卡片依次进场；“更早”内容位于第二个横向页面，不会挤占七天信息。
 
-![桌面端媒体库](screenshots/library-desktop.jpg)
+![最近更新](screenshots/recent-updates-desktop-3.0.webp)
 
-| 手机端首页 | 手机端媒体库 |
+### 继续观看与全部分区
+
+继续观看使用 6×2 媒体封套，并保留指针驱动的立体响应与详情抽屉。全部分区按“播放动态 / 番剧目录 / 文件入口”重新编排，路由与功能保持不变。
+
+![继续观看](screenshots/continue-watching-desktop-3.0.webp)
+
+![全部分区](screenshots/all-sections-desktop-3.0.webp)
+
+### 番剧库、文件列表与播放控制台
+
+番剧库使用 6×2 分页式封套排布，并在桌面端以侧边 dossier 展示季度和单集；长列表启用离屏渲染与动效生命周期清理。文件列表与播放页也使用同一套黑色、纸白和酸性绿的印刷机械语言。
+
+![番剧库](screenshots/library-desktop-3.0.webp)
+
+![番剧详情](screenshots/library-drawer-desktop-3.0.webp)
+
+![文件列表](screenshots/filelist-desktop-3.0.webp)
+
+![播放控制台](screenshots/player-desktop-3.0.webp)
+
+### 手机端稳定布局
+
+| 首页 | 番剧库 |
 | --- | --- |
-| ![手机端首页](screenshots/home-mobile.jpg) | ![手机端媒体库](screenshots/library-mobile.jpg) |
+| ![手机端稳定首页](screenshots/home-stable-mobile-3.0.webp) | ![手机端稳定番剧库](screenshots/library-stable-mobile-3.0.webp) |
 
-## 主要特性
+## 3.0 主要特性
 
-- 全屏影视化 Hero，支持真实媒体库内容与多来源图片切换。
-- 桌面端分区阶梯滚动，手机端保留原布局与自然滑动。
-- 横向分组更新时间轴，以及更高信息密度的观看和关注列表。
-- 优化最近更新时间轴的日期分组、坐标对齐、密集海报分布和观看状态标记。
-- 最近关注会按实际桌面列数动态渲染，避免最后一行空缺。
-- 首页与子页面使用统一导航，并保持各页面原有路由和数据逻辑。
-- 完整适配深色、浅色主题与 `prefers-reduced-motion`。
-- 默认中文的一键管理器，可在菜单内切换英文。
-- 安装前自动读取本机弹弹play版本，并在版本不兼容时警告。
-- 一键安装、升级后重新应用，以及一键恢复安装前文件。
+- 桌面端默认启用 Web1 3.0，手机与 `<=768px` 窄屏自动回退到 2.4 稳定布局。
+- 电脑端可持久化切换 3.0 / 稳定版，不再把明暗主题开关作为主入口。
+- Hero 蓝光盒、风格化碟片、固定尺寸装载动画，以及与播放器相接的媒体闸门转场。
+- Hero 封面按当前视觉位置优先请求，资源替换带轻量淡入，减少首屏异步闪现。
+- 最近更新首屏完整展示七天，第二页收纳更早记录；卡片、轴线和节点按明确时序出现。
+- 继续观看和最近关注统一为媒体封套比例、信息层和指针驱动 3D 响应。
+- 番剧库 6×2 spread、桌面详情抽屉、键盘操作、离屏渲染和长滚动性能治理。
+- 文件列表保留最近收录、未识别、独立文件、本地目录和远程目录全部既有路由。
+- 新增桌面播放控制台，覆盖载入、就绪、缓冲、空媒体与错误状态；保留 DPlayer、字幕、弹幕及剧集导航逻辑。
+- 尊重 `prefers-reduced-motion`，不使用滚轮劫持或强制滚动脚本。
+- 默认中文的一键管理器，支持安装、版本检查、备份、重新应用和恢复。
 
 ## 安装与回退
 
-1. 从 GitHub Releases 下载源码压缩包并完整解压，不能直接在压缩包内运行。
+1. 从 GitHub Releases 下载源码压缩包并完整解压，请勿直接在压缩包内运行。
 2. 建议先退出弹弹play。
 3. 双击 [`manage-style.bat`](manage-style.bat)。
 4. 选择 `1` 安装或重新应用界面；选择 `2` 恢复最近一次安装前的文件。
@@ -58,35 +83,54 @@
 
 ## 更新说明
 
+### 3.0
+
+- 重启 Web1 3.0 桌面迁移，首页、番剧库、文件列表与播放页采用统一的媒体封套和放映控制台系统。
+- 新增可切换且持久化的 3.0 / 稳定版模式；手机端始终使用稳定布局。
+- 重构 Hero 开盒、碟片装载、资源预载和跨页播放转场。
+- 重构七天更新时间轴、继续观看、最近关注和全部分区，并恢复原生页面吸附。
+- 为番剧库与文件列表增加桌面样式、详情抽屉和长滚动性能优化。
+- 新增桌面播放页状态机和与首页转场相接的播放器框架。
+
 ### 2.4
 
-- 放大并重新排布首页 `最近更新` 卡片，优化时间轴左右贯穿、日期分组和入场动画。
-- 为 `最近更新` 卡片加入未开始、观看中和已看完状态标记，并保持暗金视觉基调。
-- 修复 `最近关注` 在 14/18/12 列桌面布局下最后一行无法填满的问题。
-
-### 2.3
-
-- 修复移动端媒体库搜索入口在紧凑布局下不可达的问题。
-- 调整首页 `最近更新` 时间轴的对齐、日期分组和密集海报分布。
-- 记录并沿用 Web1 源码仓库与公开发布包仓库分离的发布流程。
+- 放大并重新排布首页最近更新卡片，优化时间轴日期分组和入场动画。
+- 为最近更新加入未开始、观看中和已看完状态标记。
+- 修复最近关注在不同桌面列数下最后一行无法填满的问题。
 
 ## 当前覆盖范围
 
-当前发布版本：`2.4`，基于弹弹play `18.1.0` Web1 调整。
+当前发布版本：`3.0`，基于弹弹play `18.1.0` Web1 调整。
 
-公开包只包含改版实际需要覆盖或新增的文件：
+公开包只包含改版实际需要覆盖或新增的运行文件：
 
 ```text
 bangumi.html
 filelist.html
 index.html
 style.sshtml
+video.html
 css/home-v18.css
 css/main.css
+css/home-stable-mobile.css
+css/home-v3-content.css
+css/home-v3-hero.css
+css/home-v3-hero-polish.css
+css/page-morph-transition.css
+css/web1-v3-filelist-desktop.css
+css/web1-v3-library-desktop.css
+css/web1-v3-video-desktop.css
+js/home-stable-mobile.js
+js/home-v3-content.js
+js/home-v3-hero.js
 js/library-navigation.js
+js/page-morph-transition.js
+js/recent-play-refresh.js
+js/theme.js
+js/video-v3-desktop.js
 ```
 
-没有附带媒体库数据、账号配置、服务器地址、播放记录或弹弹play自带的第三方前端依赖。
+没有附带媒体库数据、账号配置、服务器地址、播放记录、测试报告或弹弹play自带的第三方前端依赖。截图来自脱敏测试数据，不包含用户的真实媒体清单。
 
 ## 手动使用
 

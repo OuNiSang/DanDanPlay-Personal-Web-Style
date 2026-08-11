@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>@Model.AnimeTitle - @Model.EpisodeTitle - @Model.WebSiteName</title>
+    <link rel="shortcut icon" href="css/icon.png" type="image/x-icon">
+    <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
+    <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/DPlayer.min.css">
+    <link rel="stylesheet" href="css/video.css?v=@Model.StaticResourceVersion">
+    <script src="js/DPlayer-1.27.0.min.js"></script>
+    <script src="js/subtitles-octopus.js"></script>
+    @Partial['style.sshtml'];
+    <link data-web1-v3 rel="stylesheet" href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3" media="(min-width: 769px)">
+    <link data-web1-v3 rel="stylesheet" href="css/web1-v3-video-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-video-r1" media="(min-width: 769px)">
+    <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
+    <script src="js/gsap.min.js"></script>
+    <script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3"></script>
+    <script>
+        (function () {
+            try {
+                if (window.DdpRouteMorph && window.DdpRouteMorph.isArmed()) {
+                    sessionStorage.removeItem('dandanplay.hero-arrival');
+                    return;
+                }
+                var startedAt = Number(sessionStorage.getItem('dandanplay.hero-arrival') || 0);
+                sessionStorage.removeItem('dandanplay.hero-arrival');
+                if (startedAt && Date.now() - startedAt < 10000) {
+                    document.documentElement.classList.add('ddp-hero-arrival');
+                    window.setTimeout(function () {
+                        document.documentElement.classList.remove('ddp-hero-arrival');
+                    }, 900);
+                }
+            } catch (error) {}
+        })();
+    </script>
+</head>
+<body class="video-page">
+
+<!-- ── Top Nav ── -->
+<nav class="app-nav app-nav--video">
+    <div class="app-nav__inner">
+        <a class="app-nav__brand" href="index.html">
+            <i class="fas fa-play-circle"></i>
+            <span>@Model.WebSiteName</span>
+        </a>
+        <nav aria-label="breadcrumb" class="app-nav__breadcrumb">
+            <span>@Model.AnimeTitle</span>
+            <i class="fas fa-chevron-right"></i>
+            <span class="active">@Model.EpisodeTitle</span>
+        </nav>
+        <div class="app-nav__end">
+            @IfNot.IsAnonymous
+            <span class="app-nav__user">
+                <i class="fas fa-user-circle"></i> @Model.UserName
+            </span>
+            <a href="/web1/logout" class="app-nav__logout" aria-label="退出登录" title="退出登录">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+            @EndIf
+            <button id="theme-toggle" type="button" class="theme-toggle" data-ui-version-toggle title="切换到稳定版">
+                <i class="fas fa-sun" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="video-layout">
+    <div class="player-wrapper">
+        <header class="video-console-header" data-video-v3-only hidden>
+            <div class="video-console-heading">
+                <p class="video-console-kicker">NOW PLAYING / LOCAL MEDIA</p>
+                <h1 class="video-console-title">@Model.AnimeTitle</h1>
+                <span class="video-console-episode">@Model.EpisodeTitle</span>
+            </div>
+            <dl class="video-console-readout" aria-label="播放信息">
+                <dt>MEDIA</dt>
+                <dd>@Model.Id</dd>
+                <dt>ENGINE</dt>
+                <dd>DPLAYER + DDP</dd>
+            </dl>
+        </header>
+
+        <div class="player-main">
+            <div id="dplayer"></div>
+            <div class="video-console-status" id="videoConsoleStatus" role="status" aria-live="polite" data-video-v3-only hidden>
+                <div class="video-console-status__inner">
+                    <span class="video-console-status__signal" aria-hidden="true"></span>
+                    <strong data-video-status-title>正在装载媒体</strong>
+                    <small data-video-status-detail>READING LOCAL MEDIA</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="player-sidebar">
+            <div class="compact-card episode-nav-card">
+                <div class="episode-nav-header">
+                    <div class="current-item-info">
+                        <i class="fas fa-forward-step"></i>
+                        <span class="current-item-text">快速切换剧集</span>
+                    </div>
+                </div>
+                <div class="episode-nav-actions" id="episodeNavActions">
+                    <a href="#" class="episode-nav-button is-disabled" id="prevEpisodeBtn" aria-disabled="true">
+                        <i class="fas fa-chevron-left"></i>
+                        <span>
+                            <strong>上一集</strong>
+                            <small>已经是第一集</small>
+                        </span>
+                    </a>
+                    <a href="#" class="episode-nav-button is-disabled" id="nextEpisodeBtn" aria-disabled="true">
+                        <span>
+                            <strong>下一集</strong>
+                            <small>已经是最后一集</small>
+                        </span>
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            @If.HasSubtitle
+            <div class="compact-card">
+                <div class="compact-card-header" id="subtitleSelector" role="button" tabindex="0" aria-expanded="false" aria-controls="subtitlePanel">
+                    <div class="current-item-info">
+                        <i class="fas fa-closed-captioning"></i>
+                        <span class="current-item-text">字幕列表</span>
+                    </div>
+                    <i class="fas fa-chevron-right expand-icon"></i>
+                </div>
+                <div class="sidebar-panel-content" id="subtitlePanel">
+                    <div class="sidebar-panel-body">
+                        <div class="list-group">
+                            @Each.SubtitleFiles
+                            <a href="video.html?id=@Model.Id&subtitle=@Current.SafeName" class="list-group-item list-group-item-action
+                            @If.IsCurrent
+                                active
+                            @EndIf
+                            ">
+                                <i class="fas fa-file-alt"></i> @Current.Name
+                            </a>
+                            @EndEach
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @EndIf
+
+            <div class="compact-card">
+                <div class="compact-card-header" id="episodeSelector" role="button" tabindex="0" aria-expanded="false" aria-controls="episodePanel">
+                    <div class="current-item-info">
+                        <i class="fas fa-list"></i>
+                        <span class="current-item-text">播放列表</span>
+                    </div>
+                    <i class="fas fa-chevron-right expand-icon"></i>
+                </div>
+                <div class="sidebar-panel-content" id="episodePanel">
+                    <div class="sidebar-panel-body">
+                        <div class="list-group">
+                            @Each.VideoFiles
+                            <a href="video.html?id=@Current.Id" class="list-group-item list-group-item-action
+                            @If.IsCurrent
+                            active
+                            @EndIf
+                            ">
+                                <strong>@Current.EpisodeTitle</strong>
+                                <small>@Current.FileName</small>
+                            </a>
+                            @EndEach
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compact-card">
+                <div class="compact-card-header" id="danmakuSettingsBtn" role="button" tabindex="0" aria-expanded="false" aria-controls="danmakuSettingsPanel">
+                    <div class="current-item-info">
+                        <i class="fas fa-palette"></i>
+                        <span class="current-item-text">弹幕外观设置</span>
+                    </div>
+                    <i class="fas fa-chevron-right expand-icon"></i>
+                </div>
+                <div class="sidebar-panel-content" id="danmakuSettingsPanel">
+                    <div class="sidebar-panel-body">
+                        <div class="settings-group">
+                            <label for="danmakuFontSize">
+                                <i class="fas fa-text-height"></i> 字体大小
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuFontSize" min="12" max="60" value="25"
+                                       oninput="updateDanmakuPreview('fontSize', this.value)">
+                                <span class="settings-value" id="danmakuFontSizeValue">25</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuFontFamily">
+                                <i class="fas fa-font"></i> 字体
+                            </label>
+                            <select id="danmakuFontFamily" onchange="updateDanmakuPreview('fontFamily', this.value)">
+                                <option value="'Microsoft YaHei', SimHei, sans-serif">微软雅黑</option>
+                                <option value="SimHei, 'Microsoft JhengHei', Arial, Helvetica, sans-serif">黑体</option>
+                                <option value="SimSun, serif">宋体</option>
+                                <option value="KaiTi, serif">楷体</option>
+                                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>
+                                <input type="checkbox" id="danmakuBold" onchange="updateDanmakuPreview('bold', this.checked)">
+                                <i class="fas fa-bold"></i> 粗体
+                            </label>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuSpeed">
+                                <i class="fas fa-tachometer-alt"></i> 滚动速度（持续时间/秒）
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuSpeed" min="3" max="20" step="0.5" value="10"
+                                       oninput="updateDanmakuPreview('speed', this.value)">
+                                <span class="settings-value" id="danmakuSpeedValue">10</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuOpacity">
+                                <i class="fas fa-adjust"></i> 不透明度
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuOpacity" min="0.1" max="1" step="0.1" value="1.0"
+                                       oninput="updateDanmakuPreview('opacity', this.value)">
+                                <span class="settings-value" id="danmakuOpacityValue">100</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuDisplayArea">
+                                <i class="fas fa-expand-arrows-alt"></i> 显示区域（%）
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuDisplayArea" min="25" max="100" step="5" value="100"
+                                       oninput="updateDanmakuPreview('displayArea', this.value)">
+                                <span class="settings-value" id="danmakuDisplayAreaValue">100</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuLineHeight">
+                                <i class="fas fa-text-height"></i> 行间距
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuLineHeight" min="0" max="20" step="1" value="0"
+                                       oninput="updateDanmakuPreview('lineHeight', this.value)">
+                                <span class="settings-value" id="danmakuLineHeightValue">0</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuTextStrokeWidth">
+                                <i class="fas fa-border-style"></i> 描边宽度
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuTextStrokeWidth" min="0" max="3" step="0.1" value="0.5"
+                                       oninput="updateDanmakuPreview('textStrokeWidth', this.value)">
+                                <span class="settings-value" id="danmakuTextStrokeWidthValue">0.5</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuTextStrokeColor">
+                                <i class="fas fa-palette"></i> 描边颜色
+                            </label>
+                            <input type="color" id="danmakuTextStrokeColor" value="#000000"
+                                   onchange="updateDanmakuPreview('textStrokeColor', this.value)">
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuTextShadowX">
+                                <i class="fas fa-arrows-alt-h"></i> 阴影水平偏移
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuTextShadowX" min="-5" max="5" step="0.5" value="1.0"
+                                       oninput="updateDanmakuPreview('textShadowX', this.value)">
+                                <span class="settings-value" id="danmakuTextShadowXValue">1.0</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuTextShadowY">
+                                <i class="fas fa-arrows-alt-v"></i> 阴影垂直偏移
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuTextShadowY" min="-5" max="5" step="0.5" value="1.0"
+                                       oninput="updateDanmakuPreview('textShadowY', this.value)">
+                                <span class="settings-value" id="danmakuTextShadowYValue">1.0</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="danmakuTextShadowBlur">
+                                <i class="fas fa-cloud"></i> 阴影模糊半径
+                            </label>
+                            <div class="settings-row">
+                                <input type="range" id="danmakuTextShadowBlur" min="0" max="10" step="0.5" value="0.5"
+                                       oninput="updateDanmakuPreview('textShadowBlur', this.value)">
+                                <span class="settings-value" id="danmakuTextShadowBlurValue">0.5</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-actions">
+                        <button class="btn-danger" id="resetDanmakuBtn">
+                            <i class="fas fa-undo"></i> 重置
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="app-footer">
+    <p>@Model.ServerInfo</p>
+</footer>
+
+<script src="js/jquery-3.7.1.min.js"></script>
+<script src="js/bootstrap.bundle-5.3.3.min.js"></script>
+<script src="js/video.js?v=@Model.StaticResourceVersion"></script>
+<script src="js/video-v3-desktop.js?v=@Model.StaticResourceVersion&amp;ui=3.0-video-r1"></script>
+<script>
+    $(document).ready(function () {
+        var dp = new DPlayer({
+            container: document.getElementById('dplayer'),
+            theme: '@Model.Color',
+            loop: false,
+            screenshot: true,
+            hotkey: true,
+            preload: 'metadata',
+            volume: 1,
+            mutex: true,
+            video: {
+                url: '@Model.Video',
+                pic: '@Model.Image',
+                type: 'auto'
+            },
+            danmaku: {
+                id: '@Model.Id',
+                api: 'dplayer/',
+                bottom: '15%',
+                unlimited: false
+            }
+        });
+        if (window.DandanVideoV3) {
+            window.DandanVideoV3.bindPlayer(dp, '@Model.Video');
+        }
+        $(".dplayer-video").attr("crossorigin", "use-credentials");
+        if (window.DdpRouteMorph && window.DdpRouteMorph.isArmed()) {
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(function () {
+                    window.DdpRouteMorph.arrive(document.getElementById('dplayer'));
+                });
+            });
+        }
+
+        var subtitleInstance = null;
+        var subtitleUrl = '@Model.SubtitleAss';
+        if (subtitleUrl) {
+            try {
+                subtitleInstance = new SubtitlesOctopus({
+                    video: document.getElementsByClassName('dplayer-video')[0],
+                    subUrl: subtitleUrl,
+                    fonts: ['@Model.SubtitleFont'],
+                    workerUrl: 'js/subtitles-octopus-worker.js',
+                    legacyWorkerUrl: 'js/subtitles-octopus-worker-legacy.js'
+                });
+            } catch (error) {
+                DandanApp.toast('高级字幕渲染器初始化失败，视频仍可继续播放。', 'warning');
+            }
+        }
+
+        if (typeof dp.on === 'function') {
+            dp.on('error', function () {
+                DandanApp.toast('视频加载失败，请检查文件是否仍可访问。', 'error');
+            });
+        }
+
+        window.addEventListener('pagehide', function () {
+            if (subtitleInstance && typeof subtitleInstance.dispose === 'function') subtitleInstance.dispose();
+            if (dp && typeof dp.destroy === 'function') dp.destroy();
+        }, { once: true });
+    });
+
+    // Toggle sidebar panel
+    function toggleSidebarPanel(panelId, headerId) {
+        const panel = document.getElementById(panelId);
+        const header = document.getElementById(headerId);
+        const icon = header.querySelector('.expand-icon');
+
+        const isActive = panel.classList.contains('active');
+
+        document.querySelectorAll('.sidebar-panel-content').forEach(p => {
+            p.classList.remove('active');
+        });
+        document.querySelectorAll('.compact-card-header').forEach(h => {
+            h.classList.remove('active');
+            h.querySelector('.expand-icon').classList.remove('expanded');
+        });
+
+        if (!isActive) {
+            panel.classList.add('active');
+            header.classList.add('active');
+            icon.classList.add('expanded');
+        }
+        document.querySelectorAll('.compact-card-header[aria-expanded]').forEach(function (item) {
+            item.setAttribute('aria-expanded', item === header && !isActive ? 'true' : 'false');
+        });
+    }
+
+    $(document).ready(function() {
+        initializeEpisodeNavigation();
+
+        $('#subtitleSelector').on('click', function() {
+            toggleSidebarPanel('subtitlePanel', 'subtitleSelector');
+        });
+
+        $('#episodeSelector').on('click', function() {
+            toggleSidebarPanel('episodePanel', 'episodeSelector');
+        });
+
+        $('#danmakuSettingsBtn').on('click', function() {
+            toggleSidebarPanel('danmakuSettingsPanel', 'danmakuSettingsBtn');
+        });
+
+        $('.compact-card-header[role="button"]').on('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                $(this).trigger('click');
+            }
+        });
+
+        $('#resetDanmakuBtn').on('click', function() {
+            if (typeof resetDanmakuSettings === 'function') {
+                resetDanmakuSettings();
+            }
+        });
+    });
+
+    function initializeEpisodeNavigation() {
+        var currentItem = document.querySelector('#episodePanel .list-group-item.active');
+        if (!currentItem) {
+            return;
+        }
+
+        // Reuse the rendered playlist so episode navigation stays aligned with server ordering.
+        var currentListItem = currentItem;
+        var previousItem = currentListItem.previousElementSibling;
+        var nextItem = currentListItem.nextElementSibling;
+
+        configureEpisodeNavButton('prevEpisodeBtn', previousItem, '已经是第一集');
+        configureEpisodeNavButton('nextEpisodeBtn', nextItem, '已经是最后一集');
+    }
+
+    function configureEpisodeNavButton(buttonId, sourceLink, emptyText) {
+        var button = document.getElementById(buttonId);
+        if (!button) {
+            return;
+        }
+
+        if (!sourceLink) {
+            button.classList.add('is-disabled');
+            button.setAttribute('aria-disabled', 'true');
+            button.removeAttribute('href');
+            button.querySelector('small').innerText = emptyText;
+            return;
+        }
+
+        var titleNode = sourceLink.querySelector('strong');
+        var subtitleNode = sourceLink.querySelector('small');
+        var title = titleNode ? titleNode.innerText.trim() : '跳转到相邻剧集';
+        var subtitle = subtitleNode ? subtitleNode.innerText.trim() : '';
+
+        button.classList.remove('is-disabled');
+        button.setAttribute('aria-disabled', 'false');
+        button.href = sourceLink.href;
+        button.querySelector('strong').innerText = title;
+        button.querySelector('small').innerText = subtitle;
+    }
+</script>
+</body>
+</html>

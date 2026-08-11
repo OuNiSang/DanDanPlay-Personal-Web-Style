@@ -8,8 +8,16 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     @Partial['style.sshtml'];
+    <link data-web1-v3 href="css/web1-v3-library-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r3" rel="stylesheet" media="(min-width: 769px)">
+    <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
+    <style media="(max-width: 768px)">
+        .library-page--v3 .library-archive-rail,
+        .library-page--v3 .modal-artwork,
+        .library-page--v3 .poster-source-group { display: none !important; }
+        .library-page--v3 .poster-groups { display: contents; }
+    </style>
 </head>
-<body>
+<body class="library-page--v3">
 
 <!-- ── Top Nav ── -->
 <nav class="app-nav app-nav--library" aria-label="媒体库导航">
@@ -54,8 +62,8 @@
                 <i class="fas fa-sign-out-alt"></i>
             </a>
             @EndIf
-            <button id="theme-toggle" type="button" class="theme-toggle" title="切换主题">
-                <i class="fas fa-sun" aria-hidden="true"></i>
+            <button id="theme-toggle" type="button" class="theme-toggle" data-ui-version-toggle title="切换到稳定版">
+                <i class="fas fa-clock-rotate-left" aria-hidden="true"></i><span>稳定版</span>
             </button>
         </div>
     </div>
@@ -95,7 +103,17 @@
         </div>
 
         <div id="posterGrid" class="poster-grid" style="display: none;">
-            <!-- 番剧列表将通过JavaScript动态加载 -->
+            <aside class="library-archive-rail" aria-live="polite" aria-atomic="true">
+                <span class="library-archive-rail__eyebrow">ARCHIVE / ACTIVE SPREAD</span>
+                <strong id="libraryRailNumber">01</strong>
+                <div class="library-archive-rail__copy">
+                    <b id="libraryRailTitle">媒体库</b>
+                    <span id="libraryRailMeta">等待作品索引</span>
+                </div>
+            </aside>
+            <div id="posterGroups" class="poster-groups">
+                <!-- 番剧列表将通过JavaScript动态加载 -->
+            </div>
         </div>
     </section>
 </main>
@@ -107,6 +125,10 @@
 <!-- 番剧详情弹窗 -->
 <div id="bangumiModal" class="modal">
     <div class="modal-content">
+        <div class="modal-artwork" aria-hidden="true">
+            <img id="modalArtwork" src="" alt="">
+            <span>LOCAL / SERIES DOSSIER</span>
+        </div>
         <div class="modal-header">
             <div>
                 <h3 id="modalTitle"></h3>
@@ -133,8 +155,8 @@
 </div>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=2.2.1"></script>
-<script src="js/recent-play-refresh.js"></script>
+<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r3"></script>
+<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.0-recent-r1"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
 
@@ -145,6 +167,7 @@
     var bangumiMapById = {};
     var currentModalState = null;
     var libraryFallbackPromise = null;
+    var groupAnchorMap = {};
     var currentNav = (new URLSearchParams(window.location.search).get('nav') || '').toLowerCase();
     var listRequest = null;
     var modalRequest = null;
@@ -255,73 +278,140 @@
         applyBangumiList(RecentPlayRefresh.sort(bangumiList));
     }
 
+    function createPosterItem(bangumi, globalIndex, sourceGroup) {
+        var watched = Number(bangumi.EpisodeWatched) || 0;
+        var total = Number(bangumi.EpisodeTotal) || 0;
+        var progress = total > 0 ? Math.max(0, Math.min(100, Math.round(watched / total * 100))) : 0;
+        var posterItem = $('<div></div>')
+            .addClass('poster-item')
+            .attr('data-list-index', globalIndex)
+            .attr('data-code', String(globalIndex + 1).padStart(2, '0'))
+            .attr('data-source-group', sourceGroup)
+            .attr('role', 'button')
+            .attr('tabindex', '0')
+            .css('--watch-progress', progress + '%')
+            .on('click', function () {
+                showModal(String(bangumi.AnimeId), bangumi.Title);
+            })
+            .on('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    showModal(String(bangumi.AnimeId), bangumi.Title);
+                }
+            });
+
+        $('<div></div>')
+            .addClass('watched-info')
+            .text(watched + '/' + total)
+            .appendTo(posterItem);
+
+        if (currentNav === 'rating') {
+            $('<span></span>').addClass('poster-rank').text('#' + (globalIndex + 1)).appendTo(posterItem);
+        }
+
+        $('<img>')
+            .attr('data-src', bangumi.Cover)
+            .attr('alt', bangumi.Title)
+            .addClass('lazyload')
+            .appendTo(posterItem);
+
+        var posterInfo = $('<div></div>').addClass('poster-info').appendTo(posterItem);
+        $('<span></span>').addClass('poster-source-group').text(sourceGroup).appendTo(posterInfo);
+        $('<h3></h3>').text(bangumi.Title).attr('title', bangumi.Title).appendTo(posterInfo);
+        $('<p></p>').text(bangumi.Details).appendTo(posterInfo);
+
+        if (currentNav === 'lastplay') {
+            $('<span></span>').addClass('poster-progress').attr('aria-hidden', 'true').appendTo(posterItem);
+        }
+
+        return posterItem;
+    }
+
     function renderBangumiList(bangumiList) {
-        var posterGrid = $('#posterGrid');
-        posterGrid.empty();
+        var posterGroups = $('#posterGroups');
+        posterGroups.empty();
         var groups = groupBangumiItems(bangumiList);
+        var archiveRecords = [];
         var globalIndex = 0;
+        var spreadSize = 12;
+        groupAnchorMap = {};
+
+        // Keep the existing grouped library untouched on the stable mobile path.
+        // The spread compositor below is deliberately desktop-only.
+        if (!window.Web1UiVersion || !window.Web1UiVersion.isV3Desktop()) {
+            groups.forEach(function (group, groupIndex) {
+                var groupTitleId = 'group-title-' + groupIndex;
+                var groupSection = $('<section></section>')
+                    .addClass('poster-group')
+                    .attr('id', 'group-' + groupIndex)
+                    .attr('aria-labelledby', groupTitleId);
+                var groupHeader = $('<header></header>').addClass('poster-group__header').appendTo(groupSection);
+                $('<h2></h2>')
+                    .addClass('group-name')
+                    .text(group.name)
+                    .attr('id', groupTitleId)
+                    .appendTo(groupHeader);
+                $('<span></span>')
+                    .addClass('poster-group__count')
+                    .text(group.items.length + ' 部')
+                    .appendTo(groupHeader);
+                var groupGrid = $('<div></div>').addClass('poster-group__grid').appendTo(groupSection);
+
+                groupAnchorMap[group.name] = groupSection.attr('id');
+                group.items.forEach(function (bangumi) {
+                    groupGrid.append(createPosterItem(bangumi, globalIndex, group.name));
+                    globalIndex += 1;
+                });
+                posterGroups.append(groupSection);
+            });
+            return;
+        }
 
         groups.forEach(function (group, groupIndex) {
+            group.items.forEach(function (bangumi) {
+                archiveRecords.push({
+                    bangumi: bangumi,
+                    groupName: group.name,
+                    groupIndex: groupIndex
+                });
+            });
+        });
+
+        var spreadCount = Math.max(1, Math.ceil(archiveRecords.length / spreadSize));
+        for (var spreadIndex = 0; spreadIndex < spreadCount; spreadIndex += 1) {
+            var spreadItems = archiveRecords.slice(spreadIndex * spreadSize, (spreadIndex + 1) * spreadSize);
+            var firstGroupName = spreadItems.length ? spreadItems[0].groupName : '未分组';
+            var lastGroupName = spreadItems.length ? spreadItems[spreadItems.length - 1].groupName : firstGroupName;
+            var spreadTitle = firstGroupName === lastGroupName ? firstGroupName : firstGroupName + ' - ' + lastGroupName;
+            var groupTitleId = 'archive-spread-title-' + spreadIndex;
             var groupSection = $('<section></section>')
                 .addClass('poster-group')
-                .attr('id', 'group-' + groupIndex)
-                .attr('aria-labelledby', 'group-title-' + groupIndex);
+                .attr('id', 'archive-spread-' + spreadIndex)
+                .attr('aria-labelledby', groupTitleId)
+                .attr('data-focus-number', String(spreadIndex + 1).padStart(2, '0'))
+                .attr('data-focus-title', spreadTitle)
+                .attr('data-focus-meta', 'SPREAD ' + (spreadIndex + 1) + ' / ' + spreadCount + ' · ' + spreadItems.length + ' ITEMS');
             var groupHeader = $('<header></header>').addClass('poster-group__header').appendTo(groupSection);
             $('<h2></h2>')
                 .addClass('group-name')
-                .text(group.name)
-                .attr('id', 'group-title-' + groupIndex)
+                .text(spreadTitle)
+                .attr('id', groupTitleId)
                 .appendTo(groupHeader);
-            $('<span></span>').addClass('poster-group__count').text(group.items.length + ' 部').appendTo(groupHeader);
+            $('<span></span>')
+                .addClass('poster-group__count')
+                .text('SPREAD ' + String(spreadIndex + 1).padStart(2, '0') + ' / ' + String(spreadCount).padStart(2, '0'))
+                .appendTo(groupHeader);
             var groupGrid = $('<div></div>').addClass('poster-group__grid').appendTo(groupSection);
 
-            group.items.forEach(function (bangumi) {
-                var watched = Number(bangumi.EpisodeWatched) || 0;
-                var total = Number(bangumi.EpisodeTotal) || 0;
-                var progress = total > 0 ? Math.max(0, Math.min(100, Math.round(watched / total * 100))) : 0;
-                var posterItem = $('<div></div>')
-                    .addClass('poster-item')
-                    .attr('data-list-index', globalIndex)
-                    .attr('role', 'button')
-                    .attr('tabindex', '0')
-                    .css('--watch-progress', progress + '%')
-                    .on('click', function () {
-                        showModal(String(bangumi.AnimeId), bangumi.Title);
-                    })
-                    .on('keydown', function (event) {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            showModal(String(bangumi.AnimeId), bangumi.Title);
-                        }
-                    });
-
-                var watchedInfo = $('<div></div>')
-                    .addClass('watched-info')
-                    .text(watched + '/' + total)
-                    .appendTo(posterItem);
-
-                if (currentNav === 'rating') {
-                    $('<span></span>').addClass('poster-rank').text('#' + (globalIndex + 1)).appendTo(posterItem);
+            spreadItems.forEach(function (record) {
+                if (!groupAnchorMap[record.groupName]) {
+                    groupAnchorMap[record.groupName] = groupSection.attr('id');
                 }
-
-                var posterImg = $('<img>')
-                    .attr('data-src', bangumi.Cover)
-                    .attr('alt', bangumi.Title)
-                    .addClass('lazyload')
-                    .appendTo(posterItem);
-
-                var posterInfo = $('<div></div>').addClass('poster-info').appendTo(posterItem);
-                $('<h3></h3>').text(bangumi.Title).attr('title', bangumi.Title).appendTo(posterInfo);
-                $('<p></p>').text(bangumi.Details).appendTo(posterInfo);
-                if (currentNav === 'lastplay') {
-                    $('<span></span>').addClass('poster-progress').attr('aria-hidden', 'true').appendTo(posterItem);
-                }
-
-                groupGrid.append(posterItem);
+                groupGrid.append(createPosterItem(record.bangumi, globalIndex, record.groupName));
                 globalIndex += 1;
             });
-            posterGrid.append(groupSection);
-        });
+            posterGroups.append(groupSection);
+        }
     }
 
     function renderQuickNav(bangumiList) {
@@ -330,7 +420,7 @@
 
         groupBangumiItems(bangumiList).forEach(function (group, groupIndex) {
             var navLink = $('<a></a>')
-                .attr('href', '#group-' + groupIndex);
+                .attr('href', '#' + (groupAnchorMap[group.name] || 'archive-spread-0'));
             $('<i class="fas fa-angle-right" aria-hidden="true"></i>').appendTo(navLink);
             navLink.append(document.createTextNode(' ' + group.name));
             quickNav.append(navLink);
@@ -369,7 +459,9 @@
 
     function showModal(animeId, title) {
         if (modalRequest) modalRequest.abort();
+        var bangumi = bangumiMapById[String(animeId)];
         document.getElementById('modalTitle').innerText = title;
+        document.getElementById('modalArtwork').src = bangumi && bangumi.Cover ? bangumi.Cover : '';
         document.getElementById('lastWatchedInfo').innerText = '';
         document.getElementById('loading').innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i><span class="visually-hidden">加载中</span>';
         document.getElementById('loading').style.display = 'block';
