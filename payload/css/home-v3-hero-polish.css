@@ -1,0 +1,716 @@
+/*
+ * Web1 Hero geometry polish.
+ * Load this file after home-v3-hero.css so the existing Hero remains the
+ * source of behavior while this layer owns final proportions and material.
+ */
+
+/* Keep the large poster carousel visually separate from the receive deck. */
+@media (min-width: 901px) {
+  .idx-home .hero3__carousel-shell {
+    inset: calc(var(--hero3-nav-height) + 12px) clamp(18px, 2.2vw, 36px) 20px;
+  }
+
+  .idx-home .hero3__orbit {
+    transform: translateY(-14px);
+  }
+
+  .idx-home .hero3__device-zone {
+    bottom: -16px;
+  }
+}
+
+/* The disc is centered by the real 135 / 171 case ratio. */
+.idx-home .hero3__case-disc {
+  top: 25.92%;
+  left: 19.5%;
+  width: 61%;
+}
+
+/* The disc already draws its own center hole. The old hub is a duplicate. */
+.idx-home .hero3__case-hub {
+  display: none !important;
+}
+
+/* Stronger depth cues without changing the open-case interaction. */
+.idx-home .hero3__card {
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.48);
+}
+
+.idx-home .hero3__card-shadow {
+  inset: 3% -3.5% 1.5% 4%;
+  opacity: 0.62;
+  background:
+    linear-gradient(122deg, rgba(45, 50, 44, 0.78), rgba(7, 9, 7, 0.92) 68%),
+    rgba(7, 9, 7, 0.88);
+  box-shadow:
+    18px 24px 42px rgba(0, 0, 0, 0.5),
+    inset 0 1px rgba(239, 243, 233, 0.08);
+  will-change: transform, opacity;
+}
+
+.idx-home .hero3__card.is-active {
+  box-shadow:
+    0 28px 64px rgba(0, 0, 0, 0.54),
+    0 0 0 1px rgba(217, 244, 91, 0.18);
+}
+
+.idx-home .hero3__card.is-active .hero3__card-shadow {
+  inset: 3% -3.5% 1.5% 4%;
+  opacity: 0.7;
+}
+
+.idx-home .hero3__sr-summary {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.idx-home .hero3__case,
+.idx-home .hero3__case-lid,
+.idx-home .hero3__case-cover-face {
+  transform-style: preserve-3d;
+}
+
+.idx-home .hero3__case {
+  perspective: 1040px;
+}
+
+.idx-home .hero3__case-cover-face {
+  transform: translateZ(5px) rotateY(0deg);
+  background-color: #111611;
+  box-shadow:
+    inset 10px 0 rgba(238, 242, 232, 0.13),
+    inset -2px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(4, 7, 5, 0.82),
+    8px 12px 24px rgba(0, 0, 0, 0.24);
+  transition:
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 220ms ease;
+}
+
+.idx-home .hero3__card:hover:not(.is-case-open) .hero3__case-cover-face,
+.idx-home .hero3__card:focus-visible:not(.is-case-open) .hero3__case-cover-face {
+  border-color: rgba(238, 243, 231, 0.62);
+  transform: translateZ(30px) rotateY(0deg) scale(1.016);
+  box-shadow:
+    inset 13px 0 rgba(238, 242, 232, 0.18),
+    inset -4px 0 rgba(217, 244, 91, 0.24),
+    inset 0 0 0 1px rgba(4, 7, 5, 0.88),
+    20px 28px 48px rgba(0, 0, 0, 0.46);
+}
+
+.idx-home .hero3__poster {
+  translate: 0 0 8px;
+  transform-origin: center;
+}
+
+.idx-home .hero3__caption {
+  min-height: 29%;
+  isolation: isolate;
+  translate: 0 0 30px;
+  background:
+    linear-gradient(180deg, transparent 0 18%, rgba(4, 7, 5, 0.76) 48%, rgba(4, 7, 5, 0.97) 100%),
+    linear-gradient(90deg, rgba(4, 7, 5, 0.34), transparent 68%);
+  box-shadow: inset 0 -1px rgba(239, 243, 233, 0.08);
+  -webkit-font-smoothing: auto;
+  text-rendering: auto;
+}
+
+/* First mask belongs to the cover face, second mask sits directly behind copy. */
+.idx-home .hero3__case-cover-face::after {
+  background:
+    linear-gradient(180deg, transparent 0 42%, rgba(4, 7, 5, 0.22) 61%, rgba(4, 7, 5, 0.88) 100%),
+    radial-gradient(ellipse at 50% 38%, transparent 34%, rgba(3, 6, 4, 0.24) 100%),
+    repeating-linear-gradient(0deg, rgba(239, 243, 233, 0.035) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(217, 244, 91, 0.022) 0 1px, transparent 1px 5px),
+    linear-gradient(104deg, rgba(255, 255, 255, 0.18), transparent 13% 76%, rgba(255, 255, 255, 0.06));
+}
+
+.idx-home .hero3__caption strong,
+.idx-home .hero3__card.is-active .hero3__caption strong {
+  color: #f5f7f1;
+  font-weight: 860;
+  text-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.98),
+    0 0 12px rgba(0, 0, 0, 0.88);
+}
+
+.idx-home .hero3__caption small {
+  color: #d9f45b;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 1),
+    0 0 8px rgba(0, 0, 0, 0.94);
+}
+
+/* One physical lid, two real faces. Episode copy belongs to the inside face,
+   so the 160deg hinge reveal never produces a second planar page. */
+.idx-home .hero3__case-cover-face,
+.idx-home .hero3__case-lid-inside {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.idx-home .hero3__case-lid-inside {
+  isolation: isolate;
+  padding: 0;
+  color: #f3f6ee;
+  background:
+    linear-gradient(135deg, rgba(217, 244, 91, 0.12), transparent 27%),
+    repeating-linear-gradient(0deg, transparent 0 15px, rgba(239, 243, 233, 0.035) 15px 16px),
+    linear-gradient(90deg, #0b100d 0 93%, #11180f 93% 100%);
+  box-shadow:
+    inset 9px 0 rgba(239, 243, 233, 0.055),
+    inset -2px 0 rgba(217, 244, 91, 0.1),
+    inset 0 0 0 2px rgba(4, 7, 5, 0.86);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.idx-home .hero3__case-lid-inside::before {
+  top: 7%;
+  right: 6.2%;
+  bottom: 7%;
+  width: 1px;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  background: rgba(239, 243, 233, 0.11);
+  box-shadow: -9px 0 rgba(217, 244, 91, 0.07);
+}
+
+.idx-home .hero3__case-lid-inside::after {
+  right: 6.2%;
+  bottom: 5.2%;
+  left: 6.2%;
+  height: 3px;
+  background: linear-gradient(90deg, #d9f45b 0 61%, rgba(239, 243, 233, 0.18) 61% 100%);
+}
+
+.idx-home .hero3__case-inlay {
+  position: absolute;
+  z-index: 0;
+  inset: 3.6% 4.2%;
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgba(217, 244, 91, 0.14);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 15px, rgba(239, 243, 233, 0.045) 15px 16px),
+    linear-gradient(135deg, rgba(217, 244, 91, 0.12), transparent 32%),
+    #0b100d;
+  box-shadow:
+    inset 7px 0 rgba(239, 243, 233, 0.055),
+    inset 0 0 0 2px rgba(4, 7, 5, 0.82);
+  pointer-events: none;
+}
+
+.idx-home .hero3__case-inlay::before,
+.idx-home .hero3__case-inlay::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.idx-home .hero3__case-inlay::before {
+  top: 6%;
+  bottom: 6%;
+  left: 2.4%;
+  width: 5px;
+  background: linear-gradient(90deg, rgba(239, 243, 233, 0.16), rgba(217, 244, 91, 0.06));
+  box-shadow: 3px 0 rgba(4, 7, 5, 0.72);
+}
+
+.idx-home .hero3__case-inlay::after {
+  top: 3%;
+  right: 3%;
+  left: 3%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(217, 244, 91, 0.52), rgba(239, 243, 233, 0.08) 72%, transparent);
+}
+
+.idx-home .hero3__case-print {
+  position: absolute;
+  z-index: 2;
+  inset: 7.2% 9.4% 7.6% 9.6%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr) auto auto;
+  align-items: start;
+  gap: clamp(4px, 0.38vw, 7px);
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateZ(2px) rotateY(-20deg);
+  transform-origin: 50% 50%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.idx-home .hero3__case-print > span,
+.idx-home .hero3__case-print > strong {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+}
+
+.idx-home .hero3__case-print .hero3__inside-kicker {
+  max-width: 84%;
+  color: #d9f45b;
+  font-size: clamp(8px, 0.56vw, 10px);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.idx-home .hero3__case-print .hero3__inside-series {
+  display: -webkit-box;
+  width: 84%;
+  overflow: hidden;
+  color: rgba(239, 243, 233, 0.86);
+  font-size: clamp(11px, 0.76vw, 14px);
+  font-weight: 760;
+  line-height: 1.3;
+  letter-spacing: 0.015em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.idx-home .hero3__case-print .hero3__inside-label {
+  display: block;
+  margin-top: clamp(4px, 0.45vw, 8px);
+  color: rgba(217, 244, 91, 0.82);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: clamp(8px, 0.52vw, 10px);
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.idx-home .hero3__case-print .hero3__inside-episode {
+  font-size: clamp(30px, 2.4vw, 44px);
+  line-height: 0.98;
+}
+
+.idx-home .hero3__case-print .hero3__inside-title {
+  width: 84%;
+  color: #f7f8f4;
+  font-size: clamp(13px, 1vw, 18px);
+  font-weight: 820;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  -webkit-line-clamp: 2;
+}
+
+.idx-home .hero3__case-print .hero3__inside-title.is-pending {
+  color: rgba(239, 243, 233, 0.52);
+  font-size: clamp(11px, 0.8vw, 14px);
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.idx-home .hero3__case-print .hero3__inside-context {
+  display: block;
+  width: 84%;
+  overflow: hidden;
+  color: rgba(217, 244, 91, 0.8);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: clamp(8px, 0.52vw, 10px);
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idx-home .hero3__case-print .hero3__inside-summary {
+  display: -webkit-box;
+  width: 84%;
+  min-height: 0;
+  align-self: start;
+  overflow: hidden;
+  color: rgba(231, 236, 225, 0.82);
+  font-size: clamp(10px, 0.66vw, 12px);
+  line-height: 1.52;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.idx-home .hero3__case-print .hero3__inside-meta {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  align-self: end;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(4px, 0.45vw, 8px);
+}
+
+.idx-home .hero3__case-print .hero3__inside-meta > span {
+  padding-top: clamp(4px, 0.42vw, 7px);
+}
+
+.idx-home .hero3__case-print .hero3__inside-meta small {
+  color: rgba(231, 236, 225, 0.7);
+  font-size: clamp(8px, 0.48vw, 9px);
+}
+
+.idx-home .hero3__case-print .hero3__inside-meta b {
+  font-size: clamp(9px, 0.56vw, 11px);
+}
+
+.idx-home .hero3__case-print .hero3__inside-action {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  min-height: clamp(18px, 1.55vw, 26px);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 clamp(6px, 0.65vw, 10px);
+  overflow: hidden;
+  color: #0b100d;
+  background: #d9f45b;
+  font-size: clamp(8px, 0.52vw, 9px);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  mix-blend-mode: normal;
+}
+
+@media (max-width: 900px) {
+  .idx-home .hero3__case-print {
+    inset: 6.2% 8.2% 6.8% 9.2%;
+    gap: 3px;
+  }
+
+  .idx-home .hero3__case-print .hero3__inside-series {
+    width: 86%;
+    -webkit-line-clamp: 1;
+  }
+
+  .idx-home .hero3__case-print .hero3__inside-label {
+    margin-top: 2px;
+  }
+
+  .idx-home .hero3__case-print .hero3__inside-episode {
+    font-size: clamp(22px, 3.5vw, 28px);
+  }
+
+  .idx-home .hero3__case-print .hero3__inside-title {
+    font-size: 11px;
+  }
+
+  .idx-home .hero3__case-print .hero3__inside-summary {
+    font-size: 8px;
+    line-height: 1.4;
+    -webkit-line-clamp: 2;
+  }
+
+  .idx-home .hero3__case-print .hero3__inside-meta {
+    gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idx-home .hero3__poster,
+  .idx-home .hero3__disc-art {
+    animation: none !important;
+  }
+}
+
+/* Two restrained page masks keep both bright and dark artwork legible. */
+.idx-home .hero3__backdrop-scrim {
+  background:
+    radial-gradient(ellipse at 50% 39%, transparent 5%, rgba(4, 7, 5, 0.2) 49%, rgba(4, 7, 5, 0.82) 100%),
+    linear-gradient(180deg, rgba(4, 7, 5, 0.34), transparent 23% 61%, rgba(4, 7, 5, 0.88) 100%),
+    linear-gradient(90deg, rgba(4, 7, 5, 0.76), transparent 21% 79%, rgba(4, 7, 5, 0.8));
+}
+
+.idx-home .hero3__backdrop-blocks {
+  opacity: 0.34;
+  background:
+    linear-gradient(90deg, rgba(4, 7, 5, 0.8) 0 5.5%, transparent 5.5% 91.5%, rgba(4, 7, 5, 0.84) 91.5%),
+    linear-gradient(180deg, transparent 0 58%, rgba(5, 9, 6, 0.2) 58% 70%, rgba(5, 9, 6, 0.66) 100%),
+    repeating-linear-gradient(90deg, transparent 0 79px, rgba(217, 244, 91, 0.025) 79px 80px);
+  mix-blend-mode: normal;
+}
+
+/* One flat, symmetric chassis plane. The corrected SVG frame sits above it. */
+.idx-home .hero3__machine-action {
+  width: min(62vw, 720px) !important;
+  min-width: 520px;
+  aspect-ratio: 760 / 230;
+}
+
+.idx-home .hero3__player {
+  filter: none;
+}
+
+.idx-home .hero3__player::before {
+  top: auto;
+  z-index: 0;
+  right: 3.5%;
+  bottom: 7%;
+  left: 3.5%;
+  width: auto;
+  height: 58%;
+  box-sizing: border-box;
+  transform: none;
+  border: 1px solid rgba(239, 243, 233, 0.18);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 22px, rgba(217, 244, 91, 0.026) 22px 23px),
+    rgba(5, 9, 6, 0.94);
+  clip-path: polygon(4% 0, 96% 0, 100% 20%, 100% 100%, 0 100%, 0 20%);
+  box-shadow: inset 0 1px rgba(239, 243, 233, 0.05);
+}
+
+.idx-home .hero3__player::after {
+  top: auto;
+  z-index: 5;
+  right: 8%;
+  bottom: 5.5%;
+  left: 8%;
+  width: auto;
+  height: 2px;
+  opacity: 0.72;
+  transform: none;
+}
+
+.idx-home .hero3__machine {
+  z-index: 3;
+}
+
+.idx-home .hero3__machine-frame,
+.idx-home .hero3__machine-bay,
+.idx-home .hero3__machine-strut,
+.idx-home .hero3__machine-floor {
+  filter: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.idx-home .hero3__machine-frame {
+  stroke: rgba(239, 243, 233, 0.72);
+  stroke-width: 1.5;
+}
+
+.idx-home .hero3__machine-bay {
+  stroke: #d9f45b;
+  stroke-width: 1.8;
+}
+
+.idx-home .hero3__machine-strut,
+.idx-home .hero3__machine-floor {
+  stroke: rgba(239, 243, 233, 0.28);
+  stroke-width: 1;
+}
+
+.idx-home .hero3__machine-block--blue,
+.idx-home .hero3__machine-block--mint {
+  fill: rgba(217, 244, 91, 0.1);
+  stroke: rgba(239, 243, 233, 0.64);
+}
+
+.idx-home .hero3__machine-console {
+  fill: rgba(5, 9, 6, 0.98);
+  stroke: #d9f45b;
+}
+
+.idx-home .hero3__machine-node {
+  fill: #090d0a;
+  stroke: rgba(239, 243, 233, 0.76);
+}
+
+/* The receive well is a recessed bay, not a second box placed on the frame. */
+.idx-home .hero3__deck-well {
+  top: 42%;
+  z-index: 6;
+  width: calc(var(--loaded-disc-size, 220px) + 44px);
+  padding: 18px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+.idx-home .hero3__dock-orbit {
+  inset: 16px;
+  border: 1px solid rgba(217, 244, 91, 0.46);
+  background:
+    radial-gradient(circle, rgba(8, 12, 9, 0.9) 0 53%, rgba(217, 244, 91, 0.08) 54% 59%, rgba(5, 8, 6, 0.94) 60%);
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.68);
+  clip-path: none;
+}
+
+.idx-home .hero3__dock-orbit::before {
+  border-color: rgba(217, 244, 91, 0.4);
+}
+
+.idx-home .hero3__dock-orbit::after {
+  border-color: rgba(239, 243, 233, 0.2);
+}
+
+.idx-home .hero3__loaded-disc {
+  z-index: 9;
+}
+
+.idx-home .hero3__spindle {
+  z-index: 10;
+}
+
+.idx-home .hero3__tray-lip {
+  display: none;
+}
+
+.idx-home .hero3__deck-lid {
+  top: calc(42% - 16px);
+  z-index: 4;
+  width: calc(var(--loaded-disc-size, 220px) + 64px);
+  height: 32px;
+  border-top-color: #d9f45b;
+  border-bottom-color: rgba(239, 243, 233, 0.48);
+  background: linear-gradient(90deg, transparent, rgba(217, 244, 91, 0.08) 18% 82%, transparent);
+}
+
+.idx-home .hero3__dock-clamp {
+  border-color: rgba(239, 243, 233, 0.66);
+  background: #090d0a;
+}
+
+@media (max-width: 900px) {
+  .idx-home .hero3__machine-action {
+    width: min(70vw, 560px) !important;
+    min-width: 480px;
+  }
+
+  .idx-home .hero3__deck-well {
+    top: 32%;
+    width: calc(var(--loaded-disc-size, 190px) + 40px);
+    padding: 16px;
+  }
+
+  .idx-home .hero3__deck-lid {
+    top: calc(32% - 14px);
+    width: calc(var(--loaded-disc-size, 190px) + 56px);
+    height: 28px;
+  }
+
+  .idx-home .hero3__dock-orbit {
+    inset: 14px;
+    clip-path: none;
+  }
+
+  .idx-home .hero3__caption {
+    min-height: 31%;
+  }
+
+  .idx-home .hero3__backdrop-scrim {
+    background:
+      radial-gradient(ellipse at 50% 37%, transparent 3%, rgba(4, 7, 5, 0.22) 47%, rgba(4, 7, 5, 0.84) 100%),
+      linear-gradient(180deg, rgba(4, 7, 5, 0.38), transparent 20% 58%, rgba(4, 7, 5, 0.9) 100%),
+      linear-gradient(90deg, rgba(4, 7, 5, 0.7), transparent 15% 85%, rgba(4, 7, 5, 0.72));
+  }
+}
+
+@media (max-width: 768px) {
+  .idx-home .hero3__machine-action {
+    width: min(92vw, 540px) !important;
+    min-width: 0;
+  }
+
+  .idx-home .hero3__deck-well {
+    top: 30%;
+    width: calc(var(--loaded-disc-size, 150px) + 36px);
+    padding: 14px;
+  }
+
+  .idx-home .hero3__deck-lid {
+    top: calc(30% - 12px);
+    width: calc(var(--loaded-disc-size, 150px) + 50px);
+    height: 25px;
+  }
+
+  .idx-home .hero3__dock-orbit {
+    inset: 12px;
+    clip-path: none;
+  }
+
+  .idx-home .hero3__caption {
+    min-height: 34%;
+    translate: 0 0 22px;
+    background:
+      linear-gradient(180deg, transparent 0 12%, rgba(4, 7, 5, 0.8) 45%, rgba(4, 7, 5, 0.98) 100%),
+      linear-gradient(90deg, rgba(4, 7, 5, 0.38), transparent 72%);
+  }
+
+  .idx-home .hero3__card:hover:not(.is-case-open) .hero3__case-cover-face,
+  .idx-home .hero3__card:focus-visible:not(.is-case-open) .hero3__case-cover-face {
+    transform: translateZ(20px) rotateY(0deg) scale(1.01);
+  }
+
+  .idx-home .hero3__backdrop-blocks {
+    opacity: 0.29;
+  }
+}
+
+@media (max-width: 430px) {
+  .idx-home .hero3__machine-action {
+    width: 96vw !important;
+  }
+
+  .idx-home .hero3__device-zone {
+    bottom: 4px;
+  }
+
+  .idx-home .hero3__deck-well {
+    top: 28%;
+    width: calc(var(--loaded-disc-size, 116px) + 32px);
+    padding: 12px;
+  }
+
+  .idx-home .hero3__deck-lid {
+    top: calc(28% - 11px);
+    width: calc(var(--loaded-disc-size, 116px) + 46px);
+    height: 23px;
+  }
+
+  .idx-home .hero3__dock-orbit {
+    inset: 10px;
+  }
+
+  .idx-home .hero3__caption {
+    min-height: 37%;
+    translate: 0 0 16px;
+  }
+
+  .idx-home .hero3__backdrop-scrim {
+    background:
+      radial-gradient(ellipse at 50% 34%, transparent 0, rgba(4, 7, 5, 0.25) 43%, rgba(4, 7, 5, 0.86) 100%),
+      linear-gradient(180deg, rgba(4, 7, 5, 0.42), transparent 18% 53%, rgba(4, 7, 5, 0.92) 100%),
+      linear-gradient(90deg, rgba(4, 7, 5, 0.64), transparent 10% 90%, rgba(4, 7, 5, 0.66));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idx-home .hero3__case-cover-face,
+  .idx-home .hero3__card:hover:not(.is-case-open) .hero3__case-cover-face,
+  .idx-home .hero3__card:focus-visible:not(.is-case-open) .hero3__case-cover-face {
+    transform: rotateY(0deg) !important;
+    transition: none !important;
+  }
+
+  .idx-home .hero3__poster,
+  .idx-home .hero3__caption {
+    translate: 0 0 0 !important;
+  }
+
+  .idx-home .hero3__card,
+  .idx-home .hero3__card-shadow {
+    transition: none !important;
+  }
+}
