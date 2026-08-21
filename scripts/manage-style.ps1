@@ -10,7 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$SupportedDanDanPlayVersion = '18.1.0'
+$SupportedDanDanPlayVersion = '18.1.3'
 
 try {
     [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)

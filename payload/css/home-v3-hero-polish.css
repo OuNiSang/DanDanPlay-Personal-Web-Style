@@ -5,6 +5,10 @@
  */
 
 /* Keep the large poster carousel visually separate from the receive deck. */
+.idx-home .hero3__loading-rack {
+  display: none;
+}
+
 @media (min-width: 901px) {
   .idx-home .hero3__carousel-shell {
     inset: calc(var(--hero3-nav-height) + 12px) clamp(18px, 2.2vw, 36px) 20px;
@@ -98,7 +102,6 @@
 .idx-home .hero3__card:hover:not(.is-case-open) .hero3__case-cover-face,
 .idx-home .hero3__card:focus-visible:not(.is-case-open) .hero3__case-cover-face {
   border-color: rgba(238, 243, 231, 0.62);
-  transform: translateZ(30px) rotateY(0deg) scale(1.016);
   box-shadow:
     inset 13px 0 rgba(238, 242, 232, 0.18),
     inset -4px 0 rgba(217, 244, 91, 0.24),
@@ -246,10 +249,15 @@
   gap: clamp(4px, 0.38vw, 7px);
   overflow: hidden;
   pointer-events: none;
-  transform: translateZ(2px) rotateY(-20deg);
+  /* The opened lid now settles at a true -180deg. Its inside face is already
+     turned 180deg, so this print can remain on a front-facing 2D raster plane.
+     A second counter-rotation blurred glyphs and made the print feel detached. */
+  transform: none;
   transform-origin: 50% 50%;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: auto;
   text-rendering: optimizeLegibility;
+  font-synthesis: none;
+  filter: none;
 }
 
 .idx-home .hero3__case-print > span,
@@ -401,11 +409,11 @@
   }
 
   .idx-home .hero3__case-print .hero3__inside-title {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .idx-home .hero3__case-print .hero3__inside-summary {
-    font-size: 8px;
+    font-size: 9px;
     line-height: 1.4;
     -webkit-line-clamp: 2;
   }
@@ -422,21 +430,1203 @@
   }
 }
 
+/* --------------------------------------------------------------------------
+   Hero rack experiment
+
+   Spatial transforms on .hero3__card belong exclusively to the rack renderer.
+   This layer only supplies the physical shelf, case material and state cues.
+   Keeping the experiment behind data-hero-layout makes the released carousel
+   and the <= 768px stable experience independent from this pass.
+   -------------------------------------------------------------------------- */
+@media (min-width: 769px) {
+  .idx-home .hero3[data-hero-layout="rack"] {
+    --rack-card-width: clamp(270px, 22vw, 390px);
+    --rack-spine-width: clamp(36px, 2.8vw, 52px);
+    --rack-center-y: 42%;
+    --rack-half-case-height: calc(var(--rack-card-width) * 0.6333333);
+    --rack-reader-x: 0px;
+    --rack-paper: rgba(239, 243, 233, 0.72);
+    --rack-rail: rgba(217, 244, 91, 0.58);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__carousel-shell {
+    inset: calc(var(--hero3-nav-height) + 12px) 0 clamp(20px, 2.8vh, 32px);
+    overflow: clip;
+    isolation: isolate;
+    perspective: clamp(2800px, 220vw, 4400px);
+    perspective-origin: 50% var(--rack-center-y);
+  }
+
+  /* The first-frame/high-speed phase is a shallow, cached train of spines.
+     It occupies the exact final rack band but contains no jewel-case trays,
+     captions, shadows or preserve-3d descendants. One compositor transform
+     can therefore carry the whole collection while the real rack remains
+     parked in its canonical closed pose underneath. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail {
+    --hero3-entry-pitch: clamp(38px, 2.8vw, 52px);
+    --hero3-entry-spine-width: calc(var(--hero3-entry-pitch) - 2px);
+    position: absolute;
+    z-index: 9;
+    top: var(--rack-center-y);
+    right: 0;
+    left: 0;
+    height: var(--hero3-entry-card-height, calc(var(--rack-card-width) * 1.2666667));
+    overflow: hidden;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) scaleY(1);
+    transform-origin: 50% 50%;
+    pointer-events: none;
+    contain: strict;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail::after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    bottom: 0;
+    width: 12vw;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail::before {
+    left: 0;
+    background: linear-gradient(90deg, #040705, transparent);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail::after {
+    right: 0;
+    background: linear-gradient(270deg, #040705, transparent);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    width: var(--hero3-entry-track-width, 300%);
+    height: 100%;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 16% 72%, rgba(0, 0, 0, 0.52)),
+      repeating-linear-gradient(180deg, transparent 0 10px, rgba(239, 243, 233, 0.08) 10px 11px),
+      repeating-linear-gradient(
+        90deg,
+        #071009 0 2px,
+        #c23f77 2px calc(var(--hero3-entry-pitch) - 2px),
+        #071009 calc(var(--hero3-entry-pitch) - 2px) var(--hero3-entry-pitch),
+        #248f84 var(--hero3-entry-pitch) calc(var(--hero3-entry-pitch) * 2 - 2px),
+        #071009 calc(var(--hero3-entry-pitch) * 2 - 2px) calc(var(--hero3-entry-pitch) * 2),
+        #9aa82e calc(var(--hero3-entry-pitch) * 2) calc(var(--hero3-entry-pitch) * 3 - 2px),
+        #071009 calc(var(--hero3-entry-pitch) * 3 - 2px) calc(var(--hero3-entry-pitch) * 3),
+        #6a4bb4 calc(var(--hero3-entry-pitch) * 3) calc(var(--hero3-entry-pitch) * 4 - 2px),
+        #071009 calc(var(--hero3-entry-pitch) * 4 - 2px) calc(var(--hero3-entry-pitch) * 4),
+        #b56b35 calc(var(--hero3-entry-pitch) * 4) calc(var(--hero3-entry-pitch) * 5 - 2px),
+        #071009 calc(var(--hero3-entry-pitch) * 5 - 2px) calc(var(--hero3-entry-pitch) * 5),
+        #3378a7 calc(var(--hero3-entry-pitch) * 5) calc(var(--hero3-entry-pitch) * 6 - 2px),
+        #071009 calc(var(--hero3-entry-pitch) * 6 - 2px) calc(var(--hero3-entry-pitch) * 6)
+      );
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+  }
+
+  /* Decoded posters are precomposed into one text-free bitmap. The canvas is a
+     child of the single moving track, so travel and braking still animate only
+     one transform layer regardless of the number of visible cases. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail-art {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 140ms linear;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-rail[data-entry-art="ready"] .hero3__entry-rail-art {
+    opacity: 1;
+  }
+
+  /* The base loading state hides the whole carousel shell.  The rack intro
+     needs its inexpensive rail on the first painted frame, while the real
+     cases and player remain hidden until their committed data is ready. */
+  .idx-home .hero3[data-hero-layout="rack"]:not([data-hero-state="ready"]) .hero3__carousel-shell {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"]:not([data-hero-state="ready"]) .hero3__orbit,
+  .idx-home .hero3[data-hero-layout="rack"]:not([data-hero-state="ready"]) .hero3__device-zone,
+  .idx-home .hero3[data-hero-layout="rack"]:not([data-hero-state="ready"]) .hero3__rack-controls {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  /* The canonical preserve-3d rack must not flash between hydration and the
+     lightweight travelling skin.  GSAP takes ownership of the same
+     properties only at the stopped cross-fade, where inline styles
+     deliberately reveal the real cases. */
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"] .hero3__orbit,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="hydrated-run"] .hero3__orbit,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="train-run"] .hero3__orbit {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  /* The cases own the scene. The former full-width hardware shelf is reduced
+     to one soft contact plane so the rack reads as a stage, not a UI frame. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__carousel-shell::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__carousel-shell::after,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    display: block;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__carousel-shell::before {
+    display: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__carousel-shell::after {
+    display: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit {
+    --rack-unfold: 1;
+    z-index: 8;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
+    perspective: inherit;
+    transform: none;
+    transform-style: preserve-3d;
+  }
+
+  /* A preserve-3d parent may interleave neighbouring rack cards with the two
+     faces of an opened jewel case. During inspection the rack itself becomes
+     one stacking plane; the selected case keeps its own preserve-3d context. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit.is-case-inspecting {
+    transform-style: preserve-3d;
+  }
+
+  /* The canvas remains the visible closed shelf while aligned live covers
+     unfold from its slots. Only the cover faces rise above it; duplicate live
+     storage spines stay hidden until the paired ownership crossfade. */
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="live-aligned"] .hero3__entry-rail,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="rack-open"] .hero3__entry-rail,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="ownership-switch"] .hero3__entry-rail,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="backdrop"] .hero3__entry-rail {
+    z-index: 7;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__inspection-layer {
+    position: absolute;
+    z-index: 108;
+    inset: 0;
+    display: block;
+    overflow: visible;
+    perspective: inherit;
+    transform-style: preserve-3d;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__inspection-layer > .hero3__card {
+    pointer-events: auto;
+  }
+
+  /* Chromium may cull the 180deg inner print before the parent hinge rotation
+     is composed. Once the physical case is open, keep that real inner face
+     renderable; the closed state still uses backface culling. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case-lid-inside {
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit::before {
+    display: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit::after {
+    display: none;
+  }
+
+  /* The renderer owns transform, opacity and z-index on this outer button.
+     There is intentionally no transform declaration or transform transition. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card {
+    --card-w: var(--rack-card-width);
+    --rack-edge-width: clamp(20px, 1.45vw, 28px);
+    --rack-case-depth: clamp(22px, 1.65vw, 30px);
+    --rack-edge-progress: 0;
+    --rack-edge-clip: 0%;
+    --pointer-glint-x: 50%;
+    --pointer-glint-y: 42%;
+    top: var(--rack-center-y);
+    left: 50%;
+    width: var(--rack-card-width);
+    aspect-ratio: 135 / 171;
+    border-radius: 2px;
+    box-shadow: none;
+    isolation: auto;
+    overflow: visible;
+    backface-visibility: hidden;
+    transform-origin: 50% 52%;
+    transform-style: preserve-3d;
+    contain: layout style;
+    transition: none !important;
+    will-change: auto;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card::after {
+    display: none !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card[data-rack-side="right"]::after {
+    right: calc(var(--rack-edge-width) * -0.25);
+    left: auto;
+    background:
+      linear-gradient(90deg, rgba(217, 244, 91, 0.16), rgba(9, 13, 10, 0.98) 32% 66%, rgba(239, 243, 233, 0.2)),
+      repeating-linear-gradient(180deg, transparent 0 9px, rgba(239, 243, 233, 0.09) 9px 10px);
+    box-shadow: inset 2px 0 rgba(0, 0, 0, 0.54);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine::after {
+    opacity: 0;
+    border-color: rgba(239, 243, 233, 0.3);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-readable::after {
+    opacity: 0.5;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active::after {
+    opacity: 0.72;
+    border-color: rgba(217, 244, 91, 0.56);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine.is-active::after {
+    opacity: 0;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card-shadow {
+    inset: 6% 3% 4% 6%;
+    opacity: 0.42;
+    border: 0;
+    background: rgba(0, 0, 0, 0.66);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.48);
+    filter: none;
+    transform: translate3d(var(--shadow-x), var(--shadow-y), -42px) skewY(var(--shadow-skew)) scale(var(--shadow-scale-x), var(--shadow-scale-y));
+    transition: opacity 120ms linear, box-shadow 150ms ease;
+    will-change: auto;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine .hero3__card-shadow {
+    opacity: 0;
+    visibility: hidden;
+    box-shadow: none;
+  }
+
+  /* A stored spine and a readable jewel case are mutually exclusive physical
+     representations. Hiding only the poster left the transparent jewel-case
+     frame behind during a slot handoff, which produced the empty borders seen
+     between the inventory wall and the five-case aperture. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine:not(.is-rack-surface-transition) .hero3__case {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    content-visibility: hidden;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active .hero3__card-shadow {
+    inset: 6% 3% 4% 6%;
+    opacity: 0.56;
+    box-shadow: 0 14px 24px rgba(0, 0, 0, 0.54);
+  }
+
+  /* A closed case has one visible object: its printed lid.  The internal tray
+     stays mounted in the DOM for the reversible open timeline, but cannot leak
+     through an oblique cover and read as a second, already-open case. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card:not(.is-case-open):not(.is-case-transitioning) .hero3__case-back {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  /* Motion and rest use the same physical material.  Changing shadows,
+     surfaces or spine artwork on the final tick created a visibly different
+     last frame even when the geometry was correct. */
+  .idx-home .hero3[data-hero-layout="rack"].is-rack-moving .hero3__card {
+    /* Promoting all fifteen nested preserve-3d cards makes Chromium flatten
+       their counter-facing spine planes when the rack changes phase. The
+       resulting spine can collapse from ~40px to a sub-pixel line. Keep the
+       rigid rack in one composition context; only the small interactive
+       working set is promoted farther below. */
+    will-change: auto;
+  }
+
+  /* Closed cases do not expose their tray or lid print while travelling.
+     Removing those invisible preserve-3d descendants prevents Chromium from
+     rebuilding the full jewel-case layer tree on every rack frame. The cover,
+     physical spine, AO and outer perspective remain visible throughout. */
+  .idx-home .hero3[data-hero-layout="rack"].is-rack-moving .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"].is-rack-moving .hero3__case-lid {
+    transform-style: preserve-3d;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case {
+    perspective: 3200px;
+    transform-origin: 50% 52%;
+    transition: none;
+    will-change: auto;
+  }
+
+  /* Pointer depth belongs to the case itself. These two narrow material faces
+     travel with the JS-owned inner rotation, so a corner hover exposes a real
+     edge instead of merely changing a matrix or lifting a flat poster. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case::after {
+    display: none !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case::before {
+    right: calc(100% - 2px);
+    opacity: var(--case-edge-left-opacity, 0);
+    transform: translateZ(-8px) skewY(1.5deg);
+    box-shadow: inset -3px 0 rgba(0, 0, 0, 0.54);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case::after {
+    left: calc(100% - 2px);
+    opacity: var(--case-edge-right-opacity, 0);
+    transform: translateZ(-8px) skewY(-1.5deg);
+    box-shadow: inset 3px 0 rgba(0, 0, 0, 0.54);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case::after,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-transitioning .hero3__case::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-transitioning .hero3__case::after {
+    opacity: 0;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine .hero3__case::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine .hero3__case::after {
+    opacity: 0 !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-lid {
+    position: absolute;
+    inset: 0;
+    will-change: auto;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-cover-face {
+    transform: translateZ(calc(var(--rack-case-depth) * 0.5));
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-lid-inside {
+    transform: rotateY(180deg) translateZ(calc(var(--rack-case-depth) * 0.5));
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge {
+    position: absolute;
+    z-index: 3;
+    display: block;
+    border: 1px solid rgba(239, 243, 233, 0.16);
+    background:
+      linear-gradient(90deg, rgba(239, 243, 233, 0.22), rgba(7, 10, 8, 0.96) 34% 70%, rgba(217, 244, 91, 0.18)),
+      repeating-linear-gradient(0deg, transparent 0 8px, rgba(239, 243, 233, 0.065) 8px 9px);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.62);
+    backface-visibility: visible;
+    transform-style: preserve-3d;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--left,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--right {
+    top: 1px;
+    bottom: 1px;
+    width: var(--rack-case-depth);
+    transform: rotateY(90deg);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--left {
+    left: calc(var(--rack-case-depth) * -0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--right {
+    right: calc(var(--rack-case-depth) * -0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--top,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--bottom {
+    right: 1px;
+    left: 1px;
+    height: var(--rack-case-depth);
+    transform: rotateX(90deg);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--top {
+    top: calc(var(--rack-case-depth) * -0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__lid-edge--bottom {
+    bottom: calc(var(--rack-case-depth) * -0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card[data-rack-side="right"] .hero3__card-shadow {
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-offstage {
+    visibility: hidden;
+    pointer-events: none;
+    content-visibility: hidden;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-cover-face {
+    opacity: 1;
+    transition: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-back,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-lid-inside {
+    opacity: 1;
+    transition: none;
+  }
+
+  /* The selected case becomes one opaque foreground object while opening.
+     Even a fractional rack interpolation opacity lets neighbouring covers show
+     through the lid and reads as an overlay rather than a physical case. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case-back,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case-lid-inside,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-transitioning .hero3__case-back,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-transitioning .hero3__case-lid-inside {
+    opacity: 1;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-cover-face {
+    transition:
+      border-color 140ms ease,
+      box-shadow 180ms ease;
+  }
+
+  /* A case owns a complete printed surface before its remote poster decodes.
+     This reserved material prevents the transparent jewel-case outline from
+     flashing between the compact spine and readable cover states. Artwork is
+     promoted inside the same geometry during an idle frame. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card:not(.has-rack-artwork) .hero3__case-cover-face {
+    background:
+      linear-gradient(148deg, rgba(239, 243, 233, 0.13), transparent 28% 66%, rgba(217, 244, 91, 0.13)),
+      repeating-linear-gradient(0deg, rgba(239, 243, 233, 0.035) 0 1px, transparent 1px 7px),
+      radial-gradient(circle at 68% 28%, hsl(var(--hero3-spine-hue, 90) 42% 25%), transparent 43%),
+      hsl(var(--hero3-spine-hue, 90) 22% 10%);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card:not(.has-rack-artwork) .hero3__poster {
+    opacity: 0;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact .hero3__case-cover-face,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact .hero3__case-back,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact .hero3__case-lid-inside,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact .hero3__card-shadow {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact .hero3__case {
+    content-visibility: hidden;
+  }
+
+  /* Compactness is a rendering policy, never a geometry policy. The rack
+     solver positions every item by the centre of one invariant 135/171 case.
+     Changing the outer button to spine width moved that centre by roughly half
+     a case exactly as the item crossed the compact threshold, which produced
+     transient empty frames and doubled cases. Keep the outer box invariant;
+     only the physical spine remains hit-testable. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact {
+    width: var(--rack-card-width, 300px);
+    height: calc(var(--rack-card-width, 300px) * 1.2666667);
+    aspect-ratio: 135 / 171;
+    contain: layout style;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-compact .hero3__case-spine {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  /* Preserve the released 3.0 jewel-case response inside the rack. The rack
+     owns the outer placement; pointer depth belongs to the physical cover. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card:hover:not(.is-case-open) .hero3__case-cover-face,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card:focus-visible:not(.is-case-open) .hero3__case-cover-face {
+    border-color: rgba(238, 243, 231, 0.44);
+    box-shadow:
+      inset 10px 0 rgba(238, 242, 232, 0.13),
+      inset -2px 0 rgba(255, 255, 255, 0.16),
+      inset 0 0 0 1px rgba(4, 7, 5, 0.82),
+      12px 18px 30px rgba(0, 0, 0, 0.34);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-readable .hero3__case-cover-face {
+    visibility: visible;
+    opacity: 1;
+    border-color: rgba(239, 243, 233, 0.42);
+  }
+
+  /* Only the five-case reading aperture is promoted as a persistent moving
+     working set. Promoting all inventory spines inflated GPU memory, while
+     promoting none made Chromium re-rasterise the readable cases on each
+     selection step. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-readable {
+    will-change: transform;
+  }
+
+  /* Outside the short fan handoff band, the cover and storage spine are
+     mutually exclusive views of one case. This keeps settled states crisp and
+     prevents a transparent duplicate surface from lingering at the boundary. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine:not(.is-rack-surface-transition) .hero3__case-cover-face {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-readable .hero3__case-spine {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  /* The fan boundary is a continuous material handoff. Reveal an opaque slice
+     of the real case from its storage edge; an opacity blend made the complete
+     poster appear as a large translucent duplicate over neighbouring spines. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition .hero3__case-cover-face {
+    visibility: visible !important;
+    content-visibility: visible;
+    opacity: 1 !important;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition .hero3__case {
+    clip-path: inset(0 var(--rack-surface-hidden, 100%) 0 0);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition[data-rack-side="left"] .hero3__case {
+    clip-path: inset(0 0 0 var(--rack-surface-hidden, 100%));
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition[data-rack-side="center"] .hero3__case {
+    clip-path: inset(0 var(--rack-surface-half-hidden, 50%) 0 var(--rack-surface-half-hidden, 50%));
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition .hero3__case-spine {
+    visibility: visible !important;
+    opacity: calc(1 - var(--rack-surface-progress)) !important;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition .hero3__caption {
+    opacity: 0;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active .hero3__case-cover-face {
+    border-color: rgba(217, 244, 91, 0.92);
+    transform: translateZ(calc(var(--rack-case-depth) * 0.5));
+    box-shadow:
+      inset 10px 0 rgba(238, 242, 232, 0.15),
+      inset -2px 0 rgba(217, 244, 91, 0.2),
+      inset 0 0 0 1px rgba(4, 7, 5, 0.86),
+      10px 16px 26px rgba(0, 0, 0, 0.28),
+      0 0 22px rgba(217, 244, 91, 0.12);
+  }
+
+  /* Match the released 3.0 centre-card depth: the rack owns the outer case
+     placement, while the printed cover lifts independently under the cursor. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active.is-pointer-reacting:not(.is-case-open) .hero3__case-cover-face {
+    transform: translateZ(calc(var(--rack-case-depth) * 0.5));
+    border-color: rgba(238, 243, 231, 0.68);
+    box-shadow:
+      inset 13px 0 rgba(238, 242, 232, 0.18),
+      inset -4px 0 rgba(217, 244, 91, 0.24),
+      inset 0 0 0 1px rgba(4, 7, 5, 0.82),
+      18px 28px 48px rgba(0, 0, 0, 0.46),
+      0 0 28px rgba(217, 244, 91, 0.16);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-spine {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: var(--rack-visible-spine-width, var(--rack-spine-width));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 3px 7px;
+    overflow: hidden;
+    opacity: 0;
+    border-right: 1px solid rgba(239, 243, 233, 0.32);
+    background:
+      linear-gradient(90deg, rgba(239, 243, 233, 0.28), rgba(8, 12, 9, 0.32) 48%, rgba(217, 244, 91, 0.22)),
+      repeating-linear-gradient(180deg, transparent 0 10px, rgba(239, 243, 233, 0.12) 10px 11px),
+      var(--hero3-spine-art) 50% 50% / cover no-repeat,
+      hsl(var(--hero3-spine-hue, 90) 42% 20%);
+    box-shadow:
+      -7px 0 10px rgba(0, 0, 0, 0.72),
+      1px 0 rgba(239, 243, 233, 0.22),
+      inset -2px 0 rgba(0, 0, 0, 0.5);
+    transform: translateX(-50%) rotateY(-90deg);
+    transform-origin: 50% 50%;
+    transform-style: preserve-3d;
+    contain: layout style;
+    backface-visibility: visible;
+    transition: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-spine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent 32% 70%, rgba(0, 0, 0, 0.3));
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-spine b {
+    position: relative;
+    z-index: 1;
+    color: #f0f3ec;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.94);
+    transition: opacity 140ms linear;
+  }
+
+  /* The travelling shelf and the first part of the live-rack handoff are
+     image-only. Spine labels return only after the cases have unfolded far
+     enough to own them visually, avoiding ghost text through the loading rail. */
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"] .hero3__case-spine b,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="hydrated-run"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="hydrated-run"] .hero3__case-spine b,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="train-run"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="train-run"] .hero3__case-spine b,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="rack-stop"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="rack-stop"] .hero3__case-spine b,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="live-aligned"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="live-aligned"] .hero3__case-spine b,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="rack-open"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="rack-open"] .hero3__case-spine b,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="ownership-switch"] .hero3__case-spine small,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="ownership-switch"] .hero3__case-spine b {
+    opacity: 0;
+  }
+
+  /* The live storage-spine representation must never form a second closed
+     row over the canvas. During direct unfold only clipped cover faces are
+     visible. At ownership-switch, aligned outer spines replace the canvas at
+     exactly the inverse opacity. */
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="live-aligned"] .hero3__card.is-rack-spine .hero3__case-spine,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="live-aligned"] .hero3__card.is-rack-surface-transition .hero3__case-spine,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="rack-open"] .hero3__card.is-rack-spine .hero3__case-spine,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="rack-open"] .hero3__card.is-rack-surface-transition .hero3__case-spine,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="ownership-switch"] .hero3__card.is-rack-surface-transition .hero3__case-spine {
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="ownership-switch"] .hero3__card.is-rack-spine:not(.is-rack-surface-transition) .hero3__case-spine {
+    visibility: visible !important;
+    opacity: var(--hero3-rack-ownership, 0) !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-spine small {
+    padding: 2px 1px;
+    color: #071007;
+    background: #d9f45b;
+    font-size: clamp(8px, 0.56vw, 10px);
+    font-weight: 950;
+    line-height: 1;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-spine b {
+    max-height: calc(100% - 30px);
+    overflow: hidden;
+    font-size: clamp(10px, 0.72vw, 13px);
+    font-weight: 850;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    overflow-wrap: anywhere;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card[data-rack-side="right"] .hero3__case-spine {
+    right: auto;
+    left: 50%;
+    border-right: 0;
+    border-left: 1px solid rgba(239, 243, 233, 0.32);
+    background:
+      linear-gradient(90deg, rgba(217, 244, 91, 0.22), rgba(8, 12, 9, 0.32) 52%, rgba(239, 243, 233, 0.28)),
+      repeating-linear-gradient(180deg, transparent 0 10px, rgba(239, 243, 233, 0.12) 10px 11px),
+      var(--hero3-spine-art) 50% 50% / cover no-repeat,
+      hsl(var(--hero3-spine-hue, 90) 42% 20%);
+    box-shadow:
+      7px 0 10px rgba(0, 0, 0, 0.72),
+      -1px 0 rgba(239, 243, 233, 0.22),
+      inset 2px 0 rgba(0, 0, 0, 0.5);
+    transform: translateX(-50%) rotateY(90deg);
+    transform-origin: 50% 50%;
+  }
+
+  /* Pointer depth is local to the touched case. The outer rack transform stays
+     untouched, while a moving print reflection and directional contact shadow
+     make the inner rotation visible on both the centre and readable neighbours. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-pointer-reacting:not(.is-case-open) .hero3__card-shadow {
+    opacity: 0.62;
+    box-shadow: 0 26px 42px rgba(0, 0, 0, 0.58);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-pointer-reacting:not(.is-active):not(.is-case-open) .hero3__card-shadow {
+    opacity: 0.42;
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine:not(.is-rack-surface-transition) .hero3__case-spine {
+    visibility: visible;
+    opacity: 1;
+    border-color: rgba(239, 243, 233, 0.86);
+    filter: none;
+    box-shadow:
+      0 0 0 1px rgba(217, 244, 91, 0.3),
+      -7px 0 10px rgba(0, 0, 0, 0.72),
+      inset -2px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine[data-rack-side="right"] .hero3__case-spine {
+    box-shadow:
+      0 0 0 1px rgba(217, 244, 91, 0.3),
+      7px 0 10px rgba(0, 0, 0, 0.72),
+      inset 2px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active .hero3__case-spine {
+    opacity: 0;
+    border-color: #d9f45b;
+  }
+
+  /* The spine belongs to the closed jewel case. Once that same case opens it
+     cannot remain standing through the tray/disc plane; doing so was the thin
+     vertical strip seen across the disc in inspection screenshots. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case-spine,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-transitioning .hero3__case-spine {
+    visibility: hidden;
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__poster {
+    filter: none;
+    transition: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine .hero3__poster {
+    filter: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-readable .hero3__poster {
+    filter: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active .hero3__poster {
+    filter: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__caption {
+    backface-visibility: hidden;
+    translate: none;
+    padding-left: clamp(10px, 0.9vw, 16px);
+    background: transparent !important;
+    border-bottom: 1px solid rgba(239, 243, 233, 0.14);
+    border-left: 2px solid rgba(217, 244, 91, 0.62);
+    box-shadow: none;
+    transform: none;
+    transform-style: flat;
+    opacity: 1;
+    transition: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-cover-face::after {
+    opacity: 1;
+    background:
+      linear-gradient(180deg, transparent 0 46%, rgba(3, 6, 4, 0.34) 64%, rgba(3, 6, 4, 0.94) 100%),
+      repeating-linear-gradient(0deg, rgba(239, 243, 233, 0.025) 0 1px, transparent 1px 4px);
+    background-blend-mode: normal;
+    mix-blend-mode: normal;
+    filter: none;
+    transform: translateZ(0.4px);
+    transition: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__foil {
+    position: absolute;
+    z-index: 2;
+    inset: -4%;
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at var(--pointer-glint-x) var(--pointer-glint-y), rgba(255,255,255,0.94) 0 1.5%, transparent 9% 26%),
+      conic-gradient(from 94deg at var(--pointer-glint-x) var(--pointer-glint-y), transparent 0 7%, rgba(38,255,212,0.72) 12%, rgba(88,110,255,0.78) 20%, rgba(255,48,207,0.76) 29%, rgba(255,226,55,0.82) 38%, transparent 48% 61%, rgba(60,247,220,0.62) 69%, transparent 78% 100%),
+      repeating-linear-gradient(106deg, transparent 0 9px, rgba(247,250,244,0.38) 10px, transparent 13px 24px),
+      repeating-radial-gradient(ellipse at 40% 54%, transparent 0 8px, rgba(112,255,224,0.18) 9px 10px, transparent 12px 22px);
+    background-blend-mode: screen, color-dodge, screen, screen;
+    mix-blend-mode: screen;
+    filter: saturate(1.75) contrast(1.16);
+    transform: translate3d(var(--foil-shift-x, 0), var(--foil-shift-y, 0), 1px) skewX(var(--foil-skew, 0deg)) scale(1.04);
+    transform-origin: var(--pointer-glint-x) var(--pointer-glint-y);
+    transition: opacity 120ms linear;
+    will-change: auto;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-pointer-reacting:not(.is-case-open) .hero3__foil {
+    /* A material sheen must reveal the print below it, not replace the art. */
+    opacity: 0.38;
+    will-change: transform, opacity;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case-disc,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-transitioning .hero3__case-disc {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine:not(.is-rack-surface-transition) .hero3__caption {
+    opacity: 0;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-readable .hero3__caption,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active .hero3__caption,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-pointer-reacting .hero3__caption {
+    opacity: 1;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active {
+    box-shadow: none;
+  }
+
+  /* A case opens in its own foreground inspection layer.  Nearby rack cards
+     remain behind both halves, preventing covers from cutting through the
+     inside print or disc tray during the hinge motion. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-transitioning {
+    z-index: 900 !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"] .hero3__device-zone,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"] .hero3__register,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"] .hero3__art-switch,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"] .hero3__info {
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+  }
+
+  /* Artwork hydration may take several frames before the GSAP timeline owns
+     the device. Keep the player asleep during that handoff instead of briefly
+     exposing its final geometry beneath the travelling shelf. */
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="hydrated-run"] .hero3__device-zone {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__device-zone,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__register,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__art-switch,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__info {
+    transition: none;
+  }
+
+  /* Deliberate cyclic controls. Drag is intentionally absent until it can meet
+     the canonical-slot and wrap-continuity acceptance gates. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-controls {
+    position: absolute;
+    z-index: 42;
+    bottom: clamp(10px, 2.6vh, 24px);
+    left: 50%;
+    display: grid;
+    grid-template-columns: 40px minmax(164px, 202px) 40px;
+    align-items: stretch;
+    gap: 5px;
+    padding: 4px;
+    border: 1px solid rgba(239, 243, 233, 0.26);
+    background:
+      repeating-linear-gradient(135deg, transparent 0 13px, rgba(217, 244, 91, 0.035) 13px 14px),
+      rgba(5, 8, 6, 0.94);
+    box-shadow: 0 9px 24px rgba(0, 0, 0, 0.34), inset 0 1px rgba(239, 243, 233, 0.06);
+    transform: translateX(-50%);
+    pointer-events: auto;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-controls::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -6px;
+    background: rgba(4, 7, 5, 0.72);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-step,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-guide {
+    min-width: 0;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(239, 243, 233, 0.28);
+    border-radius: 0;
+    color: rgba(239, 243, 233, 0.88);
+    background: rgba(9, 13, 10, 0.96);
+    box-shadow: inset 0 -3px rgba(0, 0, 0, 0.4);
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-step {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-step:hover,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-step:focus-visible {
+    color: #060906;
+    border-color: #d9f45b;
+    background: #d9f45b;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-step:active {
+    translate: 0 2px;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-guide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    text-align: left;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-control-copy {
+    display: grid;
+    gap: 1px;
+    padding: 0 11px;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-control-copy b {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-control-copy small {
+    opacity: 0.58;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 6px;
+    letter-spacing: 0.16em;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__rack-step:focus-visible {
+    outline: 2px solid #d9f45b;
+    outline-offset: 3px;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__keyhint {
+    position: absolute;
+    z-index: 41;
+    bottom: clamp(-10px, 0.5vh, 4px);
+    left: 50%;
+    margin: 0;
+    padding: 4px 9px;
+    border-left: 2px solid rgba(217, 244, 91, 0.58);
+    color: rgba(239, 243, 233, 0.64);
+    background: rgba(4, 7, 5, 0.7);
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro]:not([data-hero-intro="ready"]) .hero3__rack-controls,
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro]:not([data-hero-intro="ready"]) .hero3__keyhint {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* The entry trail belongs behind the closed rack: layered horizontal streaks
+     read as a fast archive train, without becoming an unrelated crosshair. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-spark {
+    display: none !important;
+    top: var(--rack-center-y);
+    left: 50%;
+    z-index: 6;
+    display: block;
+    width: min(62vw, 1120px);
+    height: clamp(210px, 42vh, 440px);
+    opacity: 0;
+    border: 0;
+    background:
+      linear-gradient(90deg, transparent 0, rgba(239, 243, 233, 0.04) 9%, rgba(217, 244, 91, 0.19) 58%, rgba(217, 244, 91, 0.03) 88%, transparent 100%),
+      repeating-linear-gradient(180deg, transparent 0 25px, rgba(217, 244, 91, 0.13) 25px 27px, transparent 27px 42px);
+    box-shadow: none;
+    clip-path: polygon(0 14%, 100% 30%, 100% 70%, 0 86%);
+    filter: none;
+    mix-blend-mode: normal;
+    transform: translate3d(calc(-50% + var(--rack-reader-x)), -50%, 0);
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine:hover .hero3__case-spine,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-spine:focus-visible .hero3__case-spine {
+    filter: brightness(1.16) saturate(1.12);
+    border-color: #d9f45b;
+    box-shadow:
+      0 0 0 1px rgba(217, 244, 91, 0.54),
+      0 0 22px rgba(217, 244, 91, 0.18),
+      inset -2px 0 rgba(0, 0, 0, 0.46);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-spark::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-spark::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-spark::before {
+    top: 19%;
+    right: 1%;
+    left: 9%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(239, 243, 233, 0.38) 26%, #d9f45b 78%, transparent);
+    box-shadow: 0 0 16px rgba(217, 244, 91, 0.28);
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__entry-spark::after {
+    right: 7%;
+    bottom: 21%;
+    left: 22%;
+    height: 1px;
+    border: 0;
+    background: linear-gradient(90deg, transparent, rgba(56, 242, 182, 0.28) 34%, rgba(217, 244, 91, 0.62) 82%, transparent);
+    box-shadow: 0 0 10px rgba(56, 242, 182, 0.18);
+  }
+
+  /* Promote only the interactive case surface. Promoting the outer card while
+     it carries a camera-facing counter-spine changes Chromium's 3D flattening
+     boundary and makes that same physical case appear to change thickness. */
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit[data-rack-ready="true"] .hero3__card.is-active .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-candidate .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-pointer-reacting .hero3__case {
+    will-change: transform;
+  }
+
+  /* The arrival rack is a single rigid high-speed object. Promote the orbit,
+     not fifteen separate cases, until it has docked; runtime browsing returns
+     promotion to the small active working set above. */
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="train-run"].is-rack-moving .hero3__card {
+    will-change: auto;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-candidate .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-active .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-pointer-reacting .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-case-open .hero3__case-lid {
+    will-change: transform;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .idx-home .hero3[data-hero-layout="rack"] {
+    --rack-card-width: clamp(222px, 26vw, 280px);
+    --rack-half-case-height: calc(var(--rack-card-width) * 0.6333333);
+  }
+}
+
+@media (min-width: 769px) and (max-height: 780px) {
+  .idx-home .hero3[data-hero-layout="rack"] {
+    --rack-card-width: clamp(220px, min(22vw, 42vh), 310px);
+    --rack-half-case-height: calc(var(--rack-card-width) * 0.6333333);
+    --rack-center-y: 39%;
+  }
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: reduce) {
+  .idx-home .hero3__entry-rail {
+    display: none !important;
+  }
+
+  .idx-home .hero3__loading-rack-track {
+    animation: none !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__carousel-shell::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__carousel-shell::after,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit::before,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__orbit::after,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card::after,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card-shadow,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-spine,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__poster,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__caption {
+    transition: none !important;
+  }
+
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__card,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case,
+  .idx-home .hero3[data-hero-layout="rack"] .hero3__case-lid {
+    will-change: auto !important;
+  }
+}
+
 /* Two restrained page masks keep both bright and dark artwork legible. */
 .idx-home .hero3__backdrop-scrim {
   background:
-    radial-gradient(ellipse at 50% 39%, transparent 5%, rgba(4, 7, 5, 0.2) 49%, rgba(4, 7, 5, 0.82) 100%),
-    linear-gradient(180deg, rgba(4, 7, 5, 0.34), transparent 23% 61%, rgba(4, 7, 5, 0.88) 100%),
-    linear-gradient(90deg, rgba(4, 7, 5, 0.76), transparent 21% 79%, rgba(4, 7, 5, 0.8));
+    radial-gradient(ellipse 43% 56% at 50% 39%, rgba(239, 243, 233, 0.035), transparent 48%, rgba(4, 7, 5, 0.24) 70%, rgba(4, 7, 5, 0.9) 100%),
+    linear-gradient(180deg, rgba(4, 7, 5, 0.48), transparent 24% 55%, rgba(4, 7, 5, 0.94) 100%),
+    linear-gradient(90deg, rgba(4, 7, 5, 0.9), transparent 27% 73%, rgba(4, 7, 5, 0.92));
 }
 
 .idx-home .hero3__backdrop-blocks {
-  opacity: 0.34;
+  opacity: 0.24;
   background:
     linear-gradient(90deg, rgba(4, 7, 5, 0.8) 0 5.5%, transparent 5.5% 91.5%, rgba(4, 7, 5, 0.84) 91.5%),
     linear-gradient(180deg, transparent 0 58%, rgba(5, 9, 6, 0.2) 58% 70%, rgba(5, 9, 6, 0.66) 100%),
     repeating-linear-gradient(90deg, transparent 0 79px, rgba(217, 244, 91, 0.025) 79px 80px);
   mix-blend-mode: normal;
+}
+
+.idx-home .hero3__backdrop-image {
+  backface-visibility: hidden;
+  filter: none;
+  will-change: auto;
+}
+
+.idx-home .hero3__backdrop.is-switching .hero3__backdrop-image {
+  will-change: transform, opacity;
 }
 
 /* One flat, symmetric chassis plane. The corrected SVG frame sits above it. */
