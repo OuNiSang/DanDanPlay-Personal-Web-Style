@@ -89,6 +89,8 @@
   body.idx-home #heroBanner .hero3__register,
   body.idx-home #heroBanner .hero3__status,
   body.idx-home #heroBanner .hero3__carousel-shell,
+  body.idx-home #heroBanner .hero3__lift-guide,
+  body.idx-home #heroBanner .hero3__flight-disc,
   body.idx-home #heroBanner .hero3__art-switch,
   body.idx-home #heroBanner .hero3__info {
     visibility: hidden !important;

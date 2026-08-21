@@ -49,6 +49,9 @@
   box-shadow:
     18px 24px 42px rgba(0, 0, 0, 0.5),
     inset 0 1px rgba(239, 243, 233, 0.08);
+  /* A projected shadow is paint, not case material. Its transformed box used
+     to overlap the first compact spine and steal that spine's hover target. */
+  pointer-events: none;
   will-change: transform, opacity;
 }
 
@@ -666,6 +669,7 @@
     --rack-case-depth: clamp(22px, 1.65vw, 30px);
     --rack-edge-progress: 0;
     --rack-edge-clip: 0%;
+    --rack-entry-edge-guard: 0px;
     --pointer-glint-x: 50%;
     --pointer-glint-y: 42%;
     top: var(--rack-center-y);
@@ -1021,15 +1025,30 @@
   }
 
   .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition .hero3__case {
-    clip-path: inset(0 var(--rack-surface-hidden, 100%) 0 0);
+    clip-path: inset(
+      var(--rack-entry-edge-guard, 0px)
+      var(--rack-surface-hidden, 100%)
+      var(--rack-entry-edge-guard, 0px)
+      0
+    );
   }
 
   .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition[data-rack-side="left"] .hero3__case {
-    clip-path: inset(0 0 0 var(--rack-surface-hidden, 100%));
+    clip-path: inset(
+      var(--rack-entry-edge-guard, 0px)
+      0
+      var(--rack-entry-edge-guard, 0px)
+      var(--rack-surface-hidden, 100%)
+    );
   }
 
   .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition[data-rack-side="center"] .hero3__case {
-    clip-path: inset(0 var(--rack-surface-half-hidden, 50%) 0 var(--rack-surface-half-hidden, 50%));
+    clip-path: inset(
+      var(--rack-entry-edge-guard, 0px)
+      var(--rack-surface-half-hidden, 50%)
+      var(--rack-entry-edge-guard, 0px)
+      var(--rack-surface-half-hidden, 50%)
+    );
   }
 
   .idx-home .hero3[data-hero-layout="rack"] .hero3__card.is-rack-surface-transition .hero3__case-spine {
