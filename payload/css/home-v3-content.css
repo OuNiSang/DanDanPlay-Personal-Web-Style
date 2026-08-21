@@ -655,18 +655,20 @@ body.idx-home.is-modal-open {
   z-index: 7;
   pointer-events: none;
   background:
-    radial-gradient(circle at var(--case-light-x, 42%) var(--case-light-y, 28%), rgba(238, 255, 204, 0.2), transparent 30%),
-    linear-gradient(108deg, transparent 0 29%, rgba(238, 255, 204, 0.2) 36%, transparent 43%),
-    repeating-linear-gradient(0deg, transparent 0 5px, rgba(255, 255, 255, 0.045) 6px);
+    radial-gradient(circle at var(--case-light-x, 42%) var(--case-light-y, 28%), rgba(255, 255, 255, 0.78) 0 2%, transparent 13% 31%),
+    conic-gradient(from 112deg at var(--case-light-x, 42%) var(--case-light-y, 28%), transparent 0 7%, rgba(67, 255, 208, 0.48) 12%, rgba(84, 117, 255, 0.52) 19%, rgba(255, 75, 213, 0.5) 27%, rgba(255, 226, 71, 0.58) 36%, transparent 46% 58%, rgba(77, 247, 224, 0.38) 67%, transparent 77% 100%),
+    repeating-linear-gradient(112deg, transparent 0 13px, rgba(255, 255, 255, 0.12) 14px, transparent 17px 31px),
+    linear-gradient(108deg, transparent 0 31%, rgba(238, 255, 204, 0.28) 37%, transparent 45%);
+  background-blend-mode: screen, color-dodge, screen, screen;
   mix-blend-mode: screen;
-  opacity: 0.5;
-  transform: translateX(-56%);
-  transition: opacity var(--home3-fast), transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.42;
+  filter: saturate(1.32) contrast(1.06);
+  transform: translateZ(5px);
+  transition: opacity var(--home3-fast);
 }
 
 .idx-home .media-case.is-pointer-active .media-case__sheen {
-  opacity: 0.72;
-  transform: none;
+  opacity: 1;
   transition: opacity var(--home3-fast);
 }
 
@@ -795,8 +797,7 @@ body.idx-home.is-modal-open {
 
 .idx-home .media-case:hover .media-case__sheen,
 .idx-home .media-case:focus-visible .media-case__sheen {
-  opacity: 0.82;
-  transform: translateX(58%);
+  opacity: 0.78;
 }
 
 .idx-home .media-case:not(.is-pointer-active):hover .media-case__cover,
@@ -922,8 +923,11 @@ body.idx-home.is-modal-open {
 
 .idx-home .idx-section--updates::before {
   background:
-    linear-gradient(90deg, var(--home3-surface) 0 5%, transparent 5% 96%, var(--home3-surface) 96% 100%),
-    linear-gradient(112deg, color-mix(in srgb, var(--home3-signal) 7%, transparent) 0 18%, transparent 18% 70%, color-mix(in srgb, var(--home3-signal) 4%, transparent) 70% 100%),
+    /* Edge light frames the weekly bay without drawing a second, false
+       container boundary through the outer card groups. */
+    radial-gradient(ellipse 42% 132% at -8% 44%, color-mix(in srgb, var(--home3-signal) 6%, var(--home3-surface)) 0, color-mix(in srgb, var(--home3-signal) 3%, transparent) 44%, transparent 76%),
+    radial-gradient(ellipse 46% 138% at 108% 54%, color-mix(in srgb, var(--home3-signal) 4%, var(--home3-surface-2)) 0, color-mix(in srgb, var(--home3-signal) 2%, transparent) 46%, transparent 78%),
+    linear-gradient(90deg, color-mix(in srgb, var(--home3-surface) 76%, transparent) 0, color-mix(in srgb, var(--home3-surface) 24%, transparent) 4%, transparent 11% 89%, color-mix(in srgb, var(--home3-surface-2) 22%, transparent) 96%, color-mix(in srgb, var(--home3-surface-2) 72%, transparent) 100%),
     repeating-linear-gradient(90deg, transparent 0 7.95%, rgba(239, 243, 233, 0.022) 7.95% 8%, transparent 8% 16%),
     repeating-linear-gradient(0deg, rgba(239, 243, 233, 0.018) 0 1px, transparent 1px 5px),
     var(--home3-ink);
@@ -2799,7 +2803,11 @@ body.idx-home.is-modal-open {
   .idx-home #luSection {
     box-sizing: border-box;
     height: 100dvh;
-    padding: clamp(60px, 6.7vh, 74px) var(--home3-section-x) clamp(10px, 1.35vh, 18px);
+    /* The seven-day rail is a full-canvas instrument, not a prose column.
+       Let it align with the section frame instead of inheriting the global
+       1760px reading cap, which left almost 400px unused on each side at the
+       user's 2556px viewport. */
+    padding: clamp(60px, 6.7vh, 74px) var(--home3-edge) clamp(10px, 1.35vh, 18px);
   }
 
   .idx-home #luSection .sec-hd {
@@ -2971,8 +2979,10 @@ body.idx-home.is-modal-open {
   }
 
   .idx-home .update-week-grid {
-    --update-week-card-size: clamp(96px, min(8.8vw, 15vh), 131px);
-    --update-week-single-size: clamp(112px, min(10vw, 18vh), 166px);
+    /* The balanced wide-screen case stays visibly above the former 166px
+       scale without turning the weekly rail into a wall of posters. */
+    --update-week-card-size: clamp(128px, min(11.5vw, 16vh), 188px);
+    --update-week-single-size: var(--update-week-card-size);
     position: relative;
     z-index: 3;
     display: grid;
@@ -3702,7 +3712,7 @@ body.idx-home.is-modal-open {
   }
 }
 
-@media (min-width: 769px) and (max-width: 879px) {
+@media (min-width: 769px) and (max-width: 1023px) {
   .idx-home .update-week-grid > .schedule-day--recent > .schedule-day__items,
   .idx-home .update-week-grid > .schedule-day--recent[data-lane] > .schedule-day__items {
     grid-template-columns: minmax(0, 1fr);
@@ -3714,10 +3724,19 @@ body.idx-home.is-modal-open {
   }
 }
 
+@media (min-width: 1024px) and (max-width: 1359px) {
+  .idx-home .update-week-grid {
+    /* Four-card nodes still use two columns here. Cap their combined width so
+       matching lanes two dates apart cannot intersect around 1280px. */
+    --update-week-card-size: clamp(118px, min(10.3vw, 16.7vh), 132px);
+    --update-week-single-size: var(--update-week-card-size);
+  }
+}
+
 @media (min-width: 769px) and (max-height: 760px) {
   .idx-home .update-week-grid {
     --update-week-card-size: clamp(90px, min(8vw, 14vh), 100px);
-    --update-week-single-size: clamp(108px, min(9vw, 16vh), 124px);
+    --update-week-single-size: var(--update-week-card-size);
   }
 
   .idx-home .update-week-grid > .schedule-day--recent[data-lane="upper"] > .schedule-day__items {
@@ -3799,7 +3818,9 @@ body.idx-home.is-modal-open {
 
   .idx-home .update-week-grid {
     gap: clamp(2px, 0.22vw, 4px);
-    padding-inline: clamp(2px, 0.25vw, 5px);
+    /* Keep the wide rail, but stop the outer cases from visually touching the
+       section frame when their cover shadow or focus treatment is active. */
+    padding-inline: clamp(16px, 1.25vw, 30px);
   }
 
   .idx-home .update-week-grid > .schedule-day--recent {
@@ -3857,10 +3878,10 @@ body.idx-home.is-modal-open {
   }
 }
 
-@media (min-width: 769px) and (max-width: 879px) {
+@media (min-width: 769px) and (max-width: 1023px) {
   .idx-home .update-week-grid {
-    --update-week-card-size: clamp(88px, min(11vw, 14vh), 100px);
-    --update-week-single-size: clamp(98px, min(12.5vw, 16vh), 112px);
+    --update-week-card-size: clamp(104px, min(14.5vw, 18vh), 132px);
+    --update-week-single-size: var(--update-week-card-size);
   }
 
   .idx-home .update-week-grid .timeline-card,

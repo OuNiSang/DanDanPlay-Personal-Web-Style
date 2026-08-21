@@ -619,7 +619,8 @@ body.library-page--v3 {
   align-items: start;
   align-content: start;
   justify-content: start;
-  gap: clamp(12px, 1.35vw, 22px);
+  column-gap: clamp(12px, 1.35vw, 22px);
+  row-gap: clamp(34px, 3vw, 48px);
 }
 
 .library-page--v3 .poster-item {
@@ -629,11 +630,13 @@ body.library-page--v3 {
   --lib-image-y: 0px;
   --lib-caption-x: 0px;
   --lib-caption-y: 0px;
-  --lib-shadow-x: 16px;
-  --lib-shadow-y: 18px;
+  --lib-shadow-x: 7px;
+  --lib-shadow-y: 9px;
   --lib-card-y: 0px;
   --lib-card-z: 0px;
   --lib-card-scale: 1;
+  --lib-light-x: 50%;
+  --lib-light-y: 42%;
   position: relative;
   isolation: isolate;
   width: 100%;
@@ -646,7 +649,7 @@ body.library-page--v3 {
   border-radius: 0;
   color: var(--lib-paper);
   background: var(--lib-panel);
-  box-shadow: 0 12px 0 rgba(0, 0, 0, 0.24);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.22);
   transform-style: preserve-3d;
   transform-origin: 50% 72%;
   transform: perspective(1000px) translate3d(0, var(--lib-card-y), var(--lib-card-z)) rotateX(var(--lib-tilt-x)) rotateY(var(--lib-tilt-y)) scale(var(--lib-card-scale));
@@ -657,12 +660,12 @@ body.library-page--v3 {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: 3% -8% -9% 6%;
+  inset: 2% -4% -5% 4%;
   border: 1px solid rgba(217, 244, 91, 0.14);
   background:
     linear-gradient(90deg, rgba(7, 10, 7, 0.96), rgba(22, 30, 13, 0.88)),
     repeating-linear-gradient(0deg, rgba(238, 242, 232, 0.07) 0 1px, transparent 1px 7px);
-  box-shadow: 12px 16px 0 rgba(0, 0, 0, 0.34);
+  box-shadow: 7px 9px 0 rgba(0, 0, 0, 0.32);
   transform: translate3d(var(--lib-shadow-x), var(--lib-shadow-y), -72px) skewY(-1deg);
   transform-origin: left center;
   pointer-events: none;
@@ -710,6 +713,35 @@ body.library-page--v3 {
   transform: translate3d(var(--lib-image-x), var(--lib-image-y), 18px) scale(1.006);
   backface-visibility: hidden;
   transition: transform 360ms var(--lib-ease), filter 220ms ease, clip-path 260ms var(--lib-ease);
+}
+
+.library-page--v3 .poster-sheen {
+  position: absolute;
+  inset: 1px;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--lib-light-x) var(--lib-light-y), rgba(255, 255, 255, 0.8) 0 2%, transparent 13% 31%),
+    conic-gradient(from 112deg at var(--lib-light-x) var(--lib-light-y), transparent 0 7%, rgba(67, 255, 208, 0.48) 12%, rgba(84, 117, 255, 0.52) 19%, rgba(255, 75, 213, 0.5) 27%, rgba(255, 226, 71, 0.58) 36%, transparent 46% 58%, rgba(77, 247, 224, 0.38) 67%, transparent 77% 100%),
+    repeating-linear-gradient(112deg, transparent 0 13px, rgba(255, 255, 255, 0.12) 14px, transparent 17px 31px);
+  background-blend-mode: screen, color-dodge, screen;
+  mix-blend-mode: screen;
+  opacity: 0.4;
+  filter: saturate(1.32) contrast(1.06);
+  transform: translateZ(26px);
+  backface-visibility: hidden;
+  transition: opacity 180ms ease;
+}
+
+.library-page--v3 .poster-item:hover .poster-sheen,
+.library-page--v3 .poster-item:focus-visible .poster-sheen {
+  opacity: 0.74;
+}
+
+.library-page--v3 .poster-item.is-pointer-active .poster-sheen {
+  opacity: 1;
+  will-change: opacity;
 }
 
 .library-page--v3 .poster-info {
@@ -837,13 +869,13 @@ body.library-page--v3 {
   --lib-card-scale: 1.016;
   z-index: 6;
   border-color: var(--lib-acid);
-  box-shadow: 0 34px 76px rgba(0, 0, 0, 0.58), 0 0 0 1px rgba(217, 244, 91, 0.2);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(217, 244, 91, 0.2);
   transform: perspective(1000px) translate3d(0, var(--lib-card-y), var(--lib-card-z)) rotateX(var(--lib-tilt-x)) rotateY(var(--lib-tilt-y)) scale(var(--lib-card-scale));
 }
 
 .library-page--v3 .poster-item:hover::before {
   border-color: rgba(217, 244, 91, 0.48);
-  box-shadow: 30px 38px 78px rgba(0, 0, 0, 0.62);
+  box-shadow: 8px 10px 0 rgba(0, 0, 0, 0.5);
 }
 
 .library-page--v3 .poster-item:hover img {
@@ -853,6 +885,7 @@ body.library-page--v3 {
 .library-page--v3 .poster-groups.is-scrolling .poster-item,
 .library-page--v3 .poster-groups.is-scrolling .poster-item::before,
 .library-page--v3 .poster-groups.is-scrolling .poster-item img,
+.library-page--v3 .poster-groups.is-scrolling .poster-sheen,
 .library-page--v3 .poster-groups.is-scrolling .poster-info {
   transition-duration: 0ms;
 }
@@ -870,7 +903,7 @@ body.library-page--v3 {
   z-index: 7;
   outline: 3px solid var(--lib-acid);
   outline-offset: 7px;
-  box-shadow: 0 30px 68px rgba(0, 0, 0, 0.54);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.42);
   transform: perspective(1000px) translate3d(0, var(--lib-card-y), var(--lib-card-z)) rotateX(var(--lib-tilt-x)) rotateY(var(--lib-tilt-y)) scale(var(--lib-card-scale));
 }
 

@@ -92,7 +92,8 @@
     var wasDesktop = desktopQuery.matches;
     var motionProperties = [
         '--lib-tilt-x', '--lib-tilt-y', '--lib-image-x', '--lib-image-y',
-        '--lib-caption-x', '--lib-caption-y', '--lib-shadow-x', '--lib-shadow-y'
+        '--lib-caption-x', '--lib-caption-y', '--lib-shadow-x', '--lib-shadow-y',
+        '--lib-light-x', '--lib-light-y'
     ];
 
     function isV3Desktop() {
@@ -209,25 +210,12 @@
         }
 
         function normalizeCardActivation() {
-            if (!window.jQuery || typeof window.showModal !== 'function' || !Array.isArray(window.bangumiList)) return;
+            if (!window.jQuery || typeof window.showModal !== 'function') return;
 
-            var grouped = [];
-            var groupedByName = Object.create(null);
-            window.bangumiList.forEach(function (bangumi) {
-                var groupName = bangumi.GroupName || '未分组';
-                if (!groupedByName[groupName]) {
-                    groupedByName[groupName] = [];
-                    grouped.push(groupedByName[groupName]);
-                }
-                groupedByName[groupName].push(bangumi);
-            });
-            var orderedItems = [].concat.apply([], grouped);
-
-            Array.prototype.forEach.call(scroller.querySelectorAll('.poster-item'), function (card, index) {
-                var bangumi = orderedItems[index];
-                if (!bangumi) return;
-                card.dataset.animeId = String(bangumi.AnimeId);
-                card.dataset.animeTitle = bangumi.Title || '';
+            Array.prototype.forEach.call(scroller.querySelectorAll('.poster-item'), function (card) {
+                // Identity is authored by createPosterItem(). Reconstructing it from the
+                // current DOM index breaks as soon as search/filtering changes the list.
+                if (!card.dataset.animeId) return;
                 if (card.dataset.libraryDelegated === 'true') return;
                 window.jQuery(card).off('click keydown');
                 card.dataset.libraryDelegated = 'true';
@@ -270,8 +258,10 @@
             card.style.setProperty('--lib-image-y', '0px');
             card.style.setProperty('--lib-caption-x', '0px');
             card.style.setProperty('--lib-caption-y', '0px');
-            card.style.setProperty('--lib-shadow-x', '16px');
-            card.style.setProperty('--lib-shadow-y', '18px');
+            card.style.setProperty('--lib-shadow-x', '7px');
+            card.style.setProperty('--lib-shadow-y', '9px');
+            card.style.setProperty('--lib-light-x', '50%');
+            card.style.setProperty('--lib-light-y', '42%');
 
             card._libraryMotionResetTimer = window.setTimeout(function () {
                 card.classList.remove('is-pointer-active');
@@ -300,8 +290,10 @@
             activeCard.style.setProperty('--lib-image-y', (-normalizedY * 4).toFixed(2) + 'px');
             activeCard.style.setProperty('--lib-caption-x', (normalizedX * 3).toFixed(2) + 'px');
             activeCard.style.setProperty('--lib-caption-y', (normalizedY * 2).toFixed(2) + 'px');
-            activeCard.style.setProperty('--lib-shadow-x', (16 - normalizedX * 7).toFixed(2) + 'px');
-            activeCard.style.setProperty('--lib-shadow-y', (18 + normalizedY * 6).toFixed(2) + 'px');
+            activeCard.style.setProperty('--lib-shadow-x', (7 - normalizedX * 3).toFixed(2) + 'px');
+            activeCard.style.setProperty('--lib-shadow-y', (9 + normalizedY * 3).toFixed(2) + 'px');
+            activeCard.style.setProperty('--lib-light-x', ((normalizedX + 1) * 50).toFixed(1) + '%');
+            activeCard.style.setProperty('--lib-light-y', ((normalizedY + 1) * 50).toFixed(1) + '%');
         }
 
         function onPointerMove(event) {

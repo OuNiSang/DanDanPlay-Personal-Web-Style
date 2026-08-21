@@ -1478,8 +1478,8 @@
     <link href="css/home-v18.css?v=home18-r41" rel="stylesheet">
     <link href="css/home-stable-mobile.css?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3" rel="stylesheet">
     <link data-web1-v3 href="css/home-v3-hero.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
-    <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
-    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.0-content-r7" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r22" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.0-content-r8" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
 </head>
@@ -1536,7 +1536,7 @@
 </nav>
 
 <!-- ══ Web1 3.0 Hero (真实媒体库数据驱动) ══ -->
-<section class="idx-hero hero3" id="heroBanner" aria-labelledby="heroTitle" data-hero-state="loading">
+<section class="idx-hero hero3" id="heroBanner" aria-labelledby="heroTitle" data-hero-state="loading" data-hero-layout="rack" data-hero-slider="ring" data-hero-intro="preparing">
     <div class="hero3__backdrop" id="hero3Backdrop" aria-hidden="true">
         <img class="hero3__backdrop-image is-active" id="hero3BackdropA" alt="">
         <img class="hero3__backdrop-image" id="hero3BackdropB" alt="">
@@ -1562,8 +1562,13 @@
             <small id="hero3StatusDescription">连接本地媒体库并整理封面。</small>
         </div>
         <div class="hero3__carousel-shell" id="hero3Shell" aria-label="最近播放作品">
-            <div class="hero3__entry-cloud" id="hero3EntryCloud" aria-hidden="true"></div>
-            <span class="hero3__entry-spark" id="hero3EntrySpark" aria-hidden="true"></span>
+            <!-- First-paint rack placeholder. Cached poster crops are painted
+                 into the shallow canvas before the full-width train brakes. -->
+            <span class="hero3__entry-rail" aria-hidden="true">
+                <span class="hero3__entry-rail-track">
+                    <canvas class="hero3__entry-rail-art"></canvas>
+                </span>
+            </span>
             <div class="hero3__orbit" id="hero3Orbit" role="listbox" aria-label="选择最近播放的作品"></div>
 
             <span class="hero3__lift-guide" id="hero3LiftGuide" aria-hidden="true">
@@ -1620,8 +1625,19 @@
                         <span class="hero3__load-state" aria-hidden="true">READY</span>
                     </span>
                 </a>
-                <p class="hero3__keyhint" aria-label="键盘操作提示">← / → 切换 · Enter 播放</p>
             </div>
+            <div class="hero3__rack-controls" role="group" aria-label="循环 CD 架浏览控制">
+                <button class="hero3__rack-step hero3__rack-step--prev" id="hero3RackPrev" type="button" aria-label="上一张唱片盒">
+                    <span aria-hidden="true">←</span>
+                </button>
+                <span class="hero3__rack-guide" aria-hidden="true">
+                    <span class="hero3__rack-control-copy"><b>循环浏览</b><small>SHIFT + SCROLL / ARROW KEYS</small></span>
+                </span>
+                <button class="hero3__rack-step hero3__rack-step--next" id="hero3RackNext" type="button" aria-label="下一张唱片盒">
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+            <p class="hero3__keyhint hero3__rack-keyhint" aria-label="操作提示">点击侧盒 / 左右按钮 / 方向键 / Shift + 滚轮切换 · 点击中心盒开盒</p>
         </div>
 
         <button class="btn-hero-mode hero3__art-switch" id="heroModeToggle" type="button" title="按画质切换下一张 Hero 图片">
@@ -2043,7 +2059,7 @@
 <script src="js/lazysizes-5.3.1.min.js"></script>
 <script src="js/gsap.min.js"></script>
 <script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3"></script>
-<script src="js/home-v3-hero.js?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6"></script>
+<script src="js/home-v3-hero.js?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r22"></script>
 <script src="js/home-v3-content.js?v=@Model.StaticResourceVersion&amp;ui=3.0-content-r7"></script>
 <script src="js/home-stable-mobile.js?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3"></script>
 <script>
@@ -2778,7 +2794,7 @@ $(function () {
             return;
         }
 
-        var compactWeek = window.innerWidth < 880;
+        var compactWeek = window.innerWidth < 1024;
         var recentLimit = compactWeek ? 2 : 4;
         var recentGroups = [];
         for (var age = 0; age < 7; age++) {
@@ -3591,13 +3607,22 @@ $(function () {
     }
 
     function primeHero3Artwork(items, activeAnimeId) {
-        var targets = (items || []).slice(0, 7);
-        var active = (items || []).find(function (item) {
+        var source = items || [];
+        var activeIndex = source.findIndex(function (item) {
             return String(item.AnimeId || '') === String(activeAnimeId || '');
         });
-        if (active && !targets.some(function (item) { return String(item.AnimeId || '') === String(activeAnimeId || ''); })) {
-            targets.push(active);
-        }
+        if (activeIndex < 0) activeIndex = 0;
+        var seenTargets = {};
+        var targets = [0, -1, 1, -2, 2].map(function (offset) {
+            if (!source.length) return null;
+            var index = ((activeIndex + offset) % source.length + source.length) % source.length;
+            return source[index];
+        }).filter(function (item) {
+            var key = item ? String(item.AnimeId || item.Title || '') : '';
+            if (!key || seenTargets[key]) return false;
+            seenTargets[key] = true;
+            return true;
+        });
         var tasks = targets.map(function (item) {
             var id = String(item.AnimeId || '');
             if (!id || !item.Cover) return Promise.resolve(null);
@@ -3634,29 +3659,64 @@ $(function () {
         });
     }
 
+    function hydrateHero3Items(items, activeAnimeId, preservePosition) {
+        if (!window.DandanHero3) return;
+        DandanHero3.hydrate((items || []).map(enrichHero3Item), {
+            activeAnimeId: activeAnimeId,
+            preservePosition: Boolean(preservePosition),
+            getProgress: getWatchProgress,
+            onIntent: function (rawItem) {
+                if (String(rawItem.AnimeId || '') === String(currentHeroAnimeId || '')) {
+                    updateHeroModeButton();
+                    if (currentHeroArtwork) {
+                        $('#heroArtSource').text(currentHeroArtwork.sourceLabel || currentHeroArtwork.source || '本地');
+                    }
+                    return;
+                }
+                var cachedArtwork = readHeroArtworkCache(rawItem);
+                var candidates = cachedArtwork && Array.isArray(cachedArtwork.candidates)
+                    ? cachedArtwork.candidates
+                    : [];
+                var candidate = candidates[0] || null;
+                $('#heroModeText').text(candidates.length > 1
+                    ? '换一张 1/' + candidates.length
+                    : '当前图片');
+                $('#heroArtSource').text(candidate
+                    ? (candidate.sourceLabel || candidate.source || '本地')
+                    : '本地');
+                $('#heroModeToggle')
+                    .prop('disabled', true)
+                    .attr('aria-disabled', 'true')
+                    .attr('aria-busy', 'true')
+                    .attr('title', '正在切换到当前卡片');
+            },
+            onSelect: function (rawItem) {
+                var nextId = String(rawItem.AnimeId || '');
+                if (!nextId || nextId === currentHeroAnimeId) return;
+                hero3UserSelected = true;
+                currentHeroAnimeId = nextId;
+                renderHero(rawItem, { fromHero3: true });
+            },
+            onPlay: function (rawItem) {
+                return prepareBangumiLatest(String(rawItem.AnimeId), rawItem.Title);
+            }
+        });
+    }
+
     function syncHero3(activeItem, preservePosition) {
         if (!window.DandanHero3 || !activeItem) return;
         var sourceItems = getHero3SourceItems(activeItem);
         var activeAnimeId = String(activeItem.AnimeId || '');
         var syncRequestId = ++hero3SyncRequestId;
+
+        // Render the physical rack immediately from the local covers.  The
+        // active five-card aperture is upgraded asynchronously afterwards,
+        // so a slow artwork lookup can never delay the rack geometry.
+        hydrateHero3Items(sourceItems, activeAnimeId, preservePosition);
+
         primeHero3Artwork(sourceItems, activeAnimeId).then(function (preparedItems) {
             if (syncRequestId !== hero3SyncRequestId || !window.DandanHero3) return;
-            var enrichedItems = preparedItems.map(enrichHero3Item);
-            DandanHero3.hydrate(enrichedItems, {
-                activeAnimeId: activeAnimeId,
-                preservePosition: Boolean(preservePosition),
-                getProgress: getWatchProgress,
-                onSelect: function (rawItem) {
-                    var nextId = String(rawItem.AnimeId || '');
-                    if (!nextId || nextId === currentHeroAnimeId) return;
-                    hero3UserSelected = true;
-                    currentHeroAnimeId = nextId;
-                    renderHero(rawItem, { fromHero3: true });
-                },
-                onPlay: function (rawItem) {
-                    return prepareBangumiLatest(String(rawItem.AnimeId), rawItem.Title);
-                }
-            });
+            hydrateHero3Items(preparedItems, activeAnimeId, true);
         });
     }
 

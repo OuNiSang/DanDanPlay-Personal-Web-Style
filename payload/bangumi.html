@@ -8,7 +8,7 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     @Partial['style.sshtml'];
-    <link data-web1-v3 href="css/web1-v3-library-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r3" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/web1-v3-library-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r4" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
     <style media="(max-width: 768px)">
         .library-page--v3 .library-archive-rail,
@@ -52,7 +52,7 @@
                 <button type="button" class="app-nav__search-toggle" aria-label="打开搜索" aria-expanded="false" aria-controls="searchInput">
                     <i class="fas fa-search" aria-hidden="true"></i>
                 </button>
-                <input type="text" id="searchInput" placeholder="搜索番剧…" autocomplete="off">
+                <input type="text" id="searchInput" placeholder="搜索标题、拼音或首字母…" autocomplete="off">
             </div>
             @IfNot.IsAnonymous
             <span class="app-nav__user">
@@ -155,7 +155,8 @@
 </div>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r3"></script>
+<script src="js/vendor/pinyin-pro-3.18.2.js?v=@Model.StaticResourceVersion"></script>
+<script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r4"></script>
 <script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.0-recent-r1"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
@@ -165,12 +166,14 @@
     var bangumiDetailsApiTemplate = "@Model.BangumiDetailsApi";
     var bangumiList = [];
     var bangumiMapById = {};
+    var bangumiSearchRecords = [];
     var currentModalState = null;
     var libraryFallbackPromise = null;
     var groupAnchorMap = {};
     var currentNav = (new URLSearchParams(window.location.search).get('nav') || '').toLowerCase();
     var listRequest = null;
     var modalRequest = null;
+    var modalRequestSerial = 0;
 
     var viewPresentations = {
         lastplay: ['fa-circle-play', '观看动态', '从上次停下的位置继续，观看进度会直接显示在卡片上。'],
@@ -192,15 +195,7 @@
         $('#retryLoadBtn').on('click', loadBangumiList);
 
         $('#searchInput').on('input', function () {
-            var searchQuery = $(this).val().trim().toLowerCase();
-            var filteredList = bangumiList.filter(function (bangumi) {
-                return String(bangumi.Title || '').toLowerCase().includes(searchQuery);
-            });
-            $('#emptyState').toggle(filteredList.length === 0);
-            $('#posterGrid').toggle(filteredList.length > 0);
-            renderBangumiList(filteredList);
-            renderQuickNav(filteredList);
-            updateLibrarySummary(filteredList.length, countGroups(filteredList));
+            renderLibrarySearch($(this).val());
         });
 
         $('#quickNavToggle').click(function () {
@@ -258,14 +253,183 @@
         bangumiList.forEach(function (bangumi) {
             bangumiMapById[String(bangumi.AnimeId)] = bangumi;
         });
+        bangumiSearchRecords = bangumiList.map(buildBangumiSearchRecord);
         $('#loadingIndicator').hide();
         $('#errorState').hide();
-        $('#emptyState').toggle(bangumiList.length === 0);
-        $('#posterGrid').toggle(bangumiList.length > 0);
-        renderBangumiList(bangumiList);
-        renderQuickNav(bangumiList);
-        updateLibrarySummary(bangumiList.length, countGroups(bangumiList));
+        renderLibrarySearch($('#searchInput').val());
     }
+
+    function normalizeSearchText(value) {
+        var text = String(value == null ? '' : value);
+        if (typeof text.normalize === 'function') text = text.normalize('NFKC');
+        return text.toLowerCase().replace(/[\s\p{P}\p{S}_]+/gu, '');
+    }
+
+    function getSearchTitleSource(bangumi) {
+        return [
+            bangumi.Title,
+            bangumi.Name,
+            bangumi.NameCn,
+            bangumi.OriginalTitle,
+            bangumi.Aliases,
+            bangumi.GroupName
+        ].filter(Boolean).join(' ');
+    }
+
+    function getSearchLiteralSource(bangumi) {
+        return [getSearchTitleSource(bangumi), bangumi.Details].filter(Boolean).join(' ');
+    }
+
+    function toPinyin(value, initials) {
+        if (!window.pinyinPro || typeof window.pinyinPro.pinyin !== 'function') return '';
+        try {
+            return window.pinyinPro.pinyin(String(value || ''), {
+                pattern: initials ? 'first' : 'pinyin',
+                toneType: 'none',
+                type: 'string',
+                separator: '',
+                nonZh: 'consecutive',
+                v: true
+            });
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function buildBangumiSearchRecord(bangumi, index) {
+        var titleSource = getSearchTitleSource(bangumi);
+        return {
+            bangumi: bangumi,
+            index: index,
+            literal: normalizeSearchText(getSearchLiteralSource(bangumi)),
+            titleLiteral: normalizeSearchText(titleSource),
+            pinyin: normalizeSearchText(toPinyin(titleSource, false)),
+            initials: normalizeSearchText(toPinyin(titleSource, true))
+        };
+    }
+
+    function boundedEditDistance(left, right, limit) {
+        if (Math.abs(left.length - right.length) > limit) return limit + 1;
+        var previous = [];
+        var current = [];
+        var column;
+        for (column = 0; column <= right.length; column += 1) previous[column] = column;
+
+        for (var row = 1; row <= left.length; row += 1) {
+            current[0] = row;
+            var rowMinimum = current[0];
+            for (column = 1; column <= right.length; column += 1) {
+                var cost = left.charAt(row - 1) === right.charAt(column - 1) ? 0 : 1;
+                current[column] = Math.min(
+                    previous[column] + 1,
+                    current[column - 1] + 1,
+                    previous[column - 1] + cost
+                );
+                rowMinimum = Math.min(rowMinimum, current[column]);
+            }
+            if (rowMinimum > limit) return limit + 1;
+            var swap = previous;
+            previous = current;
+            current = swap;
+        }
+        return previous[right.length];
+    }
+
+    function fuzzyDistance(query, candidate, limit) {
+        if (!candidate || query.length < 3) return limit + 1;
+        if (candidate.length <= query.length + limit) {
+            return boundedEditDistance(query, candidate, limit);
+        }
+
+        var best = limit + 1;
+        var minLength = Math.max(1, query.length - limit);
+        var maxLength = Math.min(candidate.length, query.length + limit);
+        var anchorLength = Math.min(3, Math.max(2, query.length - limit));
+        var anchor = query.slice(0, anchorLength);
+        var anchorIndex = candidate.indexOf(anchor);
+        // Long unrelated titles used to create every possible substring and
+        // run edit distance against all of them. A typo-tolerant candidate
+        // must at least share the stable leading anchor; exact substring and
+        // subsequence matching are handled before/after this path.
+        if (anchorIndex < 0) return best;
+        var startMinimum = Math.max(0, anchorIndex - limit);
+        var startMaximum = Math.min(candidate.length - minLength, anchorIndex + limit);
+        for (var length = minLength; length <= maxLength; length += 1) {
+            for (var start = startMinimum; start <= startMaximum && start + length <= candidate.length; start += 1) {
+                best = Math.min(best, boundedEditDistance(query, candidate.slice(start, start + length), limit));
+                if (best === 0) return 0;
+            }
+        }
+        return best;
+    }
+
+    function subsequenceGap(query, candidate) {
+        if (!candidate || query.length < 2) return -1;
+        var cursor = 0;
+        var first = -1;
+        for (var index = 0; index < candidate.length && cursor < query.length; index += 1) {
+            if (candidate.charAt(index) !== query.charAt(cursor)) continue;
+            if (first < 0) first = index;
+            cursor += 1;
+        }
+        return cursor === query.length ? candidate.length - query.length + Math.max(0, first) : -1;
+    }
+
+    function scoreSearchRecord(record, query) {
+        var exactFields = [record.literal, record.pinyin, record.initials];
+        var fuzzyFields = [record.titleLiteral, record.pinyin, record.initials];
+        var best = Infinity;
+        exactFields.forEach(function (field, fieldIndex) {
+            if (!field) return;
+            if (field === query) best = Math.min(best, fieldIndex);
+            else if (field.indexOf(query) === 0) best = Math.min(best, 10 + fieldIndex);
+            else if (field.indexOf(query) >= 0) best = Math.min(best, 20 + fieldIndex);
+        });
+        if (isFinite(best)) return best;
+
+        var limit = query.length >= 8 ? 2 : 1;
+        // Fuzzy matching is intentionally title-only. Running edit-distance
+        // windows over long synopsis text makes each keystroke quadratic and
+        // can also surface semantically unrelated works that merely mention
+        // the query in their description.
+        fuzzyFields.forEach(function (field, fieldIndex) {
+            if (!field || field.indexOf(query.charAt(0)) < 0) return;
+            var distance = fuzzyDistance(query, field, limit);
+            if (distance <= limit) best = Math.min(best, 40 + distance * 4 + fieldIndex);
+            var gap = subsequenceGap(query, field);
+            if (gap >= 0) best = Math.min(best, 70 + Math.min(20, gap) + fieldIndex);
+        });
+        return best;
+    }
+
+    function searchBangumi(queryValue) {
+        var query = normalizeSearchText(queryValue);
+        if (!query) return bangumiList.slice();
+        return bangumiSearchRecords.map(function (record) {
+            return { record: record, score: scoreSearchRecord(record, query) };
+        }).filter(function (entry) {
+            return isFinite(entry.score);
+        }).sort(function (left, right) {
+            return left.score - right.score || left.record.index - right.record.index;
+        }).map(function (entry) {
+            return entry.record.bangumi;
+        });
+    }
+
+    function renderLibrarySearch(queryValue) {
+        var filteredList = searchBangumi(queryValue);
+        $('#emptyState').toggle(filteredList.length === 0);
+        $('#posterGrid').toggle(filteredList.length > 0);
+        renderBangumiList(filteredList);
+        renderQuickNav(filteredList);
+        updateLibrarySummary(filteredList.length, countGroups(filteredList));
+    }
+
+    window.Web1LibrarySearch = {
+        normalize: normalizeSearchText,
+        search: searchBangumi,
+        render: renderLibrarySearch
+    };
 
     function isRecentPlayNav() {
         return currentNav === 'lastplay' || /(?:nav[=:])lastplay/i.test(bangumiListApi || '');
@@ -284,6 +448,8 @@
         var progress = total > 0 ? Math.max(0, Math.min(100, Math.round(watched / total * 100))) : 0;
         var posterItem = $('<div></div>')
             .addClass('poster-item')
+            .attr('data-anime-id', String(bangumi.AnimeId))
+            .attr('data-anime-title', bangumi.Title || '')
             .attr('data-list-index', globalIndex)
             .attr('data-code', String(globalIndex + 1).padStart(2, '0'))
             .attr('data-source-group', sourceGroup)
@@ -313,6 +479,11 @@
             .attr('data-src', bangumi.Cover)
             .attr('alt', bangumi.Title)
             .addClass('lazyload')
+            .appendTo(posterItem);
+
+        $('<span></span>')
+            .addClass('poster-sheen')
+            .attr('aria-hidden', 'true')
             .appendTo(posterItem);
 
         var posterInfo = $('<div></div>').addClass('poster-info').appendTo(posterItem);
@@ -459,6 +630,7 @@
 
     function showModal(animeId, title) {
         if (modalRequest) modalRequest.abort();
+        var requestSerial = ++modalRequestSerial;
         var bangumi = bangumiMapById[String(animeId)];
         document.getElementById('modalTitle').innerText = title;
         document.getElementById('modalArtwork').src = bangumi && bangumi.Cover ? bangumi.Cover : '';
@@ -479,13 +651,16 @@
             method: 'GET',
             timeout: 10000,
             success: function (response) {
+                if (requestSerial !== modalRequestSerial) return;
                 refreshBangumiListFromDetails(bangumiMeta, response);
                 if (shouldAttemptLibraryFallback(response, bangumiMeta)) {
                     fetchLibraryFallback()
                         .done(function (libraryResponse) {
+                            if (requestSerial !== modalRequestSerial) return;
                             renderModalState(animeId, response, bangumiMeta, libraryResponse);
                         })
                         .fail(function () {
+                            if (requestSerial !== modalRequestSerial) return;
                             renderModalState(animeId, response, bangumiMeta, []);
                         });
                     return;
@@ -494,14 +669,14 @@
                 renderModalState(animeId, response, bangumiMeta, []);
             },
             error: function (xhr, status) {
-                if (status === 'abort') return;
+                if (status === 'abort' || requestSerial !== modalRequestSerial) return;
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('episodeList').style.display = 'block';
                 document.getElementById('episodeList').innerHTML = '<li class="episode-item empty-state">作品详情加载失败，请关闭后重试。</li>';
                 DandanApp.toast(DandanApp.describeError(xhr, '作品详情加载失败。'), 'error');
             },
             complete: function () {
-                modalRequest = null;
+                if (requestSerial === modalRequestSerial) modalRequest = null;
             }
         });
     }
@@ -967,6 +1142,7 @@
 
     function closeModal() {
         document.getElementById('bangumiModal').style.display = 'none';
+        modalRequestSerial += 1;
         if (modalRequest) modalRequest.abort();
         modalRequest = null;
     }
@@ -974,7 +1150,7 @@
     window.onclick = function (event) {
         const modal = document.getElementById('bangumiModal');
         if (event.target === modal) {
-            modal.style.display = 'none';
+            closeModal();
         }
     }
 </script>

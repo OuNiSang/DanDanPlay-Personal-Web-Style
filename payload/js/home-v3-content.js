@@ -250,6 +250,16 @@
         }
     }
 
+    function setGsapTargets(targets, vars) {
+        if (!targets) return;
+        if (targets.nodeType) {
+            gsap.set(targets, vars);
+            return;
+        }
+        var list = Array.prototype.slice.call(targets);
+        if (list.length) gsap.set(list, vars);
+    }
+
     function setUpdateRevealEndState(section) {
         var weekPage = section.querySelector('.update-timeline__page--week');
         if (!weekPage) return;
@@ -260,11 +270,11 @@
         var shadows = weekPage.querySelectorAll('.media-case__shadow');
 
         gsap.set(weekPage, { '--update-rail-progress': 1 });
-        gsap.set(days, { '--update-node-opacity': 1, '--update-node-scale': 1 });
-        gsap.set(headers, { autoAlpha: 1, y: 0 });
-        gsap.set(cards, { autoAlpha: 1 });
-        gsap.set(surfaces, { autoAlpha: 1, y: 0, rotationX: 0, scaleX: 1, scaleY: 1, clearProps: 'transform,opacity,visibility' });
-        gsap.set(shadows, { autoAlpha: 0.72, y: 0, scaleX: 1, scaleY: 1, clearProps: 'transform,visibility' });
+        setGsapTargets(days, { '--update-node-opacity': 1, '--update-node-scale': 1 });
+        setGsapTargets(headers, { autoAlpha: 1, y: 0 });
+        setGsapTargets(cards, { autoAlpha: 1 });
+        setGsapTargets(surfaces, { autoAlpha: 1, y: 0, rotationX: 0, scaleX: 1, scaleY: 1, clearProps: 'transform,opacity,visibility' });
+        setGsapTargets(shadows, { autoAlpha: 0.72, y: 0, scaleX: 1, scaleY: 1, clearProps: 'transform,visibility' });
         section.classList.add('is-update-sequence-complete');
     }
 
@@ -282,11 +292,11 @@
         var shadows = weekPage.querySelectorAll('.media-case__shadow');
 
         gsap.set(weekPage, { '--update-rail-progress': 0 });
-        gsap.set(days, { '--update-node-opacity': 0, '--update-node-scale': 0.46 });
-        gsap.set(headers, { autoAlpha: 0, y: 7 });
-        gsap.set(cards, { autoAlpha: 0 });
-        gsap.set(surfaces, { autoAlpha: 0, y: 18, rotationX: -8, scaleX: 0.9, scaleY: 0.9, transformOrigin: '50% 82%' });
-        gsap.set(shadows, { autoAlpha: 0, y: 7, scaleX: 0.94, scaleY: 0.94 });
+        setGsapTargets(days, { '--update-node-opacity': 0, '--update-node-scale': 0.46 });
+        setGsapTargets(headers, { autoAlpha: 0, y: 7 });
+        setGsapTargets(cards, { autoAlpha: 0 });
+        setGsapTargets(surfaces, { autoAlpha: 0, y: 18, rotationX: -8, scaleX: 0.9, scaleY: 0.9, transformOrigin: '50% 82%' });
+        setGsapTargets(shadows, { autoAlpha: 0, y: 7, scaleX: 0.94, scaleY: 0.94 });
     }
 
     function playUpdateReveal(section) {
@@ -305,13 +315,20 @@
         var cards = weekPage.querySelectorAll('.timeline-card');
         var surfaces = weekPage.querySelectorAll('.media-case__surface');
         var shadows = weekPage.querySelectorAll('.media-case__shadow');
+        if (!days.length) {
+            setUpdateRevealEndState(section);
+            return;
+        }
 
         updateRevealTimeline = gsap.timeline({
             defaults: { ease: 'power3.out' },
             onComplete: function () {
                 updateRevealTimeline = null;
                 section.classList.add('is-update-sequence-complete');
-                gsap.set([headers, cards, surfaces, shadows], { clearProps: 'willChange' });
+                setGsapTargets(headers, { clearProps: 'willChange' });
+                setGsapTargets(cards, { clearProps: 'willChange' });
+                setGsapTargets(surfaces, { clearProps: 'willChange' });
+                setGsapTargets(shadows, { clearProps: 'willChange' });
             }
         });
         updateRevealTimeline
