@@ -8,7 +8,8 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     @Partial['style.sshtml'];
-    <link data-web1-v3 href="css/web1-v3-library-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r4" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r4" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/web1-v3-library-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r6" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
     <style media="(max-width: 768px)">
         .library-page--v3 .library-archive-rail,
@@ -160,6 +161,8 @@
 <script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.0-recent-r1"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
+<script src="js/gsap.min.js"></script>
+<script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r4"></script>
 
 <script>
     var bangumiListApi = "@Model.BangumiListApi";
@@ -975,7 +978,7 @@
         return files.map(function (file) {
             var thumbnailUrl = `/api/v1/image/id/${file.Id}`;
             return `
-                <a href="video.html?id=${file.Id}" target="_blank" class="file-item-link">
+                <a href="video.html?id=${file.Id}" target="_blank" class="file-item-link" data-route-morph="video">
                     <img src="${thumbnailUrl}" alt="${file.Name}" class="file-thumbnail"
                          onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2214%22%3E无缩略图%3C/text%3E%3C/svg%3E';">
                     <div class="file-item-info">

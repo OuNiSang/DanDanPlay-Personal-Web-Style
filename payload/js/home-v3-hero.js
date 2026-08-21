@@ -843,11 +843,19 @@
                 entry.surfaceTransitioning = surfaceTransitioning;
             }
             if (entry.surfaceProgress == null || Math.abs(entry.surfaceProgress - surfaceProgress) >= 0.008) {
+                // The live lid has real top/bottom depth. At the first narrow
+                // horizontal reveal Chromium can antialias that edge outside
+                // the stopped rail before any poster area is perceptible. Keep
+                // those first pixels inside the closed shelf silhouette, then
+                // release the guard well before the cover becomes readable.
+                var entryEdgeGuard = state.entryRunning ?
+                    clamp((0.34 - surfaceProgress) * 12, 0, 3) : 0;
                 card.style.setProperty('--rack-surface-progress', surfaceProgress.toFixed(3));
                 card.style.setProperty('--rack-surface-hidden',
                     ((1 - surfaceProgress) * 100).toFixed(2) + '%');
                 card.style.setProperty('--rack-surface-half-hidden',
                     ((1 - surfaceProgress) * 50).toFixed(2) + '%');
+                card.style.setProperty('--rack-entry-edge-guard', entryEdgeGuard.toFixed(2) + 'px');
                 entry.surfaceProgress = surfaceProgress;
             }
             if (entry.compact !== compact) {
@@ -2816,11 +2824,12 @@
         var coordinateRoot = dom.disc.offsetParent || dom.shell;
         var rootRect = coordinateRoot.getBoundingClientRect();
         var sourceRect = parts.caseDisc.getBoundingClientRect();
-        // The bounding box of a disc inside an edge-on case is a projected
-        // ellipse and can be only a few pixels wide. Its physical diameter is
-        // the untransformed layout width; only its centre comes from the
-        // rendered box. This keeps case, flight and machine media identical.
-        var logicalDiameter = parts.caseDisc.offsetWidth ||
+        // Playback is allowed only for the committed centre case after its open
+        // timeline has settled. Preserve that visible diameter through the
+        // overlay flight and dock instead of dropping back to the smaller
+        // unprojected layout width at the ownership handoff.
+        var renderedDiameter = (sourceRect.width + sourceRect.height) / 2;
+        var logicalDiameter = renderedDiameter > 1 ? renderedDiameter : parts.caseDisc.offsetWidth ||
             parseFloat(window.getComputedStyle(parts.caseDisc).width) ||
             state.mediaDiameter || 210;
         state.mediaDiameter = logicalDiameter;
