@@ -5,6 +5,31 @@
  */
 
 /* Keep the large poster carousel visually separate from the receive deck. */
+.idx-home .hero3::before {
+  /* Keep the grain, without repainting a full-screen background at idle. */
+  animation: none;
+}
+
+.idx-home .hero3[data-hero-state="ready"] .hero3__status::after,
+.idx-home .hero3[data-hero-state="empty"] .hero3__status::after,
+.idx-home .hero3[data-hero-state="error"] .hero3__status::after {
+  animation: none;
+}
+
+.idx-home .hero3[data-hero-intro="ready"] .hero3__entry-rail-track {
+  will-change: auto;
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
+  .idx-home .hero3[data-hero-layout="rack"][data-hero-intro="preparing"]:not([data-hero-state="empty"]):not([data-hero-state="error"]) .hero3__entry-rail-track:not([data-entry-signature]) {
+    animation: home3-boot-rail 180ms linear infinite;
+  }
+}
+
+@keyframes home3-boot-rail {
+  to { transform: translate3d(calc(var(--hero3-entry-pitch) * -6), 0, 0); }
+}
+
 .idx-home .hero3__loading-rack {
   display: none;
 }

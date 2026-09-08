@@ -8,7 +8,8 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     @Partial['style.sshtml'];
-    <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r4" rel="stylesheet" media="(min-width: 769px)">
+    <link href="css/media-availability.css?v=@Model.StaticResourceVersion&amp;ui=6" rel="stylesheet">
+    <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/web1-v3-library-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r6" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
     <style media="(max-width: 768px)">
@@ -156,13 +157,15 @@
 </div>
 
 <script src="js/jquery-3.7.1.min.js"></script>
+<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=3"></script>
 <script src="js/vendor/pinyin-pro-3.18.2.js?v=@Model.StaticResourceVersion"></script>
 <script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r4"></script>
-<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.0-recent-r1"></script>
+<script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=8"></script>
+<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.2-recent-r2"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
 <script src="js/gsap.min.js"></script>
-<script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r4"></script>
+<script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7"></script>
 
 <script>
     var bangumiListApi = "@Model.BangumiListApi";
@@ -180,7 +183,7 @@
 
     var viewPresentations = {
         lastplay: ['fa-circle-play', '观看动态', '从上次停下的位置继续，观看进度会直接显示在卡片上。'],
-        lastupdate: ['fa-clock-rotate-left', '入库时间', '按最近更新的时间分组，快速查看媒体库中的新变化。'],
+        lastupdate: ['fa-clock-rotate-left', '最近更新', '按条目更新日期分组。'],
         lastadd: ['fa-bookmark', '关注动态', '最近关注与新加入媒体库的作品，按时间自然归档。'],
         season: ['fa-calendar-days', '季度归档', '按播出季度浏览收藏，快速定位每一季的作品。'],
         name: ['fa-arrow-down-a-z', '名称索引', '按作品名称浏览媒体库，在完整海报墙中快速定位。'],
@@ -217,6 +220,7 @@
 
     function loadBangumiList() {
         if (listRequest) listRequest.abort();
+        if (window.MediaAvailability) MediaAvailability.reset();
         $('#loadingIndicator').show();
         $('#posterGrid, #emptyState, #errorState').hide();
         DandanApp.setBusy(document.getElementById('retryLoadBtn'), true, '加载中');
@@ -251,7 +255,7 @@
     }
 
     function applyBangumiList(items) {
-        bangumiList = items || [];
+        bangumiList = MediaCalendar.localizeList(items, isRecentPlayNav() ? 'lastplay' : currentNav);
         bangumiMapById = {};
         bangumiList.forEach(function (bangumi) {
             bangumiMapById[String(bangumi.AnimeId)] = bangumi;
@@ -473,16 +477,23 @@
             .addClass('watched-info')
             .text(watched + '/' + total)
             .appendTo(posterItem);
+        if (window.MediaAvailability) MediaAvailability.attach(posterItem[0], bangumi, bangumiDetailsApiTemplate);
 
         if (currentNav === 'rating') {
+            posterItem.addClass('has-poster-rank');
             $('<span></span>').addClass('poster-rank').text('#' + (globalIndex + 1)).appendTo(posterItem);
         }
 
-        $('<img>')
-            .attr('data-src', bangumi.Cover)
+        var posterImage = $('<img>')
             .attr('alt', bangumi.Title)
-            .addClass('lazyload')
+            .on('error', function () { this.style.visibility = 'hidden'; })
             .appendTo(posterItem);
+        if (bangumi.Cover) {
+            posterImage.attr('data-src', bangumi.Cover).addClass('lazyload');
+        } else {
+            // Retain the sleeve geometry without a native broken-image glyph.
+            posterImage.css('visibility', 'hidden');
+        }
 
         $('<span></span>')
             .addClass('poster-sheen')
@@ -502,6 +513,7 @@
     }
 
     function renderBangumiList(bangumiList) {
+        if (window.MediaAvailability) window.requestAnimationFrame(MediaAvailability.prune);
         var posterGroups = $('#posterGroups');
         posterGroups.empty();
         var groups = groupBangumiItems(bangumiList);
@@ -636,7 +648,12 @@
         var requestSerial = ++modalRequestSerial;
         var bangumi = bangumiMapById[String(animeId)];
         document.getElementById('modalTitle').innerText = title;
-        document.getElementById('modalArtwork').src = bangumi && bangumi.Cover ? bangumi.Cover : '';
+        var modalArtwork = document.getElementById('modalArtwork');
+        var modalCover = bangumi && bangumi.Cover ? bangumi.Cover : '';
+        modalArtwork.onerror = function () { this.style.visibility = 'hidden'; };
+        modalArtwork.style.visibility = modalCover ? '' : 'hidden';
+        if (modalCover) modalArtwork.src = modalCover;
+        else modalArtwork.removeAttribute('src');
         document.getElementById('lastWatchedInfo').innerText = '';
         document.getElementById('loading').innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i><span class="visually-hidden">加载中</span>';
         document.getElementById('loading').style.display = 'block';
@@ -978,7 +995,7 @@
         return files.map(function (file) {
             var thumbnailUrl = `/api/v1/image/id/${file.Id}`;
             return `
-                <a href="video.html?id=${file.Id}" target="_blank" class="file-item-link" data-route-morph="video">
+                <a href="video.html?id=${file.Id}" target="${window.Web1UiVersion && Web1UiVersion.isV3Desktop() ? '_self' : '_blank'}" class="file-item-link" data-route-morph="video">
                     <img src="${thumbnailUrl}" alt="${file.Name}" class="file-thumbnail"
                          onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2214%22%3E无缩略图%3C/text%3E%3C/svg%3E';">
                     <div class="file-item-info">
@@ -1005,11 +1022,11 @@
     }
 
     function formatDateValue(value) {
-        return value ? new Date(value).toLocaleDateString() : 'N/A';
+        return MediaCalendar.formatDate(value);
     }
 
     function formatDateTimeValue(value) {
-        return value ? new Date(value).toLocaleString() : 'N/A';
+        return MediaCalendar.formatDateTime(value);
     }
 
     function findLastWatchedEpisode(episodes) {

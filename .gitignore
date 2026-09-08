@@ -2,3 +2,7 @@
 Thumbs.db
 *.log
 *.tmp
+/AGENTS.md
+/.audit/
+/.codex_tmp*
+/dist/

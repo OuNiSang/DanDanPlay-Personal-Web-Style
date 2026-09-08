@@ -43,6 +43,9 @@
 
     function applyDetails(bangumi, response) {
         if (!bangumi) return false;
+        if (global.MediaAvailability && response) {
+            bangumi.__availabilitySummary = global.MediaAvailability.summarize(bangumi, response);
+        }
         var latest = findLatestWatchedEpisode(response && response.Episodes);
         if (!latest) return false;
         var episodeNumber = getEpisodeNumber(latest.episode, bangumi);
@@ -73,6 +76,9 @@
     }
 
     function requestDetails(template, animeId, timeout) {
+        if (global.MediaAvailability) {
+            return global.MediaAvailability.requestDetails(template, animeId, { timeout: timeout });
+        }
         return new Promise(function (resolve) {
             $.ajax({
                 url: template.replace('{id}', animeId),

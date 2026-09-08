@@ -625,10 +625,17 @@ body.idx-home::before {
 .idx-home .pc--continue .pc__badge {
   top: 8px;
   left: 8px;
-  padding: 3px 6px;
-  border: 0;
-  border-radius: 6px;
-  background: rgba(7, 8, 10, 0.76);
+  min-width: 44px;
+  padding: 6px 8px;
+  border: 1px solid rgba(217, 244, 91, 0.72);
+  border-radius: 2px;
+  color: #fff;
+  background: rgba(4, 7, 5, 0.92);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  text-shadow: 0 1px 1px #000;
 }
 .idx-home .pc--continue .pc__play {
   width: 42px;

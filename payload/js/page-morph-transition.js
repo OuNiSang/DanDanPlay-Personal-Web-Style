@@ -19,8 +19,12 @@
     var overlayGeneration = 0;
     var paths = {};
     var activeTimeline = null;
+    var loadingTimeline = null;
     var activeTimer = 0;
-    var holdTimer = 0;
+    var exitSettle = null;
+    var sourceCancel = null;
+    var mediaCleanup = null;
+    var returnFocus = null;
     var armedPayload = null;
     var arrivalPromise = null;
     var arrivalResolve = null;
@@ -136,8 +140,15 @@
         if (payload.version !== PAYLOAD_VERSION || payload.kind !== PAYLOAD_KIND) return false;
         if (!finiteNumber(payload.createdAt) || !finiteNumber(payload.expiresAt)) return false;
         if (payload.expiresAt - payload.createdAt !== TTL_MS) return false;
-        var age = Date.now() - payload.createdAt;
-        if (age < 0 || age > TTL_MS || Date.now() > payload.expiresAt) return false;
+        var navigation = window.performance && window.performance.getEntriesByType
+            ? window.performance.getEntriesByType('navigation')[0] : null;
+        if (navigation && navigation.type !== 'navigate') return false;
+        // A slow document can execute this script long after navigation began.
+        // The one-use handoff must be fresh at navigation start, not at response time.
+        var navigationStart = window.performance && (window.performance.timeOrigin ||
+            (window.performance.timing && window.performance.timing.navigationStart));
+        var age = (navigationStart || Date.now()) - payload.createdAt;
+        if (age < -1 || age > TTL_MS) return false;
         if (!payload.destination || typeof payload.destination !== 'object') return false;
         if (String(payload.destination.id || '') !== currentFileId()) return false;
         if (String(payload.destination.pathname || '') !== window.location.pathname) return false;
@@ -231,6 +242,31 @@
             { x: cx - halfWidth, y: cy - halfHeight + corner },
             { x: cx - halfWidth + corner, y: cy - halfHeight }
         ]);
+    }
+
+    function surfaceRectPoints(cx, cy, width, height, cut) {
+        var left = cx - width / 2;
+        var right = cx + width / 2;
+        var top = cy - height / 2;
+        var bottom = cy + height / 2;
+        var corner = clamp(cut, 0, Math.min(width, height) / 4);
+        var vertices = [
+            { x: left + corner, y: top }, { x: right - corner, y: top },
+            { x: right, y: top + corner }, { x: right, y: bottom - corner },
+            { x: right - corner, y: bottom }, { x: left + corner, y: bottom },
+            { x: left, y: bottom - corner }, { x: left, y: top + corner }
+        ];
+        var points = [];
+        // Keep each edge's points paired as the aspect ratio changes. Perimeter
+        // resampling slides corners around a wide row and makes it appear to turn.
+        vertices.forEach(function (from, index) {
+            var to = vertices[(index + 1) % vertices.length];
+            for (var step = 0; step < POINT_COUNT / vertices.length; step += 1) {
+                var amount = step / (POINT_COUNT / vertices.length);
+                points.push({ x: from.x + (to.x - from.x) * amount, y: from.y + (to.y - from.y) * amount });
+            }
+        });
+        return points;
     }
 
     function interpolatePoints(from, to, progress) {
@@ -328,7 +364,100 @@
         var shutterTrace = document.createElement('span');
         shutterTrace.className = 'ddp-route-morph__shutter-trace';
         root.appendChild(shutterTrace);
+
+        var loading = document.createElement('div');
+        loading.className = 'ddp-route-morph__loading';
+        var scene = document.createElement('div');
+        scene.className = 'ddp-route-morph__loading-scene';
+        var machine = document.createElement('div');
+        machine.className = 'ddp-route-morph__loading-machine';
+        machine.setAttribute('aria-hidden', 'true');
+        for (var bladeIndex = 0; bladeIndex < 5; bladeIndex += 1) {
+            var blade = document.createElement('i');
+            blade.className = 'ddp-route-morph__loading-blade';
+            machine.appendChild(blade);
+        }
+        scene.appendChild(machine);
+        var copy = document.createElement('div');
+        copy.className = 'ddp-route-morph__loading-copy';
+        var loadingKicker = document.createElement('small');
+        loadingKicker.className = 'ddp-route-morph__loading-kicker';
+        loadingKicker.textContent = '准备放映 / NEXT ON SCREEN';
+        copy.appendChild(loadingKicker);
+        var loadingTitle = document.createElement('strong');
+        loadingTitle.className = 'ddp-route-morph__loading-title';
+        copy.appendChild(loadingTitle);
+        var loadingStatus = document.createElement('span');
+        loadingStatus.setAttribute('role', 'status');
+        loadingStatus.setAttribute('aria-live', 'polite');
+        loadingStatus.textContent = '正在进入播放';
+        copy.appendChild(loadingStatus);
+        var signal = document.createElement('span');
+        signal.className = 'ddp-route-morph__loading-signal';
+        signal.setAttribute('aria-hidden', 'true');
+        signal.appendChild(document.createElement('i'));
+        copy.appendChild(signal);
+        scene.appendChild(copy);
+        loading.appendChild(scene);
+        var cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.textContent = '取消加载';
+        cancelButton.addEventListener('click', function () {
+            // Stop the provisional document request before uncovering the source.
+            // On the player, only dismiss the gate; keep native media controls usable.
+            cancel('user-cancelled');
+        });
+        loading.appendChild(cancelButton);
+        root.appendChild(loading);
+        root.addEventListener('keydown', function (event) {
+            if (!root.classList.contains('is-loading')) return;
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                cancelButton.focus({ preventScroll: true });
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelButton.click();
+            }
+        });
         return root;
+    }
+
+    function showLoading(root, destinationReady) {
+        root.classList.add('is-loading');
+        root.setAttribute('aria-hidden', 'false');
+        root.setAttribute('role', 'dialog');
+        root.setAttribute('aria-modal', 'true');
+        root.setAttribute('aria-label', '播放加载');
+        root.querySelector('[role="status"]').textContent = destinationReady ? '正在装载媒体' : '正在进入播放';
+        root.querySelector('.ddp-route-morph__loading-title').textContent =
+            root.querySelector('.ddp-route-morph__label b').textContent || '下一场，即将开始';
+        var button = root.querySelector('.ddp-route-morph__loading button');
+        button.textContent = destinationReady ? '显示播放器' : '取消加载';
+        if (!returnFocus) returnFocus = document.activeElement;
+        button.focus({ preventScroll: true });
+        startLoadingMotion(root);
+    }
+
+    function stopLoadingMotion() {
+        if (loadingTimeline) loadingTimeline.kill();
+        loadingTimeline = null;
+    }
+
+    function startLoadingMotion(root) {
+        stopLoadingMotion();
+        if (!root || !root.classList.contains('is-loading') || !hasGsap() || hasReducedMotion()) return;
+        var blades = root.querySelectorAll('.ddp-route-morph__loading-blade');
+        var signal = root.querySelector('.ddp-route-morph__loading-signal i');
+        // The schematic shutter has its own transform owners; the full-screen
+        // projection paths and physical flight disc keep their existing owners.
+        loadingTimeline = window.gsap.timeline({ repeat: -1, paused: document.hidden });
+        loadingTimeline.fromTo(blades, { x: -8, scaleX: 0.74, opacity: 0.3 }, {
+            x: 8, scaleX: 1, opacity: 0.82, duration: 1.15,
+            ease: 'sine.inOut', stagger: 0.09, repeat: 1, yoyo: true
+        }, 0).fromTo(signal, { xPercent: -110 }, {
+            xPercent: 400, duration: 2.66, ease: 'sine.inOut'
+        }, 0);
     }
 
     function ensureOverlay() {
@@ -375,6 +504,14 @@
     function sourceKeyframes(viewport, origin, seed, layerIndex) {
         var cx = origin.left + origin.width / 2;
         var cy = origin.top + origin.height / 2;
+        if (origin.kind === 'surface') {
+            return [
+                surfaceRectPoints(cx, cy, origin.width, origin.height, 0),
+                surfaceRectPoints(cx, cy, origin.width + 28, origin.height + 18, 5),
+                surfaceRectPoints(viewport.width / 2, viewport.height / 2,
+                    viewport.width + 64, viewport.height + 64, 16)
+            ];
+        }
         var registrationPad = (2 - layerIndex) * 5;
         var radius = Math.max(origin.width, origin.height) / 2 + registrationPad;
         var paperOffsetX = layerIndex === 1 ? (seed % 2 ? 8 : -8) : 0;
@@ -433,7 +570,9 @@
     }
 
     function applyMedia(root, data) {
-        var artworkUrl = safeMediaUrl(data.artworkUrl);
+        var sourceKind = data.origin && data.origin.kind === 'surface' ? 'surface' : 'disc';
+        root.dataset.originShape = sourceKind;
+        var artworkUrl = sourceKind === 'disc' ? safeMediaUrl(data.artworkUrl) : '';
         var backdropUrl = safeMediaUrl(data.backdropUrl);
         var artwork = root.querySelector('.ddp-route-morph__disc img');
         var backdrop = root.querySelector('.ddp-route-morph__backdrop img');
@@ -476,9 +615,12 @@
 
     function clearTimers() {
         if (activeTimer) window.clearTimeout(activeTimer);
-        if (holdTimer) window.clearTimeout(holdTimer);
         activeTimer = 0;
-        holdTimer = 0;
+    }
+
+    function clearMediaWait() {
+        if (mediaCleanup) mediaCleanup();
+        mediaCleanup = null;
     }
 
     function killTimeline() {
@@ -497,16 +639,22 @@
     }
 
     function removeOverlay() {
+        stopLoadingMotion();
         overlayGeneration += 1;
         if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
         overlay = null;
         overlayPromise = null;
         paths = {};
         clearRootClasses();
+        if (returnFocus && returnFocus.isConnected && typeof returnFocus.focus === 'function') {
+            returnFocus.focus({ preventScroll: true });
+        }
+        returnFocus = null;
     }
 
     function finishArrival(animated, reason) {
         clearTimers();
+        clearMediaWait();
         killTimeline();
         removeOverlay();
         armedPayload = null;
@@ -527,9 +675,6 @@
         armedPayload = candidate;
         mode = 'armed';
         document.documentElement.classList.add('ddp-route-morph-pending');
-        activeTimer = window.setTimeout(function () {
-            if (mode === 'armed' || mode === 'arriving') finishArrival(false, 'fail-open-timeout');
-        }, FAIL_OPEN_MS);
         ensureOverlay().then(function (root) {
             if (mode !== 'armed' && mode !== 'arriving') return;
             var viewport = currentViewport();
@@ -539,7 +684,35 @@
                 paths[layer].setAttribute('d', pathFromPoints(fullPoints(viewport, index)));
             });
             root.classList.add('is-armed');
+            showLoading(root, true);
         });
+        return true;
+    }
+
+    function waitForMedia(targetElement, mediaElement, hasSource) {
+        if (!armedPayload || mode !== 'armed') return false;
+        clearMediaWait();
+        if (!mediaElement || hasSource === false) {
+            cancel('empty-media');
+            return false;
+        }
+        function ready() {
+            clearMediaWait();
+            arrive(targetElement);
+        }
+        function failed() {
+            cancel('media-error');
+        }
+        var readyEvents = ['loadedmetadata', 'loadeddata', 'canplay', 'playing'];
+        readyEvents.forEach(function (name) { mediaElement.addEventListener(name, ready); });
+        mediaElement.addEventListener('error', failed);
+        mediaCleanup = function () {
+            readyEvents.forEach(function (name) { mediaElement.removeEventListener(name, ready); });
+            mediaElement.removeEventListener('error', failed);
+        };
+        if (mediaElement.error) failed();
+        // DPlayer intentionally preloads metadata; canplay alone can wait for Play.
+        else if (mediaElement.readyState >= 1) ready();
         return true;
     }
 
@@ -559,6 +732,7 @@
         }
 
         arrivalPromise = new Promise(function (resolve) { arrivalResolve = resolve; });
+        clearMediaWait();
         mode = 'arriving';
         document.documentElement.classList.add('ddp-route-morph-arriving');
         if (activeTimer) window.clearTimeout(activeTimer);
@@ -578,6 +752,8 @@
             applyMedia(root, armedPayload);
             positionTargetVisual(root, targetRect);
             root.classList.add('is-arriving');
+            stopLoadingMotion();
+            root.classList.remove('is-loading');
             var states = LAYERS.map(function () { return { progress: 0 }; });
             try {
                 activeTimeline = window.gsap.timeline({
@@ -635,6 +811,7 @@
 
     function exit(options) {
         if (exitPromise) return exitPromise;
+        if (mode === 'holding') return Promise.resolve({ animated: false, cancelled: true, reason: 'navigation-in-progress' });
         var settings = options || {};
         var originElement = settings.originElement;
         var destination = normalizeDestination(settings.destination);
@@ -654,6 +831,7 @@
         }
 
         mode = 'exiting';
+        sourceCancel = typeof settings.onCancel === 'function' ? settings.onCancel : null;
         removeStoredPayload();
         clearTimers();
         killTimeline();
@@ -662,6 +840,7 @@
         try { rotation = Number(window.gsap.getProperty(originElement, 'rotation')) || 0; }
         catch (error) {}
         var origin = {
+            kind: settings.sourceKind === 'disc' ? 'disc' : 'surface',
             left: measured.left,
             top: measured.top,
             width: measured.width,
@@ -700,14 +879,17 @@
             function settle(result) {
                 if (settled) return;
                 settled = true;
+                clearTimers();
                 if (!result.covered) {
                     killTimeline();
                     removeOverlay();
                     mode = 'idle';
                 }
                 exitPromise = null;
+                exitSettle = null;
                 resolve(result);
             }
+            exitSettle = settle;
             activeTimer = window.setTimeout(function () {
                 settle({ animated: false, covered: false, reason: 'fail-open-timeout' });
             }, FAIL_OPEN_MS);
@@ -716,7 +898,8 @@
                 if (settled || mode !== 'exiting') return;
                 sizeOverlay(viewport);
                 applyMedia(root, payloadBase);
-                positionOriginVisual(root, origin, viewport);
+                var isDisc = origin.kind === 'disc';
+                if (isDisc) positionOriginVisual(root, origin, viewport);
                 root.classList.add('is-exiting');
                 document.documentElement.classList.add('ddp-route-morph-exiting');
 
@@ -737,13 +920,8 @@
                                 return;
                             }
                             mode = 'holding';
+                            showLoading(root, false);
                             settle({ animated: true, covered: true, reason: 'complete', payload: payload });
-                            holdTimer = window.setTimeout(function () {
-                                if (mode !== 'holding') return;
-                                removeStoredPayload();
-                                removeOverlay();
-                                mode = 'idle';
-                            }, FAIL_OPEN_MS);
                         }
                     });
                     var disc = root.querySelector('.ddp-route-morph__disc');
@@ -753,19 +931,21 @@
                     var shutter = root.querySelector('.ddp-route-morph__shutter');
                     var shutterTrace = root.querySelector('.ddp-route-morph__shutter-trace');
                     window.gsap.set(root, { autoAlpha: 1 });
-                    window.gsap.set(disc, { autoAlpha: 1, scale: 1 });
-                    window.gsap.set(scanner, { autoAlpha: 0, scale: 1.18, rotation: -18 });
+                    window.gsap.set(disc, { autoAlpha: isDisc ? 1 : 0, scale: 1 });
+                    window.gsap.set(scanner, { autoAlpha: 0, scale: isDisc ? 1.18 : 1, rotation: isDisc ? -18 : 0 });
                     window.gsap.set(label, { autoAlpha: 0, x: -8 });
                     window.gsap.set(backdrop, { autoAlpha: 0 });
                     window.gsap.set(shutter, { autoAlpha: 0, scaleX: 1 });
                     window.gsap.set(shutterTrace, { autoAlpha: 0, x: 0 });
-                    window.gsap.set(paths.ink, { autoAlpha: 1 });
+                    window.gsap.set(paths.ink, { autoAlpha: isDisc ? 1 : 0 });
                     window.gsap.set(paths.paper, { autoAlpha: 0 });
                     window.gsap.set(paths.acid, { autoAlpha: 0.94, strokeDashoffset: 28 });
                     LAYERS.forEach(function (layer, index) {
-                        var firstDuration = index === 2 ? 0.085 : 0.075;
-                        var secondDuration = index === 2 ? 0.26 : (index === 1 ? 0.25 : 0.27);
-                        var position = index === 2 ? 0.06 : (index === 1 ? 0.05 : 0.04);
+                        // A surface stays one frame: its border and fill must not
+                        // separate while expanding from a narrow button or file row.
+                        var firstDuration = isDisc && index !== 2 ? 0.075 : 0.085;
+                        var secondDuration = isDisc && index !== 2 ? (index === 1 ? 0.25 : 0.27) : 0.26;
+                        var position = isDisc && index !== 2 ? (index === 1 ? 0.05 : 0.04) : 0.06;
                         makeProgressTween(
                             activeTimeline,
                             states[index],
@@ -775,10 +955,10 @@
                             secondDuration,
                             position,
                             'power2.inOut',
-                            index === 2 ? 'power4.inOut' : 'power3.inOut'
+                            isDisc && index !== 2 ? 'power3.inOut' : 'power4.inOut'
                         );
                     });
-                    activeTimeline
+                    if (isDisc) activeTimeline
                         .to(backdrop, { autoAlpha: 0.12, duration: 0.07, ease: 'power2.out' }, 0)
                         .to(backdrop, { autoAlpha: 0, duration: 0.12, ease: 'power2.in' }, 0.16)
                         .to(scanner, { autoAlpha: 1, scale: 1, rotation: 0, duration: 0.065, ease: 'power3.out' }, 0)
@@ -794,6 +974,12 @@
                         .to(paths.acid, { strokeDashoffset: 0, duration: 0.3, ease: 'none' }, 0.04)
                         .to(disc, { autoAlpha: 0, duration: 0.14, ease: 'power2.in' }, 0.14)
                         .to(scanner, { autoAlpha: 0, duration: 0.1, ease: 'power2.in' }, 0.16);
+                    else activeTimeline
+                        // Register the clicked control without covering its content,
+                        // then carry that same frame into the shared projection gate.
+                        .to(paths.ink, { autoAlpha: 1, duration: 0.075, ease: 'power2.in' }, 0.04)
+                        .to(paths.paper, { autoAlpha: 0.12, duration: 0.035, ease: 'none' }, 0.12)
+                        .to(paths.paper, { autoAlpha: 0, duration: 0.065, ease: 'power2.out' }, 0.155);
                 } catch (error) {
                     settle({ animated: false, covered: false, reason: 'timeline-error' });
                 }
@@ -815,17 +1001,34 @@
         var title = episodeTitle && episodeTitle.textContent
             ? episodeTitle.textContent
             : (fileTitle && fileTitle.textContent ? fileTitle.textContent : link.textContent);
+        var player = document.body && document.body.classList.contains('video-page')
+            ? document.getElementById('dplayer') : null;
+        if (player) {
+            var targetTitle = link.querySelector('strong');
+            title = targetTitle ? targetTitle.textContent : title;
+            var video = player.querySelector('video');
+            return {
+                destination: destination,
+                originElement: link,
+                sourceKind: 'surface',
+                artworkUrl: video ? video.poster : '',
+                backdropUrl: video ? video.poster : '',
+                title: title || '切换剧集'
+            };
+        }
 
         return {
             destination: destination,
-            originElement: thumbnail || link,
+            originElement: link,
+            sourceKind: 'surface',
             artworkUrl: thumbnail ? (thumbnail.currentSrc || thumbnail.src || '') : '',
             backdropUrl: backdrop ? (backdrop.currentSrc || backdrop.src || '') : '',
             title: title || ''
         };
     }
 
-    function clearPlaybackLinkState() {
+    function clearPlaybackLinkState(restorePlayback) {
+        var previous = playbackLinkActive;
         if (playbackLinkActive && playbackLinkActive.link) {
             playbackLinkActive.link.classList.remove('is-route-leaving');
             playbackLinkActive.link.removeAttribute('aria-busy');
@@ -833,10 +1036,15 @@
         var modal = document.getElementById('bangumiModal');
         if (modal) modal.removeAttribute('aria-busy');
         playbackLinkActive = null;
+        if (restorePlayback && previous && previous.resume && previous.media && previous.media.isConnected) {
+            var playResult = previous.media.play();
+            if (playResult && typeof playResult.catch === 'function') playResult.catch(function () {});
+        }
     }
 
     function commitPlaybackDestination(destination) {
-        window.location.assign(destination.href);
+        try { window.location.assign(destination.href); }
+        catch (error) { cancel('navigation-error'); }
     }
 
     function handlePlaybackLinkClick(event) {
@@ -848,6 +1056,8 @@
             ? target.closest('a[data-route-morph="video"]')
             : null;
         if (!link) return;
+        if (link.hasAttribute('download') || link.getAttribute('aria-disabled') === 'true') return;
+        if (link.target && link.target.toLowerCase() !== '_self') return;
 
         var context = playableLinkContext(link);
         if (!context) return;
@@ -855,12 +1065,19 @@
 
         if (playbackLinkActive) return;
         playbackLinkActive = { link: link, destination: context.destination };
+        var playingMedia = document.querySelector('.video-page #dplayer video');
+        if (playingMedia) {
+            playbackLinkActive.media = playingMedia;
+            playbackLinkActive.resume = !playingMedia.paused && !playingMedia.ended;
+            playingMedia.pause();
+        }
         link.classList.add('is-route-leaving');
         link.setAttribute('aria-busy', 'true');
         var modal = document.getElementById('bangumiModal');
         if (modal) modal.setAttribute('aria-busy', 'true');
 
-        exit(context).then(function () {
+        exit(context).then(function (result) {
+            if (result && result.cancelled) return;
             commitPlaybackDestination(context.destination);
         }, function () {
             commitPlaybackDestination(context.destination);
@@ -868,22 +1085,62 @@
     }
 
     function cancel(reason) {
+        var stopNavigation = mode === 'holding' && reason !== 'bfcache-restore';
+        var onCancel = sourceCancel;
+        sourceCancel = null;
         removeStoredPayload();
+        try { window.sessionStorage.removeItem('dandanplay.hero-arrival'); }
+        catch (error) {}
         clearTimers();
+        clearMediaWait();
+        if (exitSettle) exitSettle({ animated: false, covered: false, cancelled: true, reason: reason || 'cancelled' });
         if (mode === 'armed' || mode === 'arriving') {
             finishArrival(false, reason || 'cancelled');
-            return;
+        } else {
+            killTimeline();
+            removeOverlay();
+            mode = 'idle';
+            armedPayload = null;
+            exitPromise = null;
         }
-        killTimeline();
-        removeOverlay();
-        mode = 'idle';
-        armedPayload = null;
-        exitPromise = null;
+        if (stopNavigation) window.stop();
+        clearPlaybackLinkState(true);
+        if (onCancel) onCancel();
     }
 
     window.addEventListener('pagehide', function () {
         clearTimers();
+        clearMediaWait();
         killTimeline();
+        stopLoadingMotion();
+        sourceCancel = null;
+    });
+
+    if (window.navigation && window.navigation.addEventListener) {
+        window.navigation.addEventListener('navigateerror', function () {
+            if (mode === 'holding') cancel('navigation-error');
+        });
+    }
+
+    document.addEventListener('visibilitychange', function () {
+        if (overlay) overlay.classList.toggle('is-page-hidden', document.hidden);
+        if (loadingTimeline) loadingTimeline.paused(document.hidden);
+    });
+
+    window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', function (event) {
+        if (overlay && overlay.classList.contains('is-loading')) {
+            startLoadingMotion(overlay);
+            if (event.matches && hasGsap()) window.gsap.set(overlay.querySelectorAll('.ddp-route-morph__loading-blade'), { clearProps: 'transform,opacity' });
+        }
+        if (!event.matches) return;
+        if (mode === 'arriving') finishArrival(false, 'reduced-motion');
+        else if (mode === 'exiting' && exitSettle) {
+            exitSettle({ animated: false, covered: false, reason: 'reduced-motion' });
+        }
+    });
+
+    window.matchMedia('(min-width: 769px)').addEventListener('change', function (event) {
+        if (!event.matches && mode !== 'idle') cancel('viewport-change');
     });
 
     window.addEventListener('pageshow', function (event) {
@@ -896,6 +1153,7 @@
     window.DdpRouteMorph = {
         exit: exit,
         arrive: arrive,
+        waitForMedia: waitForMedia,
         arm: armFromSession,
         cancel: cancel,
         isArmed: function () { return Boolean(armedPayload); },

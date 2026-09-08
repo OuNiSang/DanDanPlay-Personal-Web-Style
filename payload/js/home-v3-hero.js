@@ -86,6 +86,7 @@
         entryHydrationTimer: 0,
         entryPlayed: false,
         entryRunning: false,
+        pendingHydration: null,
         backdropFront: 'A',
         backdropRequest: 0,
         backdropTimeline: null,
@@ -234,8 +235,8 @@
         if (chinese) {
             return chinese[1] + '.' + chinese[2].padStart(2, '0') + '.' + chinese[3].padStart(2, '0');
         }
-        var date = new Date(text);
-        if (!isNaN(date.getTime())) {
+        var date = MediaCalendar.parse(text);
+        if (date) {
             return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('.');
         }
         return text.length > 14 ? text.slice(0, 14) : text;
@@ -244,8 +245,8 @@
     function normalizeDateTime(value) {
         var text = primitiveText(value);
         if (!text) return '尚无记录';
-        var date = new Date(text);
-        if (!isNaN(date.getTime())) {
+        var date = MediaCalendar.parse(text);
+        if (date) {
             return [
                 date.getFullYear() + '.' + String(date.getMonth() + 1).padStart(2, '0') + '.' + String(date.getDate()).padStart(2, '0'),
                 String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0')
@@ -289,6 +290,10 @@
         ]);
         var poster = posterChoice.url;
         var backdrop = backdropChoice.url;
+        // The caller supplies the artwork chosen for this page view. Entry and
+        // later metadata hydration must use the same choice, including cached
+        // artwork, so poster-based deduplication cannot change the collection
+        // immediately after it unfolds. preloadItems owns loading and decoding.
         var progress = getProgress(raw, options || {});
         var date = normalizeDate(pickText(raw, ['Details', 'OnAirDate', 'LastPlay', 'LastUpdate', 'Created']));
         var status = pickText(raw, [
@@ -846,10 +851,13 @@
                 // The live lid has real top/bottom depth. At the first narrow
                 // horizontal reveal Chromium can antialias that edge outside
                 // the stopped rail before any poster area is perceptible. Keep
-                // those first pixels inside the closed shelf silhouette, then
-                // release the guard well before the cover becomes readable.
+                // those first pixels inside the closed shelf silhouette. Keep
+                // the guard through the shallow-lid phase: that phase lasts
+                // longer than a single frame, and releasing at 0.34 allowed a
+                // row of detached top caps to sit above the travelling shelf.
+                // The guard is gone before the cover becomes readable.
                 var entryEdgeGuard = state.entryRunning ?
-                    clamp((0.34 - surfaceProgress) * 12, 0, 3) : 0;
+                    clamp((0.80 - surfaceProgress) * 14, 0, 8) : 0;
                 card.style.setProperty('--rack-surface-progress', surfaceProgress.toFixed(3));
                 card.style.setProperty('--rack-surface-hidden',
                     ((1 - surfaceProgress) * 100).toFixed(2) + '%');
@@ -1026,6 +1034,7 @@
             state.rackMovingVisual = false;
             if (dom.hero) dom.hero.classList.remove('is-rack-moving');
         }
+        if (idle) flushPendingHydration();
     }
 
     function startRackTicker() {
@@ -1561,6 +1570,9 @@
                frames with the compositor animation. */
             card.__hero3ArtworkRequested = false;
             card.__hero3ArtworkCommitted = false;
+            if (window.MediaAvailability) {
+                window.MediaAvailability.attach(qs('.hero3__case-cover-face', card), state.items[index].raw);
+            }
             bindCard(card, index);
             return {
                 card: card,
@@ -1568,6 +1580,11 @@
                 setters: createSetters(card)
             };
         });
+        if (state.entryPlayed) {
+            // Replacement artwork was decoded before committing the new rack.
+            // Fill its reserved surfaces in this same paint, not in later frames.
+            state.items.forEach(function (_, index) { promoteArtworkIndex(index, false); });
+        }
         refreshMetrics();
         state.sliderPosition = state.activeIndex;
         state.sliderTarget = state.activeIndex;
@@ -1701,6 +1718,10 @@
 
     function startEntryRailCruise(forceRestart) {
         if (!hasMotion() || !dom.entryRail || !dom.entryRailTrack) return;
+        var bootX = 0;
+        if (!dom.entryRailTrack.hasAttribute('data-entry-signature') && window.DOMMatrixReadOnly) {
+            bootX = new window.DOMMatrixReadOnly(window.getComputedStyle(dom.entryRailTrack).transform).m41;
+        }
         renderEntryRail();
         if (state.entryRailAnimation && !forceRestart) return;
         cancelEntryRailAnimation();
@@ -1722,6 +1743,7 @@
             iterations: Infinity,
             easing: 'linear'
         });
+        if (bootX < 0) state.entryRailAnimation.currentTime = (-bootX % travelDistance) / travelDistance * cycleDuration;
         state.entryRailActive = true;
     }
 
@@ -1814,11 +1836,27 @@
         startEntryRailCruise(false);
         if (dom.hero) dom.hero.setAttribute('data-hero-intro', 'hydrated-run');
         if (state.entryHydrationTimer) window.clearTimeout(state.entryHydrationTimer);
-        state.entryHydrationTimer = window.setTimeout(function () {
-            state.entryHydrationTimer = 0;
+        window.requestAnimationFrame(function () {
             if (hydrateRequest !== state.hydrateRequest || state.entryPlayed) return;
-            window.requestAnimationFrame(playEntry);
-        }, 160);
+            playEntry();
+        });
+    }
+
+    function flushPendingHydration() {
+        if (!state.pendingHydration || !state.entryPlayed || state.entryRunning ||
+            state.devicePreparing || state.devicePlaying || state.deviceHovering || state.casePinnedOpen ||
+            Math.abs(state.sliderTarget - state.sliderPosition) > 0.001) return;
+        var pending = state.pendingHydration;
+        var request = state.hydrateRequest;
+        state.pendingHydration = null;
+        Promise.resolve().then(function () {
+            if (request === state.hydrateRequest && !state.pendingHydration) hydrate(pending.items, pending.options);
+        });
+    }
+
+    function notifyEntryReady() {
+        document.dispatchEvent(new CustomEvent('ddp:hero-ready'));
+        flushPendingHydration();
     }
 
     function playEntry() {
@@ -1847,6 +1885,7 @@
             syncDiscOrigin();
             prioritizeDeferredArtwork(state.activeIndex);
             scheduleDeferredArtworkHydration(state.hydrateRequest);
+            notifyEntryReady();
             return;
         }
 
@@ -1868,7 +1907,10 @@
         startRackTicker();
         startEntryRailCruise(false);
         var frameParts = [dom.frame, dom.register, dom.artSwitch].filter(Boolean);
-        var finalTargets = [dom.backdrop, dom.zone, dom.rackControls, dom.info, dom.orbit].concat(frameParts).filter(Boolean);
+        // renderRack owns the orbit transform. Keep the orbit out of the
+        // generic GSAP cleanup so the entry-to-ready handoff cannot clear or
+        // recompose that 3D projection underneath it.
+        var finalTargets = [dom.backdrop, dom.zone, dom.rackControls, dom.info].concat(frameParts).filter(Boolean);
 
         state.entryTimeline = gsap.timeline({
             defaults: { ease: 'power3.out', overwrite: 'auto' },
@@ -1891,17 +1933,22 @@
                 renderRack();
                 if (dom.hero) dom.hero.setAttribute('data-hero-intro', 'ready');
                 if (finalTargets.length) gsap.set(finalTargets, { clearProps: 'opacity,visibility,transform,willChange' });
+                if (dom.orbit) gsap.set(dom.orbit, { clearProps: 'opacity,visibility,willChange' });
                 if (dom.led) gsap.set(dom.led, { clearProps: 'willChange' });
                 if (dom.action) gsap.set(dom.action, { clearProps: 'willChange' });
                 syncPlayerCarriage(false);
                 syncDiscOrigin();
                 prioritizeDeferredArtwork(state.activeIndex);
                 scheduleDeferredArtworkHydration(state.hydrateRequest);
+                notifyEntryReady();
             }
         });
 
         if (frameParts.length) gsap.set(frameParts, { autoAlpha: 0, y: 5 });
-        if (dom.orbit) gsap.set(dom.orbit, { autoAlpha: 0.001, visibility: 'visible', willChange: 'opacity' });
+        // Do not promote this preserve-3d owner with will-change: opacity.
+        // Chromium projects its children differently when that hint is later
+        // removed, producing a visible 24px-per-side rack pop at completion.
+        if (dom.orbit) gsap.set(dom.orbit, { autoAlpha: 0.001, visibility: 'visible' });
         if (dom.backdrop) gsap.set(dom.backdrop, { opacity: 0.001, visibility: 'visible', willChange: 'opacity' });
         if (dom.zone) gsap.set(dom.zone, { opacity: 0.001, visibility: 'visible', y: 14, willChange: 'transform,opacity' });
         if (dom.action) gsap.set(dom.action, { force3D: true, willChange: 'transform' });
@@ -2095,13 +2142,11 @@
         var cursor = 0;
         var results = new Array(criticalIndexes.length);
         var workers = [];
-        var workerCount = Math.min(2, criticalIndexes.length);
+        var workerCount = Math.min(6, criticalIndexes.length);
 
-        // The shallow CSS rail is intentionally allowed to cruise for longer
-        // while every rack poster is fetched and decoded. This spends memory
-        // and loading time before the handoff so the 3D entrance and direct
-        // interaction never compete with background image decode or DOM image
-        // promotion. Failed artwork still settles to the reserved placeholder.
+        // The caller resolves the final composition first. Decode every
+        // train/live cover with bounded parallel requests before entry;
+        // no extra settling delay follows decoded artwork.
         function worker() {
             function next() {
                 if (requestId && requestId !== state.hydrateRequest) return Promise.resolve();
@@ -2169,7 +2214,7 @@
                     resolve(false);
                     return;
                 }
-                var end = Math.min(index + 4, promoteIndexes.length);
+                var end = Math.min(index + 8, promoteIndexes.length);
                 for (; index < end; index += 1) {
                     promoteArtworkIndex(promoteIndexes[index], false);
                 }
@@ -2343,6 +2388,7 @@
     function updateCardMetadata(item) {
         var card = qs('.hero3__card[data-anime-id="' + String(item.id).replace(/"/g, '\\"') + '"]', dom.orbit);
         if (!card) return;
+        if (window.MediaAvailability) window.MediaAvailability.attach(qs('.hero3__case-cover-face', card), item.raw);
         var progress = item.progress;
         var captionTitle = qs('.hero3__caption strong', card);
         var captionMeta = qs('.hero3__caption small', card);
@@ -2910,6 +2956,7 @@
         if (parts.caption) window.gsap.set(parts.caption, { autoAlpha: 1 });
         window.gsap.to(dom.mechButton, { y: 0, duration: immediate ? 0 : 0.18, ease: 'power2.out', overwrite: true });
         window.gsap.to(dom.led, { opacity: 0.48, duration: immediate ? 0 : 0.18, overwrite: true });
+        if (state.pendingHydration && state.entryPlayed && !state.entryRunning) startRackTicker();
     }
 
     function startDeviceHover(pinned, selection) {
@@ -2974,7 +3021,6 @@
 
     function commitPlayIntent(intent, requestId) {
         if (!intent || typeof intent.commit !== 'function') return false;
-        var hrefBeforeCommit = window.location.href;
         try {
             var result = intent.commit();
             if (result && typeof result.then === 'function') {
@@ -2984,11 +3030,8 @@
             recoverPlaybackNavigation(requestId);
             return false;
         }
-        if (requestId && intent.destination) {
-            window.setTimeout(function () {
-                if (window.location.href === hrefBeforeCommit) recoverPlaybackNavigation(requestId);
-            }, 1800);
-        }
+        // The old document keeps its URL while the destination response is pending.
+        // Only an actual commit error or explicit cancellation should recover it.
         return true;
     }
 
@@ -3027,12 +3070,18 @@
         if (window.DdpRouteMorph && typeof window.DdpRouteMorph.exit === 'function') {
             Promise.resolve(window.DdpRouteMorph.exit({
                 originElement: dom.loadedDisc,
+                sourceKind: 'disc',
                 artworkUrl: item && item.poster,
                 backdropUrl: item && (item.backdrop || item.poster),
                 title: item && item.title,
-                destination: intent.destination || null
-            })).then(function () {
-                if (requestId !== state.playRequest) return;
+                destination: intent.destination || null,
+                onCancel: function () { recoverPlaybackNavigation(requestId); }
+            })).then(function (result) {
+                if (result && result.cancelled) return;
+                if (requestId !== state.playRequest) {
+                    window.DdpRouteMorph.cancel('hero-request-cancelled');
+                    return;
+                }
                 if (state.deviceSpin) {
                     state.deviceSpin.kill();
                     state.deviceSpin = null;
@@ -3343,12 +3392,16 @@
         if (state.items[state.activeIndex] && state.items[state.activeIndex].id === id) updateInfo(state.items[state.activeIndex]);
     }
 
-    function hydrate(rawItems, options) {
+    function hydrate(rawItems, options, replacementPrepared) {
         if (!ensureReady()) return;
         options = options || {};
         var pool = uniqueItems(rawItems, options);
         if (!pool.length) return;
         var desiredId = String(options.activeAnimeId || '');
+        if (options.preservePosition && state.entryPlayed && state.items[state.activeIndex]) {
+            var committedId = state.items[state.activeIndex].id;
+            if (pool.some(function (item) { return item.id === committedId; })) desiredId = committedId;
+        }
         var selectedPoolIndex = pool.findIndex(function (item) { return item.id === desiredId; });
         if (selectedPoolIndex < 0) selectedPoolIndex = 0;
         var itemCount = Math.min(RACK_TUNING.itemCount, pool.length);
@@ -3371,6 +3424,11 @@
                 heroItems.push(pool[(startIndex + itemOffset + pool.length) % pool.length]);
             }
         }
+        if (state.items.length && (!state.entryPlayed || state.entryRunning || state.devicePreparing || state.devicePlaying)) {
+            state.pendingHydration = { items: rawItems, options: options };
+            return;
+        }
+        state.pendingHydration = null;
         var hydrateRequest = ++state.hydrateRequest;
         cancelDeferredArtworkHydration();
         if (state.entryHydrationTimer) {
@@ -3380,22 +3438,35 @@
         var previousItems = state.items.slice();
         var nextSignature = heroItems.map(function (item) { return item.id; }).join('|');
         var structureChanged = nextSignature !== state.signature;
+        if (structureChanged && state.entryPlayed && (state.deviceHovering || state.casePinnedOpen ||
+            Math.abs(state.sliderTarget - state.sliderPosition) > 0.001)) {
+            state.pendingHydration = { items: rawItems, options: options };
+            return;
+        }
         if (!structureChanged && previousItems.length) {
             var previousById = {};
             previousItems.forEach(function (item) { previousById[item.id] = item; });
             heroItems.forEach(function (item) {
                 var previous = previousById[item.id];
                 if (!previous) return;
-                if (previous.poster && Number(previous.posterRank || 0) > Number(item.posterRank || 0)) {
+                if (previous.poster && (options.preserveArtwork || Number(previous.posterRank || 0) > Number(item.posterRank || 0))) {
                     item.poster = previous.poster;
                     item.posterRank = previous.posterRank;
                 }
-                if (previous.backdrop && Number(previous.backdropRank || 0) > Number(item.backdropRank || 0)) {
+                if (previous.backdrop && (options.preserveArtwork || Number(previous.backdropRank || 0) > Number(item.backdropRank || 0))) {
                     item.backdrop = previous.backdrop;
                     item.backdropRank = previous.backdropRank;
                     item.backdropKind = previous.backdropKind;
                 }
             });
+        }
+        if (structureChanged && state.entryPlayed && !replacementPrepared) {
+            // Keep the current composition visible while any new covers load.
+            // Recompute selection on commit so input during the wait wins.
+            preloadItems(heroItems, selectedIndex, hydrateRequest).then(function () {
+                if (hydrateRequest === state.hydrateRequest) hydrate(rawItems, options, true);
+            });
+            return;
         }
         state.options = options;
         state.pool = pool;
@@ -3420,9 +3491,11 @@
             state.carouselPosition = selectedIndex;
             state.introOpacity = 1;
             state.introMaterialize = 1;
-            state.introRevealStrength = 0;
-            state.introCenterLift = 0;
-            setIntroOwnership(0);
+            // A later library response may replace a rack item. It must not
+            // reset a completed entrance to its closed, travelling state.
+            state.introRevealStrength = state.entryPlayed ? 1 : 0;
+            state.introCenterLift = state.entryPlayed ? 1 : 0;
+            setIntroOwnership(state.entryPlayed ? 1 : 0);
             state.introArrivalProgress = 1;
             // Keep the canonical 3D rack parked in its final closed geometry.
             // The shallow rail owns every travelling frame and is already in
@@ -3433,7 +3506,8 @@
             state.introRackVelocity = 0;
             state.introFlow = 0;
             renderCards();
-            startEntryRailCruise(false);
+            if (!state.entryPlayed) startEntryRailCruise(false);
+            else stopEntryRail(false);
             updateInfo(state.items[state.activeIndex]);
             // Bind the first backdrop immediately to the same committed item.
             // Poster decoding may finish later, but an old owner's artwork is
@@ -3444,7 +3518,13 @@
                 return promoteRackArtwork(hydrateRequest);
             }).then(function (promoted) {
                 if (!promoted || hydrateRequest !== state.hydrateRequest) return;
-                prepareEntryFrames(hydrateRequest);
+                if (!state.entryPlayed) prepareEntryFrames(hydrateRequest);
+                else {
+                    state.rackNeedsRender = true;
+                    renderRack();
+                    syncPlayerCarriage(true);
+                    syncDiscOrigin();
+                }
             });
         } else {
             if (!options.preservePosition) {
@@ -3521,6 +3601,7 @@
         listen(window, 'pageshow', function () {
             startRackTicker();
             if (!state.entryPlayed) startEntryRailCruise(true);
+            else if (!state.entryRunning) notifyEntryReady();
             state.rackNeedsRender = true;
             resetDevice(true, true);
         });
@@ -3548,9 +3629,9 @@
             state.entryRunning = false;
             state.introOpacity = 1;
             state.introMaterialize = 1;
-            state.introRevealStrength = 1;
-            state.introCenterLift = 1;
-            setIntroOwnership(1);
+            state.introRevealStrength = state.entryPlayed ? 1 : 0;
+            state.introCenterLift = state.entryPlayed ? 1 : 0;
+            setIntroOwnership(state.entryPlayed ? 1 : 0);
             state.introArrivalProgress = 1;
             state.introRackOffsetX = 0;
             state.introRackOffsetY = 0;
@@ -3558,7 +3639,7 @@
             state.rackDockWorld = null;
             state.rackDockCommitIndex = -1;
             state.rackDockNotify = false;
-            if (dom.hero) dom.hero.setAttribute('data-hero-intro', 'ready');
+            if (dom.hero) dom.hero.setAttribute('data-hero-intro', state.entryPlayed ? 'ready' : 'preparing');
             if (state.backdropTimeline) state.backdropTimeline.kill();
             if (state.deviceTimeline) state.deviceTimeline.kill();
             if (state.deviceSpin) state.deviceSpin.kill();
@@ -3569,6 +3650,7 @@
     }
 
     function destroy() {
+        state.pendingHydration = null;
         clearCardBindings();
         state.listeners.splice(0).forEach(function (dispose) {
             try { dispose(); } catch (error) {}

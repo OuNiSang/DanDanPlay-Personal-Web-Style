@@ -997,14 +997,19 @@
     /* 进度角标 */
     .pc__badge {
         position: absolute;
-        top: 6px; left: 6px;
+        top: 8px; left: 8px;
         z-index: 4;
-        background: rgba(0,0,0,0.65);
-        border-radius: 4px;
-        padding: 1px 5px;
-        font-size: 9px;
-        font-weight: 700;
-        color: rgba(255,255,255,0.85);
+        min-width: 44px;
+        padding: 6px 8px;
+        border: 1px solid rgba(217,244,91,0.72);
+        border-radius: 2px;
+        color: #fff;
+        background: rgba(4,7,5,0.92);
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.05;
+        text-align: center;
+        text-shadow: 0 1px 1px #000;
     }
 
     .pc__title {
@@ -1476,11 +1481,12 @@
     }
     </style>
     <link href="css/home-v18.css?v=home18-r41" rel="stylesheet">
+    <link href="css/media-availability.css?v=@Model.StaticResourceVersion&amp;ui=6" rel="stylesheet">
     <link href="css/home-stable-mobile.css?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3" rel="stylesheet">
     <link data-web1-v3 href="css/home-v3-hero.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
-    <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r23" rel="stylesheet" media="(min-width: 769px)">
-    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.0-content-r8" rel="stylesheet" media="(min-width: 769px)">
-    <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r4" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.2-hero-r26" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.2-content-r9" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
 </head>
 <body class="idx-home">
@@ -1714,7 +1720,7 @@
         <div class="sec-hd">
             <div>
                 <h2 class="sec-hd__title">最近更新</h2>
-                <p class="sec-hd__summary"><span id="luCount">0</span> 部作品按更新日期编排</p>
+                <p class="sec-hd__summary"><span id="luCount">0</span> 部作品按条目更新日期编排</p>
             </div>
             <a href="bangumi.html?nav=lastupdate" class="sec-hd__more">
                 查看全部 <i class="fas fa-chevron-right"></i>
@@ -2063,12 +2069,14 @@
 </footer>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.0-recent-r1"></script>
+<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=3"></script>
+<script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=8"></script>
+<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.2-recent-r2"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
 <script src="js/gsap.min.js"></script>
-<script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r4"></script>
-<script src="js/home-v3-hero.js?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r23"></script>
+<script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7"></script>
+<script src="js/home-v3-hero.js?v=@Model.StaticResourceVersion&amp;ui=3.2-hero-r31"></script>
 <script src="js/home-v3-content.js?v=@Model.StaticResourceVersion&amp;ui=3.0-content-r7"></script>
 <script src="js/home-stable-mobile.js?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3"></script>
 <script>
@@ -2090,16 +2098,17 @@ $(function () {
     var HERO_DESCRIPTION_CACHE_PREFIX = 'dandanplay.hero-description.v1.';
     var HERO_DESCRIPTION_CACHE_OK_TTL = 30 * 24 * 60 * 60 * 1000;
     var HERO_DESCRIPTION_CACHE_MISS_TTL = 6 * 60 * 60 * 1000;
-    var TIMELINE_TIME_ZONE = 'Asia/Shanghai';
     var currentHeroArtwork = null;
     var heroArtworkCandidates = [];
     var heroArtworkIndex = 0;
     var heroArtworkSwitching = false;
     var heroArtworkSwitchRequest = 0;
     var bangumiSubjectPromises = {};
-    var hero3PrimePromises = {};
-    var hero3SyncRequestId = 0;
+    var hero3ArtworkSnapshot = {};
+    var hero3SourceSnapshot = null;
+    var hero3ArtworkWarmStarted = false;
     var hero3UserSelected = false;
+    var hero3InitialDataPending = Boolean(window.DandanHero3);
     var renderedSectionSignatures = {};
     var shouldStartAtHero = !window.location.hash;
     var lastSectionMobile = null;
@@ -2315,10 +2324,13 @@ $(function () {
     }
 
     function appendCover($frame, b, className) {
+        if (window.MediaAvailability) MediaAvailability.attach($frame[0], b, bangumiDetailsApiTemplate);
         if (b.Cover) {
             $('<img>')
                 .addClass(className)
-                .attr({ src: b.Cover, alt: b.Title, loading: 'eager', decoding: 'async' })
+                // Section cards have reserved frame geometry. Keep the Hero's
+                // separate decoded-artwork gate eager; defer these scroll cards.
+                .attr({ src: b.Cover, alt: b.Title, loading: 'lazy', decoding: 'async', width: 300, height: 400 })
                 .appendTo($frame);
         } else {
             $('<div class="pc__placeholder"><i class="fas fa-play-circle"></i></div>')
@@ -2419,37 +2431,15 @@ $(function () {
     }
 
     function parseTimelineDate(value) {
-        if (!value) return null;
-        var raw = String(value).trim();
-        var normalized = raw.replace(' ', 'T');
-        if (/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/.test(normalized)) {
-            normalized += normalized.indexOf('T') === -1 ? 'T00:00:00+08:00' : '+08:00';
-        }
-        var time = new Date(normalized).getTime();
-        return Number.isFinite(time) && time > 0 ? new Date(time) : null;
+        return MediaCalendar.parse(value);
     }
 
     function getTimelineDateParts(date) {
-        var formatter = new Intl.DateTimeFormat('en-CA', {
-            timeZone: TIMELINE_TIME_ZONE,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-        var values = {};
-        formatter.formatToParts(date).forEach(function (part) {
-            if (part.type !== 'literal') values[part.type] = part.value;
-        });
-        return {
-            year: Number(values.year),
-            month: Number(values.month),
-            day: Number(values.day)
-        };
+        return MediaCalendar.parts(date);
     }
 
     function getTimelineDayStamp(date) {
-        var parts = getTimelineDateParts(date);
-        return Date.UTC(parts.year, parts.month - 1, parts.day);
+        return MediaCalendar.dayStamp(date);
     }
 
     function getUpdateDateCandidate(b) {
@@ -2500,16 +2490,13 @@ $(function () {
         if (isInProgress) {
             $card
                 .attr('data-watch-progress', String(pct))
-                .addClass('timeline-card--in-progress')
-                .attr('title', '已看 ' + progress.watched + '/' + progress.total + ' · ' + pct + '%');
+                .addClass('timeline-card--in-progress');
         } else if (isUnwatched) {
             $card
-                .addClass('timeline-card--unwatched')
-                .attr('title', '尚未观看 · 共' + total + '话');
+                .addClass('timeline-card--unwatched');
         } else if (isComplete) {
             $card
-                .addClass('timeline-card--complete')
-                .attr('title', '已看完 · 共' + total + '话');
+                .addClass('timeline-card--complete');
         }
         if (!useWeb3Desktop()) {
             appendCover($card, b, 'timeline-card__cover');
@@ -2599,6 +2586,7 @@ $(function () {
                 item.Title || '',
                 item.EpisodeWatched || 0,
                 item.EpisodeTotal || 0,
+                item.VideoFileCount == null ? '?' : item.VideoFileCount,
                 item.LastEpisodeTitle || item.EpisodeTitle || '',
                 item.Details || ''
             ].join(':');
@@ -2730,6 +2718,7 @@ $(function () {
                 item.LastEpisodeTitle || item.EpisodeTitle || '',
                 item.EpisodeWatched || 0,
                 item.EpisodeTotal || 0,
+                item.VideoFileCount == null ? '?' : item.VideoFileCount,
                 meta.key,
                 meta.label
             ].join(':');
@@ -2771,10 +2760,16 @@ $(function () {
             $header.appendTo($day);
 
             if (!visibleGroupItems.length) {
-                var $emptyItems = $('<div class="schedule-day__items schedule-day__items--empty"></div>').appendTo($day);
-                $('<p class="schedule-day__empty"></p>')
-                    .text(options.emptyText || '此日暂无更新')
-                    .appendTo($emptyItems);
+                var $emptyItems = $('<div class="schedule-day__items schedule-day__items--empty"></div>')
+                    .attr('aria-hidden', 'true')
+                    .appendTo($day);
+                $day.addClass('schedule-day--empty');
+                if (group.type !== 'recent') {
+                    $emptyItems.removeAttr('aria-hidden');
+                    $('<p class="schedule-day__empty"></p>')
+                        .text(options.emptyText || '暂无内容')
+                        .appendTo($emptyItems);
+                }
             } else if (shouldBalanceGroup) {
                 var splitIndex = Math.ceil(visibleGroupItems.length / 2);
                 var $topItems = $('<div class="schedule-day__items schedule-day__items--top"></div>').appendTo($day);
@@ -2811,7 +2806,7 @@ $(function () {
             var dayDate = new Date(todayStamp - age * 86400000);
             recentGroups.push({
                 key: key,
-                label: age === 0 ? '今天' : (age === 1 ? '昨天' : formatTimelineWeekday(dayDate)),
+                label: age === 0 ? '今天' : (age === 1 ? '昨天' : ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dayDate.getUTCDay()]),
                 type: 'recent',
                 age: age,
                 items: groupMap[key] ? groupMap[key].items : []
@@ -2948,6 +2943,7 @@ $(function () {
         renderLatestFollows(isMobile);
 
         window.requestAnimationFrame(function () {
+            if (window.MediaAvailability) MediaAvailability.prune();
             setupRailIndicators();
             if (!options.skipHeroSync) syncCurrentHero3();
         });
@@ -3504,7 +3500,26 @@ $(function () {
         else updateHeroModeButton();
     }
 
+    function appendHeroCandidates(candidates) {
+        var seen = {};
+        heroArtworkCandidates.forEach(function (candidate) { seen[candidate.url] = true; });
+        (candidates || []).forEach(function (candidate) {
+            if (!candidate || !candidate.url || seen[candidate.url]) return;
+            seen[candidate.url] = true;
+            heroArtworkCandidates.push(candidate);
+        });
+        // New choices are available to the existing switch button. The user,
+        // rather than a late search response, decides when the picture changes.
+        updateHeroModeButton();
+    }
+
     /* ── 渲染 Hero ── */
+    function afterHeroEntry(action) {
+        var debug = window.DandanHero3 && DandanHero3.debugState();
+        if (!debug || (debug.entryPlayed && !debug.entryRunning)) { action(); return; }
+        document.addEventListener('ddp:hero-ready', action, { once: true });
+    }
+
     function renderHero(b, renderOptions) {
         renderOptions = renderOptions || {};
         var artworkRequestId = ++heroArtworkRequestId;
@@ -3515,7 +3530,7 @@ $(function () {
         heroArtworkCandidates = [];
         heroArtworkIndex = 0;
         updateHeroModeButton();
-        if (b.Cover && !renderOptions.fromHero3) {
+        if (b.Cover && !renderOptions.fromHero3 && !window.DandanHero3) {
             resolveInitialHeroCover(b.Cover)
                 .then(function (candidate) {
                     if (artworkRequestId !== heroArtworkRequestId || heroArtworkCandidates.length) return;
@@ -3543,8 +3558,11 @@ $(function () {
             metaHtml += '<span>' + b.EpisodeTotal + '话</span>';
         }
         $('#heroMeta').html(metaHtml);
-        resolveHeroDescription(b).then(function (description) {
-            applyHeroDescription(description, artworkRequestId);
+        afterHeroEntry(function () {
+            if (artworkRequestId !== heroArtworkRequestId) return;
+            resolveHeroDescription(b).then(function (description) {
+                applyHeroDescription(description, artworkRequestId);
+            });
         });
         $('#heroPlayBtn').off('click');
         if (!window.DandanHero3) {
@@ -3563,10 +3581,17 @@ $(function () {
             restoreInitialHeroPosition(false);
         });
 
-        resolveHeroArtwork(b).then(function (candidates) {
-            if (!candidates || !candidates.length || artworkRequestId !== heroArtworkRequestId) return;
-            setHeroCandidates(candidates);
-        });
+        // The initial desktop composition is prepared by syncHero3 as one
+        // collection. Later explicit selections retain the artwork switcher.
+        if (!window.DandanHero3 || renderOptions.fromHero3) {
+            afterHeroEntry(function () {
+                if (artworkRequestId !== heroArtworkRequestId) return;
+                resolveHeroArtwork(b).then(function (candidates) {
+                    if (!candidates || !candidates.length || artworkRequestId !== heroArtworkRequestId) return;
+                    setHeroCandidates(candidates);
+                });
+            });
+        }
         if (!renderOptions.fromHero3) syncHero3(b, false);
     }
 
@@ -3579,20 +3604,44 @@ $(function () {
         else if (poster) DandanHero3.updateArtwork(String(animeId), poster.url, 'poster-backdrop');
     }
 
-    function enrichHero3Item(item) {
-        var enriched = $.extend({}, item);
+    function getHero3SessionArtwork(item) {
+        var key = String(item.AnimeId || item.Title || '');
+        if (hero3ArtworkSnapshot[key]) return hero3ArtworkSnapshot[key];
         var cachedArtwork = readHeroArtworkCache(item);
-        var candidates = cachedArtwork && Array.isArray(cachedArtwork.candidates) ? cachedArtwork.candidates : [];
+        // A cache entry with measured dimensions has already survived image
+        // loading. Discovery and inspection of alternatives are not an entry gate.
+        var candidates = cachedArtwork && Array.isArray(cachedArtwork.candidates)
+            ? cachedArtwork.candidates.filter(function (candidate) { return candidate.url && candidate.width && candidate.height; }).slice()
+            : [];
         var poster = candidates.find(function (candidate) { return candidate.kind !== 'wide'; });
         var wide = candidates.find(function (candidate) { return candidate.kind === 'wide'; });
+        if (!poster && (item.PosterLarge || item.Cover)) {
+            poster = { url: item.PosterLarge || item.Cover, kind: 'poster', role: 'poster', source: 'dandanplay', sourceLabel: '本地' };
+            candidates.push(poster);
+        }
+        if (!wide && item.HeroArtwork) {
+            wide = { url: item.HeroArtwork, kind: 'wide', role: 'banner', source: 'dandanplay', sourceLabel: '本地' };
+            candidates.unshift(wide);
+        }
+        return hero3ArtworkSnapshot[key] = { candidates: candidates, poster: poster, wide: wide };
+    }
+
+    function enrichHero3Item(item) {
+        var enriched = $.extend({}, item);
+        var artwork = getHero3SessionArtwork(item);
         var cachedDescription = readHeroDescriptionCache(item);
-        if (poster && poster.url) enriched.PosterLarge = poster.url;
-        if (wide && wide.url) enriched.HeroArtwork = wide.url;
+        if (artwork.poster) enriched.PosterLarge = artwork.poster.url;
+        if (artwork.wide) enriched.HeroArtwork = artwork.wide.url;
         if (cachedDescription && cachedDescription.text) enriched.HeroSynopsis = cachedDescription.text;
         return enriched;
     }
 
     function getHero3SourceItems(activeItem) {
+        if (hero3SourceSnapshot) {
+            return hero3SourceSnapshot.map(function (item) {
+                return bangumiMapById[String(item.AnimeId)] || item;
+            });
+        }
         var result = [];
         var seen = {};
         function append(items) {
@@ -3615,8 +3664,9 @@ $(function () {
         return result;
     }
 
-    function primeHero3Artwork(items, activeAnimeId) {
+    function warmHero3Artwork(items, activeAnimeId) {
         var source = items || [];
+        var runId = homeLoadRun;
         var activeIndex = source.findIndex(function (item) {
             return String(item.AnimeId || '') === String(activeAnimeId || '');
         });
@@ -3632,40 +3682,19 @@ $(function () {
             seenTargets[key] = true;
             return true;
         });
-        var tasks = targets.map(function (item) {
-            var id = String(item.AnimeId || '');
-            if (!id || !item.Cover) return Promise.resolve(null);
-            if (!hero3PrimePromises[id]) {
-                hero3PrimePromises[id] = resolveHeroArtwork(item).then(function (candidates) {
-                    candidates = candidates || [];
-                    return {
-                        poster: candidates.find(function (candidate) { return candidate.kind !== 'wide'; }) || null,
-                        wide: candidates.find(function (candidate) { return candidate.kind === 'wide'; }) || null
-                    };
-                }).catch(function () {
-                    return resolveInitialHeroCover(item.Cover).then(function (candidate) {
-                        return { poster: candidate, wide: null };
-                    }).catch(function () { return null; });
-                });
-            }
-            return hero3PrimePromises[id].then(function (artwork) {
-                return artwork ? { id: id, artwork: artwork } : null;
-            });
-        });
-        return Promise.all(tasks).then(function (results) {
-            var prepared = {};
-            results.forEach(function (result) {
-                if (result) prepared[result.id] = result.artwork;
-            });
-            return (items || []).map(function (item) {
-                var artwork = prepared[String(item.AnimeId || '')];
-                if (!artwork) return item;
-                var enriched = $.extend({}, item);
-                if (artwork.poster && artwork.poster.url) enriched.PosterLarge = artwork.poster.url;
-                if (artwork.wide && artwork.wide.url) enriched.HeroArtwork = artwork.wide.url;
-                return enriched;
-            });
-        });
+        var cursor = 0;
+        function next() {
+            if (runId !== homeLoadRun || document.hidden) return Promise.resolve();
+            var item = targets[cursor++];
+            if (!item) return Promise.resolve();
+            // Discovery cannot replace the composition that just unfolded.
+            return resolveHeroArtwork(item).then(function (candidates) {
+                if (runId === homeLoadRun && String(item.AnimeId) === currentHeroAnimeId) {
+                    appendHeroCandidates(candidates);
+                }
+            }).catch(function () {}).then(next);
+        }
+        return Promise.all([next(), next()]);
     }
 
     function hydrateHero3Items(items, activeAnimeId, preservePosition) {
@@ -3673,6 +3702,7 @@ $(function () {
         DandanHero3.hydrate((items || []).map(enrichHero3Item), {
             activeAnimeId: activeAnimeId,
             preservePosition: Boolean(preservePosition),
+            preserveArtwork: true,
             getProgress: getWatchProgress,
             onIntent: function (rawItem) {
                 if (String(rawItem.AnimeId || '') === String(currentHeroAnimeId || '')) {
@@ -3713,20 +3743,24 @@ $(function () {
     }
 
     function syncHero3(activeItem, preservePosition) {
-        if (!window.DandanHero3 || !activeItem) return;
+        if (!window.DandanHero3 || !activeItem || hero3InitialDataPending) return;
         var sourceItems = getHero3SourceItems(activeItem);
         var activeAnimeId = String(activeItem.AnimeId || '');
-        var syncRequestId = ++hero3SyncRequestId;
+        if (!hero3SourceSnapshot) hero3SourceSnapshot = sourceItems.slice();
 
-        // Render the physical rack immediately from the local covers.  The
-        // active five-card aperture is upgraded asynchronously afterwards,
-        // so a slow artwork lookup can never delay the rack geometry.
+        setHero3Status('loading', '正在准备完整画面', '封面与背景准备完成后，唱片架将完整入场。');
+        var initialComposition = !DandanHero3.debugState().itemCount;
+        if (initialComposition) setHeroCandidates(getHero3SessionArtwork(activeItem).candidates);
+        // The existing decode gate still waits for every image actually used
+        // by this rack. Playback metadata and artwork discovery run separately.
         hydrateHero3Items(sourceItems, activeAnimeId, preservePosition);
-
-        primeHero3Artwork(sourceItems, activeAnimeId).then(function (preparedItems) {
-            if (syncRequestId !== hero3SyncRequestId || !window.DandanHero3) return;
-            hydrateHero3Items(preparedItems, activeAnimeId, true);
-        });
+        if (!hero3ArtworkWarmStarted) {
+            hero3ArtworkWarmStarted = true;
+            var runId = homeLoadRun;
+            afterHeroEntry(function () {
+                if (runId === homeLoadRun) warmHero3Artwork(sourceItems, activeAnimeId);
+            });
+        }
     }
 
     function syncCurrentHero3() {
@@ -3804,8 +3838,9 @@ $(function () {
         });
     }
 
-    function applyRecentPlayItems(items) {
-        recentPlayItems = items || [];
+    function applyRecentPlayItems(items, options) {
+        options = options || {};
+        recentPlayItems = MediaCalendar.localizeList(items, 'lastplay');
         bangumiMapById = {};
         recentPlayItems.forEach(function (bangumi) {
             bangumiMapById[String(bangumi.AnimeId)] = bangumi;
@@ -3816,11 +3851,16 @@ $(function () {
         });
         sectionData.continueWatching = inProgress;
 
+        if (hero3InitialDataPending) {
+            renderDynamicSections({ skipHeroSync: true });
+            return;
+        }
+
         var heroItem = inProgress[0] || recentPlayItems[0] || null;
-        var selectedItem = hero3UserSelected ? recentPlayItems.find(function (item) {
+        var selectedItem = (hero3UserSelected || options.preserveHeroSelection) ? recentPlayItems.find(function (item) {
             return String(item.AnimeId) === currentHeroAnimeId;
         }) : null;
-        if (hero3UserSelected && selectedItem) {
+        if (selectedItem) {
             syncHero3(selectedItem, true);
         } else if (heroItem && String(heroItem.AnimeId) !== currentHeroAnimeId) {
             hero3UserSelected = false;
@@ -3829,13 +3869,14 @@ $(function () {
         } else if (heroItem) {
             syncHero3(heroItem, true);
         }
-        renderDynamicSections();
+        renderDynamicSections({ skipHeroSync: true });
     }
 
     function refreshRecentPlayFromDetails(animeId, response) {
         if (!window.RecentPlayRefresh) return;
         var bangumi = bangumiMapById[String(animeId)];
         if (!bangumi || !RecentPlayRefresh.applyDetails(bangumi, response)) return;
+        MediaCalendar.localizeList([bangumi], 'lastplay');
         recentPlayItems = RecentPlayRefresh.sort(recentPlayItems);
         sectionData.continueWatching = recentPlayItems.filter(function (item) {
             return Number(item.EpisodeWatched || 0) > 0;
@@ -4114,7 +4155,11 @@ $(function () {
 
     function loadHomeData() {
         abortHomeRequests();
+        if (window.MediaAvailability) MediaAvailability.reset();
+        renderedSectionSignatures = {};
         var runId = ++homeLoadRun;
+        hero3InitialDataPending = Boolean(window.DandanHero3 && !DandanHero3.debugState().entryPlayed);
+        if (hero3InitialDataPending) hero3ArtworkWarmStarted = false;
         setHomeStatus('loading', '正在整理你的媒体库', '最近播放、更新和关注内容正在同步。');
 
         homeBootstrapRequest = $.ajax({
@@ -4132,19 +4177,23 @@ $(function () {
 
                 var endpoints = [
                     { url: bangumiListApi, apply: function (items) {
+                        hero3InitialDataPending = false;
                         applyRecentPlayItems(items);
+                        window.requestAnimationFrame(function () { restoreInitialHeroPosition(true); });
                         if (window.RecentPlayRefresh) {
-                            RecentPlayRefresh.hydrate(items, bangumiDetailsApiTemplate, { limit: 16, concurrency: 4, timeout: 3500 })
-                                .then(function (freshItems) { if (runId === homeLoadRun) applyRecentPlayItems(freshItems); });
+                            RecentPlayRefresh.hydrate(items, bangumiDetailsApiTemplate, { limit: 16, concurrency: 3, timeout: 3500 })
+                                .then(function (freshItems) {
+                                    if (runId === homeLoadRun) applyRecentPlayItems(freshItems, { preserveHeroSelection: true });
+                                });
                         }
                     } },
                     { url: replaceBangumiNav(bangumiListApi, 'lastupdate'), apply: function (items) {
-                        sectionData.latestUpdates = items;
-                        renderDynamicSections();
+                        sectionData.latestUpdates = MediaCalendar.localizeList(items, 'lastupdate');
+                        renderDynamicSections({ skipHeroSync: true });
                     } },
                     { url: replaceBangumiNav(bangumiListApi, 'lastadd'), apply: function (items) {
-                        sectionData.latestFollows = items;
-                        renderDynamicSections();
+                        sectionData.latestFollows = MediaCalendar.localizeList(items, 'lastadd');
+                        renderDynamicSections({ skipHeroSync: true });
                     } }
                 ];
                 var remaining = endpoints.length;
@@ -4154,10 +4203,10 @@ $(function () {
                 function settle() {
                     remaining -= 1;
                     if (remaining > 0 || runId !== homeLoadRun) return;
-                    window.requestAnimationFrame(function () { restoreInitialHeroPosition(true); });
+                    hero3InitialDataPending = false;
                     if (loadedSections > 0) {
                         $('#homeStatus').slideUp(180);
-                        if (!window.DandanHero3 || !DandanHero3.debugState().itemCount) {
+                        if (!recentPlayItems.length) {
                             setHero3Status('empty', '最近播放暂时为空', '可以从下方分区进入媒体库。');
                         }
                         if (failedSections > 0) DandanApp.toast('部分首页内容暂时未能同步。', 'warning');
@@ -4174,6 +4223,7 @@ $(function () {
                         method: 'GET',
                         timeout: 8000,
                         success: function (data) {
+                            if (runId !== homeLoadRun) return;
                             var items = Array.isArray(data) ? data : [];
                             if (!items.length) return;
                             loadedSections += 1;
@@ -4193,7 +4243,13 @@ $(function () {
     }
 
     $('#homeRetryBtn').on('click', loadHomeData);
-    window.addEventListener('pagehide', abortHomeRequests);
+    window.addEventListener('pagehide', function () {
+        homeLoadRun += 1;
+        abortHomeRequests();
+    });
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted && window.DandanHero3 && !DandanHero3.debugState().entryPlayed) loadHomeData();
+    });
     loadHomeData();
 
     function renderSeasonTabs(modalState) {
@@ -4474,7 +4530,7 @@ $(function () {
         return files.map(function (file) {
             var thumbnailUrl = `/api/v1/image/id/${file.Id}`;
             return `
-                <a href="video.html?id=${file.Id}" target="_blank" class="file-item-link" data-route-morph="video">
+                <a href="video.html?id=${file.Id}" target="${useWeb3Desktop() ? '_self' : '_blank'}" class="file-item-link" data-route-morph="video">
                     <img src="${thumbnailUrl}" alt="${file.Name}" class="file-thumbnail"
                          onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2214%22%3E无缩略图%3C/text%3E%3C/svg%3E';">
                     <div class="file-item-info">
@@ -4497,11 +4553,11 @@ $(function () {
     }
 
     function formatDateValue(value) {
-        return value ? new Date(value).toLocaleDateString() : 'N/A';
+        return MediaCalendar.formatDate(value);
     }
 
     function formatDateTimeValue(value) {
-        return value ? new Date(value).toLocaleString() : 'N/A';
+        return MediaCalendar.formatDateTime(value);
     }
 
     function collectSeasonIds(episodes) {

@@ -368,6 +368,7 @@
     function observeUpdateReveal() {
         var section = document.getElementById('luSection');
         if (!section || !window.MutationObserver) return;
+        if (updateRevealObserver) updateRevealObserver.disconnect();
         updateRevealObserver = new MutationObserver(function (mutations) {
             var structureChanged = mutations.some(function (mutation) {
                 return mutation.type === 'childList';
@@ -392,6 +393,14 @@
 
     observeUpdateReveal();
 
+    function syncDocumentMotion() {
+        document.body.classList.toggle('is-home-motion-paused', document.hidden);
+        if (document.hidden) resetAll();
+    }
+
+    document.addEventListener('visibilitychange', syncDocumentMotion);
+    syncDocumentMotion();
+
     reducedMotion.addEventListener('change', resetAll);
     finePointer.addEventListener('change', resetAll);
     window.addEventListener('blur', resetAll);
@@ -399,6 +408,18 @@
         resetAll();
         killUpdateReveal();
         if (updateRevealObserver) updateRevealObserver.disconnect();
+    });
+    window.addEventListener('pageshow', function (event) {
+        if (!event.persisted) return;
+        syncDocumentMotion();
+        // pagehide disconnected the observer. Restore it for the same page
+        // when history navigation revives it from the back/forward cache.
+        observeUpdateReveal();
+        var section = document.getElementById('luSection');
+        if (section && section.classList.contains('is-update-revealed') &&
+            !section.classList.contains('is-update-sequence-complete')) {
+            setUpdateRevealEndState(section);
+        }
     });
 
     window.DandanHomeContent = { reset: resetAll, revealUpdates: playUpdateReveal };

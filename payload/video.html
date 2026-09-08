@@ -9,15 +9,13 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/DPlayer.min.css">
-    <link rel="stylesheet" href="css/video.css?v=@Model.StaticResourceVersion">
-    <script src="js/DPlayer-1.27.0.min.js"></script>
-    <script src="js/subtitles-octopus.js"></script>
+    <link rel="stylesheet" href="css/video.css?v=@Model.StaticResourceVersion&amp;ui=skip-intro-r3">
     @Partial['style.sshtml'];
-    <link data-web1-v3 rel="stylesheet" href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3" media="(min-width: 769px)">
+    <link data-web1-v3 rel="stylesheet" href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7" media="(min-width: 769px)">
     <link data-web1-v3 rel="stylesheet" href="css/web1-v3-video-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-video-r3" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
     <script src="js/gsap.min.js"></script>
-    <script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.0-route-r3"></script>
+    <script src="js/page-morph-transition.js?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7"></script>
     <script>
         (function () {
             try {
@@ -36,6 +34,8 @@
             } catch (error) {}
         })();
     </script>
+    <script src="js/DPlayer-1.27.0.min.js"></script>
+    <script src="js/subtitles-octopus.js"></script>
 </head>
 <body class="video-page">
 
@@ -159,7 +159,7 @@
                     <div class="sidebar-panel-body">
                         <div class="list-group">
                             @Each.VideoFiles
-                            <a href="video.html?id=@Current.Id" class="list-group-item list-group-item-action
+                            <a href="video.html?id=@Current.Id" data-route-morph="video" class="list-group-item list-group-item-action
                             @If.IsCurrent
                             active
                             @EndIf
@@ -328,41 +328,52 @@
 
 <script src="js/jquery-3.7.1.min.js"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
-<script src="js/video.js?v=@Model.StaticResourceVersion"></script>
+<script src="js/video.js?v=@Model.StaticResourceVersion&amp;ui=skip-intro-r3"></script>
 <script src="js/video-v3-desktop.js?v=@Model.StaticResourceVersion&amp;ui=3.0-video-r3"></script>
 <script>
-    $(document).ready(function () {
-        var dp = new DPlayer({
-            container: document.getElementById('dplayer'),
-            theme: '@Model.Color',
-            loop: false,
-            screenshot: true,
-            hotkey: true,
-            preload: 'metadata',
-            volume: 1,
-            mutex: true,
-            video: {
-                url: '@Model.Video',
-                pic: '@Model.Image',
-                type: 'auto'
-            },
-            danmaku: {
-                id: '@Model.Id',
-                api: 'dplayer/',
-                bottom: '15%',
-                unlimited: false
-            }
-        });
-        if (window.DandanVideoV3) {
-            window.DandanVideoV3.bindPlayer(dp, '@Model.Video');
-        }
-        $(".dplayer-video").attr("crossorigin", "use-credentials");
-        if (window.DdpRouteMorph && window.DdpRouteMorph.isArmed()) {
-            window.requestAnimationFrame(function () {
-                window.requestAnimationFrame(function () {
-                    window.DdpRouteMorph.arrive(document.getElementById('dplayer'));
-                });
+    document.addEventListener('DOMContentLoaded', function () {
+        var dp;
+        try {
+            dp = new DPlayer({
+                container: document.getElementById('dplayer'),
+                theme: '@Model.Color',
+                loop: false,
+                screenshot: true,
+                hotkey: true,
+                preload: 'metadata',
+                volume: 1,
+                mutex: true,
+                video: {
+                    url: '@Model.Video',
+                    pic: '@Model.Image',
+                    type: 'auto'
+                },
+                danmaku: {
+                    id: '@Model.Id',
+                    api: 'dplayer/',
+                    bottom: '15%',
+                    unlimited: false
+                }
             });
+            if (window.DandanVideoControls) {
+                window.DandanVideoControls.bindPlayer(dp);
+            }
+            if (window.DandanVideoV3) {
+                window.DandanVideoV3.bindPlayer(dp, '@Model.Video');
+            }
+            document.querySelectorAll('.dplayer-video').forEach(function (video) {
+                video.setAttribute('crossorigin', 'use-credentials');
+            });
+            if (window.DdpRouteMorph && window.DdpRouteMorph.isArmed()) {
+                window.DdpRouteMorph.waitForMedia(document.getElementById('dplayer'), dp.video, Boolean(String('@Model.Video').trim()));
+            }
+        } catch (error) {
+            if (window.DandanVideoV3) {
+                window.DandanVideoV3.setState('error', '播放器初始化失败', 'PLAYER INITIALIZATION FAILED');
+            }
+            if (window.DdpRouteMorph) window.DdpRouteMorph.cancel('player-initialization-error');
+            if (window.DandanApp) DandanApp.toast('播放器初始化失败，请检查播放器资源是否可用。', 'error');
+            return;
         }
 
         var subtitleInstance = null;
@@ -419,7 +430,7 @@
         });
     }
 
-    $(document).ready(function() {
+    if (window.jQuery) $(document).ready(function() {
         initializeEpisodeNavigation();
 
         $('#subtitleSelector').on('click', function() {
@@ -484,6 +495,7 @@
 
         button.classList.remove('is-disabled');
         button.setAttribute('aria-disabled', 'false');
+        button.setAttribute('data-route-morph', 'video');
         button.href = sourceLink.href;
         button.querySelector('strong').innerText = title;
         button.querySelector('small').innerText = subtitle;
