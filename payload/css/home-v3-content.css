@@ -850,20 +850,23 @@ body.idx-home.is-modal-open {
 
 .idx-home .pc--continue .pc__badge {
   position: absolute;
-  top: 7px;
-  left: 7px;
+  top: 8px;
+  left: 8px;
   z-index: 8;
-  min-width: 32px;
-  padding: 4px 6px;
-  border: 1px solid rgba(217, 244, 91, 0.58);
+  min-width: 42px;
+  padding: 5px 8px;
+  border: 1px solid rgba(217, 244, 91, 0.82);
   border-radius: 0;
-  color: #f3f6eb;
-  background: rgba(4, 7, 5, 0.88);
+  color: #ffffff;
+  background: rgba(4, 7, 5, 0.94);
   font-family: Bahnschrift, "Arial Narrow", sans-serif;
-  font-size: 9px;
-  font-weight: 820;
-  line-height: 1;
-  box-shadow: none;
+  font-size: clamp(11px, 0.62vw, 13px);
+  font-weight: 860;
+  line-height: 1.05;
+  letter-spacing: 0.025em;
+  text-align: center;
+  text-shadow: 0 1px 1px #000;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.62);
 }
 
 .idx-home .pc--continue .pc__play {
@@ -2807,7 +2810,8 @@ body.idx-home.is-modal-open {
        Let it align with the section frame instead of inheriting the global
        1760px reading cap, which left almost 400px unused on each side at the
        user's 2556px viewport. */
-    padding: clamp(60px, 6.7vh, 74px) var(--home3-edge) clamp(10px, 1.35vh, 18px);
+    /* Include the CJK glyph ascent above the tight title line box. */
+    padding: clamp(68px, 7.5vh, 86px) var(--home3-edge) clamp(10px, 1.35vh, 18px);
   }
 
   .idx-home #luSection .sec-hd {
@@ -3748,7 +3752,7 @@ body.idx-home.is-modal-open {
   }
 
   .idx-home #luSection {
-    padding-top: 60px;
+    padding-top: 68px;
     padding-bottom: 10px;
   }
 
@@ -3874,7 +3878,34 @@ body.idx-home.is-modal-open {
   }
 
   .idx-home .idx-section--updates.is-update-sequence-complete .update-timeline__page--week::after {
-    animation: home3-rail-pass 8.8s 180ms linear infinite;
+    /* The settled rail is already illuminated. No perpetual paint sweep. */
+    animation: none;
+  }
+}
+@media (min-width: 769px) {
+  /* These sections already occupy one viewport. Preserve their snap boxes
+     while letting the browser skip distant card trees. Their existing border-
+     box height/min-height reserves the viewport, including padding; using a
+     100dvh content placeholder here would add that padding a second time. */
+  .idx-home #cwSection,
+  .idx-home #luSection,
+  .idx-home #lfSection {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 0px;
+  }
+
+  /* v3's reveal timeline owns node opacity/scale. The inherited v1.8
+     box-shadow breathing loop also ran on all seven nodes before reveal. */
+  .idx-home #luSection .schedule-day::before,
+  .idx-home #luSection .update-timeline::after,
+  .idx-home #luSection .update-timeline__page::after {
+    animation: none;
+  }
+
+  .idx-home.is-home-motion-paused .hero3::before,
+  .idx-home.is-home-motion-paused .hero3__status::after,
+  .idx-home.is-home-motion-paused .hero3__art-switch i {
+    animation-play-state: paused;
   }
 }
 
@@ -3907,5 +3938,14 @@ body.idx-home.is-modal-open {
   .idx-home .idx-section--updates.is-update-armed .update-week-grid .timeline-card {
     visibility: visible;
     opacity: 1;
+  }
+}
+
+/* Fit both rows inside a shorter desktop bay. Single and grouped posters
+   retain one size, and the weekly grouping and section snap stay intact. */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .idx-home .update-week-grid {
+    --update-week-card-size: clamp(96px, min(11.5vw, 14vh), 126px);
+    --update-week-single-size: var(--update-week-card-size);
   }
 }

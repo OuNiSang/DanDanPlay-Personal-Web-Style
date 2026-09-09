@@ -21,3 +21,8 @@ js/page-morph-transition.js
 js/recent-play-refresh.js
 js/theme.js
 js/video-v3-desktop.js
+css/media-availability.css
+css/video.css
+js/media-availability.js
+js/media-calendar.js
+js/video.js

@@ -390,7 +390,8 @@ html {
   filter: saturate(0.98) contrast(1.04);
   clip-path: polygon(0 0, 96% 0, 100% 3%, 100% 100%, 4% 100%, 0 97%);
   transform: translateZ(0);
-  will-change: transform;
+  /* The case owns motion; a static print needs no separate promotion. */
+  will-change: auto;
 }
 
 .idx-home .hero3__caption {
@@ -408,7 +409,7 @@ html {
   background: rgba(5, 8, 6, 0.78);
   border-left: 4px solid var(--hero3-accent);
   transform: translateZ(22px);
-  will-change: transform;
+  will-change: auto;
 }
 
 .idx-home .hero3__caption strong,
@@ -2637,6 +2638,10 @@ html {
 }
 
 .idx-home .hero3__case-disc {
+  will-change: auto;
+}
+
+.idx-home .hero3__card.is-case-transitioning .hero3__case-disc {
   will-change: transform, opacity;
 }
 
