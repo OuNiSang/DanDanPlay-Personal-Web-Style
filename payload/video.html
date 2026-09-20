@@ -9,7 +9,7 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/DPlayer.min.css">
-    <link rel="stylesheet" href="css/video.css?v=@Model.StaticResourceVersion&amp;ui=skip-intro-r3">
+    <link rel="stylesheet" href="css/video.css?v=@Model.StaticResourceVersion&amp;ui=transport-r4">
     @Partial['style.sshtml'];
     <link data-web1-v3 rel="stylesheet" href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7" media="(min-width: 769px)">
     <link data-web1-v3 rel="stylesheet" href="css/web1-v3-video-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-video-r3" media="(min-width: 769px)">
@@ -328,7 +328,7 @@
 
 <script src="js/jquery-3.7.1.min.js"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
-<script src="js/video.js?v=@Model.StaticResourceVersion&amp;ui=skip-intro-r3"></script>
+<script src="js/video.js?v=@Model.StaticResourceVersion&amp;ui=transport-r4"></script>
 <script src="js/video-v3-desktop.js?v=@Model.StaticResourceVersion&amp;ui=3.0-video-r3"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -460,20 +460,11 @@
     });
 
     function initializeEpisodeNavigation() {
-        var currentItem = document.querySelector('#episodePanel .list-group-item.active');
-        if (!currentItem) {
-            return;
-        }
-
-        // Reuse the rendered playlist so episode navigation stays aligned with server ordering.
-        var currentListItem = currentItem;
-        var previousItem = currentListItem.previousElementSibling;
-        var nextItem = currentListItem.nextElementSibling;
-
-        configureEpisodeNavButton('prevEpisodeBtn', previousItem, '已经是第一集');
-        configureEpisodeNavButton('nextEpisodeBtn', nextItem, '已经是最后一集');
+        // Share the rendered playlist order with the in-player transport controls.
+        var adjacent = window.DandanVideoControls.getAdjacentEpisodes();
+        configureEpisodeNavButton('prevEpisodeBtn', adjacent.previous, '已经是第一集');
+        configureEpisodeNavButton('nextEpisodeBtn', adjacent.next, '已经是最后一集');
     }
-
     function configureEpisodeNavButton(buttonId, sourceLink, emptyText) {
         var button = document.getElementById(buttonId);
         if (!button) {

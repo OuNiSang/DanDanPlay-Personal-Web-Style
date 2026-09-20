@@ -3949,3 +3949,36 @@ body.idx-home.is-modal-open {
     --update-week-single-size: var(--update-week-card-size);
   }
 }
+
+/* Keep crowded update days complete without changing the weekly bay geometry. */
+.idx-home .schedule-day__all {
+  color: var(--home3-signal, var(--accent));
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.idx-home .schedule-day__all:hover { color: var(--home3-paper, var(--text-1)); }
+.idx-home .schedule-day__all:active { opacity: 0.75; }
+.idx-home .schedule-day__all:focus-visible,
+.idx-home .schedule-day--overflow > .schedule-day__items:focus-visible {
+  outline: 2px solid var(--home3-signal, var(--accent));
+  outline-offset: -2px;
+}
+@media (min-width: 769px) {
+  .idx-home .update-week-grid > .schedule-day--overflow[data-lane] > .schedule-day__items,
+  .idx-home .schedule-day--archive.schedule-day--overflow > .schedule-day__items {
+    max-height: 100%;
+    align-content: start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--home3-signal) transparent;
+  }
+  .idx-home .schedule-day--archive[data-group-type="future"] .schedule-day__header::before {
+    content: "UPCOMING / LOCAL DATE";
+  }
+  .idx-home .schedule-day--archive[data-group-type="archive"] .schedule-day__header::before {
+    content: "ARCHIVE / EARLIER";
+  }
+}

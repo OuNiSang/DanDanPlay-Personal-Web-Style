@@ -229,6 +229,14 @@
 (function () {
     'use strict';
 
+    function getAdjacentEpisodes() {
+        var current = document.querySelector('#episodePanel .list-group-item.active');
+        return {
+            previous: current ? current.previousElementSibling : null,
+            next: current ? current.nextElementSibling : null
+        };
+    }
+
     function bindPlayer(player) {
         if (!player || !player.video || !player.container) return;
         var controls = player.container.querySelector('.dplayer-icons-left');
@@ -236,12 +244,59 @@
         var video = player.video;
         var button = document.createElement('button');
         button.type = 'button';
-        button.className = 'dplayer-icon dplayer-skip-forward';
+        button.className = 'dplayer-icon dplayer-transport-control dplayer-skip-forward';
         button.setAttribute('aria-label', '跳过片头');
         button.title = '跳过片头';
-        button.innerHTML = '<span class="dplayer-skip-forward__label" aria-hidden="true">跳过片头</span>';
+        button.innerHTML = '<svg class="dplayer-skip-forward__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 5 9 7-9 7V5Zm9 0 9 7-9 7V5Z"/></svg>' +
+            '<span class="dplayer-skip-forward__label" aria-hidden="true">跳过片头</span>';
         var playButton = controls.querySelector('.dplayer-play-icon');
         controls.insertBefore(button, playButton ? playButton.nextSibling : controls.firstChild);
+        var adjacent = getAdjacentEpisodes();
+
+        function episodeControl(source, direction, label, path) {
+            var link = document.createElement('a');
+            link.className = 'dplayer-icon dplayer-transport-control dplayer-episode-step dplayer-episode-' + direction;
+            link.setAttribute('aria-label', label);
+            link.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + path + '"/></svg>';
+            if (source && source.matches('a[href]')) {
+                link.href = source.href;
+                link.setAttribute('data-route-morph', 'video');
+                var title = source.querySelector('strong');
+                link.title = label + (title ? '：' + title.textContent.trim() : '');
+            } else {
+                link.setAttribute('aria-disabled', 'true');
+                link.tabIndex = -1;
+                link.title = label + '（暂无可播放剧集）';
+            }
+            return link;
+        }
+
+        var previous = episodeControl(adjacent.previous, 'previous', '上一集', 'M5 5h2v14H5V5Zm14 0v14L9 12l10-7Z');
+        var next = episodeControl(adjacent.next, 'next', '下一集', 'M17 5h2v14h-2V5ZM5 5l10 7-10 7V5Z');
+        controls.insertBefore(previous, playButton || button);
+        controls.insertBefore(next, button);
+        var transportControls = [previous, next, button];
+
+        function releasePointerFocus(event) {
+            // A pointer click can retain :focus-visible from earlier keyboard use.
+            // Keep keyboard/assistive activation focused, but never latch pointer focus.
+            if (event.detail > 0 || event.pointerType) event.currentTarget.blur();
+        }
+
+        function resumeAutoHide() {
+            // Skip does not bubble to DPlayer; its mobile controller also has no
+            // click timer. Reuse the existing timer without altering its delay.
+            player.controller.setAutoHide();
+        }
+
+        function navigate(event) {
+            releasePointerFocus(event);
+            if (!event.currentTarget.hasAttribute('href')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            // Enabled links retain native navigation, modifiers and route-morph handling.
+        }
 
         function canSeek() {
             return !video.error && video.readyState >= 1 &&
@@ -256,6 +311,8 @@
 
         function skip(event) {
             event.stopPropagation();
+            releasePointerFocus(event);
+            resumeAutoHide();
             if (!canSeek()) { sync(); return; }
             try {
                 // DPlayer's seek also updates its progress, time and danmaku.
@@ -268,23 +325,43 @@
         }
 
         function onKeydown(event) {
-            // Let the native button activate without also toggling DPlayer's
-            // document-level Space hotkey.
+            // Let native activation work without toggling DPlayer's Space hotkey.
             if (event.key === ' ' || event.key === 'Enter') event.stopPropagation();
+            if (event.key === ' ' && event.currentTarget.tagName === 'A') event.preventDefault();
+        }
+
+        function onKeyup(event) {
+            if (event.key === ' ' && event.currentTarget.tagName === 'A') {
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.click();
+            }
         }
 
         var events = ['loadedmetadata', 'durationchange', 'timeupdate', 'emptied', 'error'];
         events.forEach(function (name) { video.addEventListener(name, sync); });
         button.addEventListener('click', skip);
-        button.addEventListener('keydown', onKeydown);
+        previous.addEventListener('click', navigate);
+        next.addEventListener('click', navigate);
+        transportControls.forEach(function (control) {
+            control.addEventListener('keydown', onKeydown);
+            control.addEventListener('keyup', onKeyup);
+            control.addEventListener('focus', resumeAutoHide);
+        });
         var destroyed = false;
         function destroy() {
             if (destroyed) return;
             destroyed = true;
             events.forEach(function (name) { video.removeEventListener(name, sync); });
             button.removeEventListener('click', skip);
-            button.removeEventListener('keydown', onKeydown);
-            button.remove();
+            previous.removeEventListener('click', navigate);
+            next.removeEventListener('click', navigate);
+            transportControls.forEach(function (control) {
+                control.removeEventListener('keydown', onKeydown);
+                control.removeEventListener('keyup', onKeyup);
+                control.removeEventListener('focus', resumeAutoHide);
+                control.remove();
+            });
             window.removeEventListener('pagehide', destroy);
         }
         player.on('destroy', destroy);
@@ -292,6 +369,5 @@
         sync();
     }
 
-    window.DandanVideoControls = { bindPlayer: bindPlayer };
+    window.DandanVideoControls = { bindPlayer: bindPlayer, getAdjacentEpisodes: getAdjacentEpisodes };
 })();
-
