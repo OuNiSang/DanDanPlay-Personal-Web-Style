@@ -23,6 +23,14 @@
         return date ? Date.UTC(date.year, date.month - 1, date.day) : null;
     }
 
+    // Classify once against a local calendar day, never elapsed 24-hour windows.
+    // In particular, future timestamps must not be collapsed into today's slot.
+    function relativeDay(value, now) {
+        var stamp = dayStamp(value);
+        var today = dayStamp(now === undefined ? new Date() : now);
+        return stamp === null || today === null ? null : Math.round((today - stamp) / 86400000);
+    }
+
     function formatDate(value) {
         var date = parse(value);
         return date ? date.toLocaleDateString() : 'N/A';
@@ -53,7 +61,7 @@
         return items || [];
     }
 
-    var api = { parse: parse, parts: parts, dayStamp: dayStamp, formatDate: formatDate, formatDateTime: formatDateTime, localizeList: localizeList };
+    var api = { parse: parse, parts: parts, dayStamp: dayStamp, relativeDay: relativeDay, formatDate: formatDate, formatDateTime: formatDateTime, localizeList: localizeList };
     global.MediaCalendar = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

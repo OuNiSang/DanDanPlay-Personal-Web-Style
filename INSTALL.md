@@ -1,6 +1,6 @@
 # DanDanPlay Personal Web Style 安装包
 
-版本：3.3
+版本：3.4
 兼容目标：弹弹play Windows 18.1.3（本次验证版本 18.1.3.0）。
 
 1. 完整解压 ZIP。不要直接在压缩包内运行。

@@ -1485,7 +1485,7 @@
     <link href="css/home-stable-mobile.css?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3" rel="stylesheet">
     <link data-web1-v3 href="css/home-v3-hero.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.2-hero-r26" rel="stylesheet" media="(min-width: 769px)">
-    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.2-content-r9" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.3-content-r10" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
 </head>
@@ -2069,7 +2069,7 @@
 </footer>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=3"></script>
+<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=4"></script>
 <script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=8"></script>
 <script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.2-recent-r2"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
@@ -2464,11 +2464,13 @@ $(function () {
             if (index < 3) return '近期';
             return '队列 ' + String(index + 1).padStart(2, '0');
         }
-        var today = new Date();
-        var startToday = getTimelineDayStamp(today);
-        var startDate = getTimelineDayStamp(date);
-        var diffDays = Math.round((startToday - startDate) / 86400000);
-        if (diffDays <= 0) return '今天';
+        var diffDays = MediaCalendar.relativeDay(date);
+        if (diffDays === -1) return '明天';
+        if (diffDays < -1) {
+            var futureParts = getTimelineDateParts(date);
+            return futureParts.month + '/' + futureParts.day;
+        }
+        if (diffDays === 0) return '今天';
         if (diffDays === 1) return '昨天';
         if (diffDays > 1 && diffDays < 7) return diffDays + '天前';
         var parts = getTimelineDateParts(date);
@@ -2602,8 +2604,9 @@ $(function () {
     function getScheduleGroupMeta(item, index) {
         var date = getUpdateDateCandidate(item);
         if (date) {
-            var diffDays = Math.round((getTimelineDayStamp(new Date()) - getTimelineDayStamp(date)) / 86400000);
-            if (diffDays <= 0) return { key: 'day-0', label: '今天', type: 'recent', age: 0 };
+            var diffDays = MediaCalendar.relativeDay(date);
+            if (diffDays < 0) return { key: 'future', label: '明天及以后', type: 'future', age: -1 };
+            if (diffDays === 0) return { key: 'day-0', label: '今天', type: 'recent', age: 0 };
             if (diffDays === 1) return { key: 'day-1', label: '昨天', type: 'recent', age: 1 };
             if (diffDays < 7) return { key: 'day-' + diffDays, label: formatTimelineWeekday(date), type: 'recent', age: diffDays };
             return { key: 'archive', label: '更早', type: 'archive', age: 7 };
@@ -2658,7 +2661,7 @@ $(function () {
     }
 
     function getUpdateTimelineLane(group, groupIndex) {
-        if (group.type === 'archive') return 'split';
+        if (group.type === 'archive' || group.type === 'future') return 'split';
         var age = typeof group.age === 'number' ? group.age : groupIndex;
         return age % 2 === 0 ? 'upper' : 'lower';
     }
@@ -2706,9 +2709,13 @@ $(function () {
         var isMobileLayout = !useWeb3Desktop();
         var visibleItems = items.filter(function (item) {
             return !!getUpdateDateCandidate(item);
-        }).slice(0, count);
+        }).sort(function (a, b) {
+            var dateOrder = getUpdateDateCandidate(b) - getUpdateDateCandidate(a);
+            return dateOrder || String(a.AnimeId).localeCompare(String(b.AnimeId), undefined, { numeric: true });
+        });
         var todayStamp = getTimelineDayStamp(new Date());
-        var signature = (isMobileLayout ? 'mobile|' : 'desktop|') + todayStamp + '|' + visibleItems.map(function (item) {
+        var compactWeek = window.innerWidth < 1024;
+        var signature = (isMobileLayout ? 'mobile|' : (compactWeek ? 'compact|' : 'desktop|')) + todayStamp + '|' + visibleItems.map(function (item) {
             var meta = getScheduleGroupMeta(item, 0);
             if (!meta) return '';
             return [
@@ -2720,7 +2727,8 @@ $(function () {
                 item.EpisodeTotal || 0,
                 item.VideoFileCount == null ? '?' : item.VideoFileCount,
                 meta.key,
-                meta.label
+                meta.label,
+                getTimelineDayStamp(getUpdateDateCandidate(item))
             ].join(':');
         }).join('|');
         if (renderedSectionSignatures.updates === signature) return;
@@ -2741,7 +2749,10 @@ $(function () {
 
         function createScheduleDay(group, groupIndex, limit, options) {
             options = options || {};
-            var visibleGroupItems = group.items.slice(0, limit);
+            // Recent/future days retain every card. Their existing lanes scroll
+            // when full; only the historical archive remains a linked preview.
+            var visibleGroupItems = group.type === 'archive' ? group.items.slice(0, limit) : group.items;
+            var overflowing = group.type !== 'archive' && visibleGroupItems.length > limit;
             var shouldBalanceGroup = Boolean(options.balance && visibleGroupItems.length >= 5);
             var $day = $('<section class="schedule-day"></section>')
                 .attr('data-update-count', String(visibleGroupItems.length))
@@ -2751,12 +2762,15 @@ $(function () {
                 .attr('data-timeline-slot', String(getUpdateTimelineSlot(group, groupIndex)))
                 .css('--group-index', String(groupIndex))
                 .css('--timeline-slot', getUpdateTimelineSlot(group, groupIndex) + '%')
-                .toggleClass('schedule-day--balanced', shouldBalanceGroup);
+                .toggleClass('schedule-day--balanced', shouldBalanceGroup)
+                .toggleClass('schedule-day--overflow', overflowing);
             if (options.className) $day.addClass(options.className);
             if (options.label) $day.attr('aria-label', options.label);
             var $header = $('<header class="schedule-day__header"></header>');
             $('<h3 class="schedule-day__label"></h3>').text(group.label).appendTo($header);
-            $('<span class="schedule-day__count"></span>').text(group.items.length + ' 部').appendTo($header);
+            $('<span class="schedule-day__count"></span>')
+                .text(group.items.length ? group.items.length + ' 部' + (overflowing ? ' · 可滚动' : '') : '暂无更新')
+                .appendTo($header);
             $header.appendTo($day);
 
             if (!visibleGroupItems.length) {
@@ -2767,8 +2781,7 @@ $(function () {
                 if (group.type !== 'recent') {
                     $emptyItems.removeAttr('aria-hidden');
                     $('<p class="schedule-day__empty"></p>')
-                        .text(options.emptyText || '暂无内容')
-                        .appendTo($emptyItems);
+                        .text(options.emptyText || '暂无内容').appendTo($emptyItems);
                 }
             } else if (shouldBalanceGroup) {
                 var splitIndex = Math.ceil(visibleGroupItems.length / 2);
@@ -2784,11 +2797,24 @@ $(function () {
                     $items.append(makeUpdateCard(item, itemIndex));
                 });
             }
+            if (overflowing) {
+                $day.find('.schedule-day__items').attr('tabindex', '0')
+                    .attr('role', 'region').attr('aria-label', group.label + '的全部 ' + group.items.length + ' 部作品，可滚动查看');
+            }
+            if (group.type === 'archive' && group.items.length > visibleGroupItems.length) {
+                $('<a class="schedule-day__all" href="bangumi.html?nav=lastupdate"></a>')
+                    .text('查看全部 ' + group.items.length + ' 部').appendTo($header);
+            }
             return $day;
         }
 
         if (isMobileLayout) {
             $grid.css('grid-template-columns', '');
+            groups.sort(function (a, b) {
+                var aOrder = a.type === 'recent' ? a.age : (a.type === 'future' ? 7 : 8);
+                var bOrder = b.type === 'recent' ? b.age : (b.type === 'future' ? 7 : 8);
+                return aOrder - bOrder;
+            });
             groups.forEach(function (group, groupIndex) {
                 createScheduleDay(group, groupIndex, group.type === 'archive' ? 8 : 4, {
                     label: group.label + '，' + group.items.length + ' 部作品'
@@ -2798,7 +2824,6 @@ $(function () {
             return;
         }
 
-        var compactWeek = window.innerWidth < 1024;
         var recentLimit = compactWeek ? 2 : 4;
         var recentGroups = [];
         for (var age = 0; age < 7; age++) {
@@ -2821,7 +2846,7 @@ $(function () {
             items: []
         };
 
-        $grid.attr('data-page-count', '2').css('grid-template-columns', '');
+        $grid.attr('data-page-count', groupMap.future ? '3' : '2').css('grid-template-columns', '');
         var $weekPage = $('<div class="update-timeline__page update-timeline__page--week"></div>')
             .attr('data-timeline-page', 'week')
             .attr('aria-label', '最近七天更新');
@@ -2833,6 +2858,16 @@ $(function () {
             }).appendTo($weekGrid);
         });
         $weekPage.appendTo($grid);
+
+        if (groupMap.future) {
+            var $futurePage = $('<div class="update-timeline__page update-timeline__page--archive"></div>')
+                .attr('data-timeline-page', 'future').attr('aria-label', '明天及以后');
+            createScheduleDay(groupMap.future, 7, 8, {
+                className: 'schedule-day--archive',
+                label: '明天及以后，' + groupMap.future.items.length + ' 部作品'
+            }).appendTo($futurePage);
+            $futurePage.appendTo($grid);
+        }
 
         var $archivePage = $('<div class="update-timeline__page update-timeline__page--archive"></div>')
             .attr('data-timeline-page', 'archive')

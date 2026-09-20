@@ -125,7 +125,7 @@
 </footer>
 
 <!-- 番剧详情弹窗 -->
-<div id="bangumiModal" class="modal">
+<div id="bangumiModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
     <div class="modal-content">
         <div class="modal-artwork" aria-hidden="true">
             <img id="modalArtwork" src="" alt="">
@@ -180,6 +180,11 @@
     var listRequest = null;
     var modalRequest = null;
     var modalRequestSerial = 0;
+    var modalOpen = false;
+    var modalReturnFocus = null;
+    var modalBackgroundState = null;
+    var modalScrollFrame = 0;
+    var librarySnapshotPinned = false;
 
     var viewPresentations = {
         lastplay: ['fa-circle-play', '观看动态', '从上次停下的位置继续，观看进度会直接显示在卡片上。'],
@@ -219,6 +224,7 @@
     });
 
     function loadBangumiList() {
+        librarySnapshotPinned = false;
         if (listRequest) listRequest.abort();
         if (window.MediaAvailability) MediaAvailability.reset();
         $('#loadingIndicator').show();
@@ -263,7 +269,25 @@
         bangumiSearchRecords = bangumiList.map(buildBangumiSearchRecord);
         $('#loadingIndicator').hide();
         $('#errorState').hide();
-        renderLibrarySearch($('#searchInput').val());
+        if (librarySnapshotPinned) {
+            // Keep the browsing snapshot alive after opening a dossier, including
+            // hydration that arrives after it closes. Metadata can update in
+            // place; the next search/list load uses the refreshed order.
+            document.querySelectorAll('#posterGroups .poster-item').forEach(function (card) {
+                var item = bangumiMapById[card.dataset.animeId];
+                if (!item) return;
+                var watched = Number(item.EpisodeWatched) || 0;
+                var total = Number(item.EpisodeTotal) || 0;
+                var badge = card.querySelector('.watched-info');
+                var caption = card.querySelector('.poster-info p');
+                var progress = (total > 0 ? Math.max(0, Math.min(100, Math.round(watched / total * 100))) : 0) + '%';
+                if (badge.textContent !== watched + '/' + total) badge.textContent = watched + '/' + total;
+                if (card.style.getPropertyValue('--watch-progress') !== progress) card.style.setProperty('--watch-progress', progress);
+                if (caption.textContent !== (item.Details || '')) caption.textContent = item.Details || '';
+            });
+        } else {
+            renderLibrarySearch($('#searchInput').val());
+        }
     }
 
     function normalizeSearchText(value) {
@@ -643,6 +667,55 @@
         $('#pageDescription').text(presentation[2]);
     }
 
+    function setModalOpen(open) {
+        var modal = document.getElementById('bangumiModal');
+        modal.setAttribute('aria-hidden', String(!open));
+        if (modalOpen === open) return;
+        modalOpen = open;
+        var root = document.documentElement;
+        if (open) {
+            librarySnapshotPinned = true;
+            modalReturnFocus = document.activeElement;
+            var background = Array.from(document.querySelectorAll('main, .app-nav, #quickNavContainer'));
+            modalBackgroundState = {
+                overflow: root.style.overflow,
+                gutter: root.style.scrollbarGutter,
+                elements: background.map(function (element) { return { element: element, inert: element.inert }; })
+            };
+            if (window.innerWidth > root.clientWidth) root.style.scrollbarGutter = 'stable';
+            root.style.overflow = 'hidden';
+            background.forEach(function (element) { element.inert = true; });
+            modal.querySelector('.close').focus({ preventScroll: true });
+        } else {
+            window.cancelAnimationFrame(modalScrollFrame);
+            modalScrollFrame = 0;
+            root.style.overflow = modalBackgroundState.overflow;
+            root.style.scrollbarGutter = modalBackgroundState.gutter;
+            modalBackgroundState.elements.forEach(function (entry) { entry.element.inert = entry.inert; });
+            modalBackgroundState = null;
+            if (modalReturnFocus && modalReturnFocus.isConnected) modalReturnFocus.focus({ preventScroll: true });
+            modalReturnFocus = null;
+        }
+    }
+
+    document.getElementById('episodeList').style.overscrollBehavior = 'contain';
+    ['wheel', 'touchmove'].forEach(function (type) {
+        document.getElementById('bangumiModal').addEventListener(type, function (event) {
+            if (modalOpen && !document.getElementById('episodeList').contains(event.target)) event.preventDefault();
+        }, { passive: false });
+    });
+    document.addEventListener('keydown', function (event) {
+        if (!modalOpen) return;
+        if (event.key === 'Escape') { event.preventDefault(); closeModal(); return; }
+        if (event.key !== 'Tab') return;
+        var focusable = Array.from(document.querySelectorAll('#bangumiModal a[href], #bangumiModal button:not([disabled])'))
+            .filter(function (element) { return element.getClientRects().length; });
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus({ preventScroll: true }); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus({ preventScroll: true }); }
+    });
+
     function showModal(animeId, title) {
         if (modalRequest) modalRequest.abort();
         var requestSerial = ++modalRequestSerial;
@@ -662,6 +735,7 @@
         document.getElementById('episodeList').style.display = 'none';
         document.getElementById('episodeList').innerHTML = '';
         document.getElementById('bangumiModal').style.display = 'block';
+        setModalOpen(true);
 
         var getBangumiDetailsApi = bangumiDetailsApiTemplate.replace('{id}', animeId);
         var bangumiMeta = bangumiMapById[String(animeId)] || null;
@@ -971,13 +1045,21 @@
             episodeList.appendChild(li);
         });
 
-        if (lastWatchedElement) {
-            setTimeout(function () {
-                lastWatchedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-        } else {
-            episodeList.scrollTop = 0;
-        }
+        window.cancelAnimationFrame(modalScrollFrame);
+        var requestSerial = modalRequestSerial;
+        modalScrollFrame = window.requestAnimationFrame(function () {
+            modalScrollFrame = 0;
+            if (!modalOpen || requestSerial !== modalRequestSerial || !episodeList.contains(lastWatchedElement)) {
+                if (modalOpen && requestSerial === modalRequestSerial && !lastWatchedElement) episodeList.scrollTop = 0;
+                return;
+            }
+            // scrollIntoView also moves ancestor scrollers. Center only in the
+            // dossier's list, after layout is available; there is no timeout.
+            var listRect = episodeList.getBoundingClientRect();
+            var itemRect = lastWatchedElement.getBoundingClientRect();
+            episodeList.scrollTop += itemRect.top - listRect.top - episodeList.clientTop -
+                (episodeList.clientHeight - itemRect.height) / 2;
+        });
     }
 
     function updateSeasonTabState() {
@@ -1162,6 +1244,7 @@
 
     function closeModal() {
         document.getElementById('bangumiModal').style.display = 'none';
+        setModalOpen(false);
         modalRequestSerial += 1;
         if (modalRequest) modalRequest.abort();
         modalRequest = null;
