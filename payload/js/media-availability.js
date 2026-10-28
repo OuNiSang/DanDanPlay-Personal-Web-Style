@@ -24,68 +24,103 @@
         return Number.isFinite(time) ? today(time) : '';
     }
 
+    function basis(item) {
+        return [item.AnimeId, item.EpisodeTotal, item.LastUpdate, item.VideoFileCount].join('|');
+    }
+
     function summarize(item, response, now) {
         item = item || {};
         var files = count(item.VideoFileCount);
         var catalog = count(item.EpisodeTotal);
         var result = {
             state: files === 0 ? 'empty' : 'unknown',
-            local: files === null ? '本地待核对' : (files ? '本地 ' + files + ' 文件' : '本地暂无'),
-            online: catalog ? '条目 ' + catalog + ' 话' : '网络待核对',
-            note: '',
-            detail: '网络条目信息不代表文件已下载；本地按媒体库匹配记录核对。'
+            local: files === null ? '' : (files ? '本地 ' + files + ' 文件' : '本地暂无'),
+            online: catalog ? '条目 ' + catalog + ' 话' : '',
+            latest: null, latestLocal: null, note: '', detail: '',
+            checkedAt: now == null ? Date.now() : now, basis: basis(item)
         };
         if (!response || !Array.isArray(response.Episodes) || !response.Episodes.length) return result;
-        // Numeric episode numbers exclude OP/ED/credits. Distinct episode IDs
-        // count once even when multiple encodes/files match the same episode.
+        // Credits and specials cannot determine the latest regular episode.
         var regular = response.Episodes.filter(function (episode) {
             return /^\d+(?:\.\d+)?$/.test(String(episode.EpisodeNumber || '')) && Number(episode.EpisodeNumber) > 0;
         });
         if (!regular.length) return result;
         var seen = {};
+        var conflicts = [];
         var episodes = regular.filter(function (episode, index) {
             var key = String(episode.EpisodeId || (String(episode.SeasonId) + ':' + (episode.EpisodeNumber || index)));
-            if (seen[key]) return false;
-            seen[key] = true;
+            if (seen[key]) {
+                var previous = seen[key];
+                if (Number(previous.EpisodeNumber) !== Number(episode.EpisodeNumber) ||
+                    String(previous.SeasonId || '') !== String(episode.SeasonId || '') ||
+                    day(previous.AirDate) !== day(episode.AirDate) || local(previous) !== local(episode)) {
+                    conflicts.push(previous, episode);
+                }
+                return false;
+            }
+            seen[key] = episode;
             return true;
         });
         function local(episode) {
-            if (episode.LocalMatchedExists === false) return false;
-            if (Array.isArray(episode.LocalMatchedFiles)) return episode.LocalMatchedFiles.length > 0;
-            return episode.LocalMatchedExists === true ? true : null;
+            var matches = episode.LocalMatchedFiles;
+            if (Array.isArray(matches)) {
+                if (matches.some(function (file) { return file.EpisodeId != null && String(file.EpisodeId) !== String(episode.EpisodeId); })) return null;
+                if (episode.LocalMatchedExists === false && matches.length) return null;
+                if (episode.LocalMatchedExists === true && !matches.length) return null;
+                return matches.length > 0;
+            }
+            return typeof episode.LocalMatchedExists === 'boolean' ? episode.LocalMatchedExists : null;
         }
-        var allLocalKnown = episodes.every(function (episode) { return local(episode) !== null; });
         var localCount = episodes.filter(function (episode) { return local(episode) === true; }).length;
+        if (episodes.every(function (episode) { return local(episode) !== null; })) {
+            result.local = localCount ? '本地 ' + localCount + ' 话' : '本地暂无';
+        }
         var currentDay = today(now);
         var dated = episodes.filter(function (episode) { return Boolean(day(episode.AirDate)); });
         var aired = dated.filter(function (episode) {
             var airedDay = localDay(episode.AirDate);
             return airedDay && airedDay <= currentDay;
         });
-        // The list can already report the next update while its calendar date
-        // is still ahead of the browser. Match BOTH its count and date to the
-        // detail rows; scheduled episodes beyond that boundary remain excluded.
         var updateDay = day(item.LastUpdate);
         var hasListUpdate = catalog !== null && catalog > 0 && Boolean(updateDay);
         var listed = updateDay ? dated.filter(function (episode) { return day(episode.AirDate) <= updateDay; }) : [];
-        var listVerified = hasListUpdate && listed.length === catalog;
-        var network = listVerified ? listed : aired;
-        var networkKnown = dated.length === episodes.length && (!hasListUpdate || listVerified);
-        if (allLocalKnown) result.local = localCount ? '本地 ' + localCount + ' 话' : '本地暂无';
-        if (hasListUpdate) result.online = '网络 ' + catalog + ' 话';
-        else if (networkKnown) result.online = network.length ? '网络 ' + network.length + ' 话' : '网络未开播';
-        // AirStatus is a watch-state enum, not evidence of broadcast or a file.
-        // Known missing files remain actionable even if other rows are partial.
-        var missing = network.filter(function (episode) { return local(episode) === false; });
-        var synced = networkKnown && network.length > 0 && network.every(function (episode) { return local(episode) === true; });
-        if (missing.length || synced) {
-            result.state = missing.length ? 'behind' : 'available';
-            result.note = missing.length ? '待入库 ' + missing.length + ' 话' : '';
-            result.detail = '本地已匹配 ' + localCount + ' 话；网络已更新 ' + network.length + ' 话' +
-                (missing.length ? '，其中 ' + missing.length + ' 话尚无本地文件。' : '。') +
-                (listVerified ? '按列表更新日期与正片话数核对；' : '按设备本地日期核对放送记录；') +
-                '特典和多版本文件不重复计入正片话数。';
+        // A count alone is not a boundary: 1,2,4,5 cannot stand in for 1..4.
+        // Require identified, unambiguous consecutive rows from one season.
+        function completePrefix(rows) {
+            if (!rows.length) return false;
+            var sorted = rows.slice().sort(function (a, b) { return Number(a.EpisodeNumber) - Number(b.EpisodeNumber); });
+            var season = String(sorted[0].SeasonId || '');
+            return sorted.every(function (episode, index) {
+                return episode.EpisodeId && Number(episode.EpisodeNumber) === index + 1 &&
+                    String(episode.SeasonId || '') === season &&
+                    episodes.filter(function (row) { return Number(row.EpisodeNumber) === index + 1; }).length === 1;
+            });
         }
+        var tomorrow = new Date(now == null ? Date.now() : now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        // A one-day calendar difference can come from the list/browser zones;
+        // remote future plans cannot be promoted into an already released update.
+        var listVerified = hasListUpdate && updateDay <= today(tomorrow.getTime()) && listed.length === catalog && completePrefix(listed) &&
+            listed.some(function (episode) { return day(episode.AirDate) === updateDay; });
+        // Only undated rows strictly beyond the verified range may be ignored.
+        var networkKnown = hasListUpdate ? listVerified : catalog === episodes.length &&
+            dated.length === episodes.length && completePrefix(episodes) && completePrefix(aired);
+        var network = listVerified ? listed : aired;
+        if (networkKnown && (conflicts.some(function (episode) { return Number(episode.EpisodeNumber) <= network.length; }) ||
+            episodes.some(function (episode) { return Number(episode.EpisodeNumber) <= network.length && !day(episode.AirDate); }))) networkKnown = false;
+        if (!networkKnown) return result;
+        var latest = network.reduce(function (a, b) { return Number(a.EpisodeNumber) > Number(b.EpisodeNumber) ? a : b; });
+        result.latest = String(latest.EpisodeNumber);
+        result.latestLocal = local(latest);
+        result.online = '最新第 ' + result.latest + ' 话';
+        if (result.latestLocal === null) return result;
+        // This badge answers whether the latest episode is local, not whether
+        // every older episode has been downloaded or watched.
+        result.state = result.latestLocal ? 'available' : (files === 0 ? 'empty' : 'behind');
+        result.note = result.latestLocal ? '' : '最新话未入库';
+        result.detail = result.online + (result.latestLocal ? '已有对应本地文件。' : '尚无对应本地文件。') +
+            (listVerified ? '按列表更新日期和正片编号确认；' : '按设备本地日期确认；') +
+            '特典、多版本文件和未来未排期条目不计为当前更新。';
         return result;
     }
 
@@ -138,10 +173,23 @@
     }
 
     function paint(badge, item, response) {
-        var info = response !== undefined ? summarize(item, response) : (item.__availabilitySummary || summarize(item));
-        var status = { available: '本地已同步', behind: '网络已更新，本地待同步', empty: '暂无本地文件', unknown: '本地同步状态待核对' }[info.state];
+        var saved = item.__availabilitySummary;
+        var fresh = saved && saved.basis === basis(item) && Date.now() - saved.checkedAt >= 0 && Date.now() - saved.checkedAt < 20000;
+        var info = response !== undefined ? summarize(item, response) : (fresh ? saved : summarize(item));
+        var known = info.latest !== null && info.latestLocal !== null;
+        var visible = known || info.state === 'empty';
         badge.dataset.state = info.state;
-        badge.setAttribute('aria-label', [status, info.local, info.online, info.note, info.detail].filter(Boolean).join('；'));
+        badge.textContent = known ? info.latest : '';
+        if (visible) {
+            var description = [known ? info.online + (info.latestLocal ? '，本地已有' : '，本地未入库') : '暂无本地文件', info.local, info.detail].filter(Boolean).join('；');
+            badge.removeAttribute('aria-hidden');
+            badge.setAttribute('aria-label', description);
+            badge.setAttribute('title', description);
+        } else {
+            badge.setAttribute('aria-hidden', 'true');
+            badge.removeAttribute('aria-label');
+            badge.removeAttribute('title');
+        }
     }
 
     function attach(owner, item, template) {

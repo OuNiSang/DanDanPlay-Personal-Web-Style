@@ -49,9 +49,14 @@
         player.on('loadedmetadata', markReady);
         player.on('canplay', markReady);
         player.on('playing', markReady);
+        function markPaused() {
+            if (body && body.getAttribute('data-video-state') === 'buffering') setState('paused', '播放已暂停', 'PLAYBACK PAUSED');
+        }
         player.on('waiting', function () {
-            setState('buffering', readyOnce ? '缓冲中' : '正在装载媒体', readyOnce ? 'BUFFERING STREAM' : 'READING LOCAL MEDIA');
+            if (player.video && player.video.paused) setState('paused', '播放尚未开始', 'PLAYBACK PAUSED');
+            else setState('buffering', readyOnce ? '缓冲中' : '正在装载媒体', readyOnce ? 'BUFFERING STREAM' : 'READING LOCAL MEDIA');
         });
+        player.on('pause', markPaused);
         player.on('error', function () {
             setState('error', '无法打开媒体文件', 'CHECK FILE ACCESS OR FORMAT');
         });

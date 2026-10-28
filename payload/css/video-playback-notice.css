@@ -1,0 +1,68 @@
+.video-playback-notice[hidden] { display: none; }
+.video-compatibility[hidden] { display: none; }
+.video-compatibility {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+    padding: .65rem 1rem;
+    border: 1px solid var(--accent, #ffb53a);
+    border-radius: 8px;
+    background: var(--bg-card, #1a1a1a);
+    color: var(--text-primary, #eee);
+    line-height: 1.5;
+}
+.video-compatibility button {
+    min-height: 44px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    padding: .4rem .8rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.video-compatibility button:disabled { opacity: .6; cursor: wait; }
+.video-compatibility button:focus-visible { outline: 2px solid var(--accent, #ffb53a); outline-offset: 3px; }
+.video-playback-notice {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--accent, #ffb53a);
+    border-radius: 8px;
+    background: var(--bg-card, #1a1a1a);
+    color: var(--text-primary, #eee);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.video-playback-notice strong { display: block; font-size: 1rem; }
+.video-playback-notice p { margin: .5rem 0; }
+.video-playback-notice small { display: block; margin-top: .75rem; opacity: .8; }
+.video-playback-notice__actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.video-playback-notice__actions button,
+.video-playback-notice__actions a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: .5rem .9rem;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+.video-playback-notice__actions :focus-visible { outline: 2px solid var(--accent, #ffb53a); outline-offset: 3px; }
+@media (min-width: 769px) {
+    html[data-ui-version="v3"] .video-page .video-playback-notice {
+        grid-column: 1 / -1;
+        grid-row: 4;
+        margin-top: 0;
+    }
+    html[data-ui-version="v3"] .video-page .video-compatibility { grid-column: 1 / -1; grid-row: 3; }
+}
+
+.video-playback-notice__actions [hidden] {
+  display: none;
+}

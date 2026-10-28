@@ -1,4 +1,4 @@
-/* Sync changes the material of the existing corner badge, not its geometry. */
+/* One corner ticket owns the latest/local status; watch progress stays on the card. */
 .has-media-availability {
   --availability-local: #d9f45b;
   --availability-network: #f3b35a;
@@ -29,6 +29,7 @@
   width: 100%;
   height: 12px;
   color: var(--availability-edge);
+  font-size: 0;
   pointer-events: none;
 }
 .media-availability::before {
@@ -41,50 +42,107 @@
   background: currentColor;
   box-shadow: 0 0 5px var(--availability-glow);
 }
-/* Unbadged covers use only a glint on their existing top edge. */
-.has-media-availability:has(> :is(.pc__badge, .timeline-card__watch-badge, .timeline-card__watch-dot, .watched-info)) > .media-availability::before {
+/* List sequence is decoration, not a second status badge. */
+.library-page--v3 .poster-item.has-media-availability::after {
   content: none;
+  display: none;
 }
-.idx-home .has-media-availability:has(> .media-availability) > :is(.pc__badge, .timeline-card__watch-badge) {
-  border-color: var(--availability-edge);
-  background: var(--availability-fill);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--availability-edge) 32%, transparent), 0 0 5px var(--availability-glow);
+/* Rating order belongs to ordinary caption text, below the title/details. */
+.library-page .poster-info > .poster-rating-position {
+  display: block;
+  margin-top: 4px;
+  color: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
 }
-.idx-home .has-media-availability:has(> .media-availability) > .timeline-card__watch-dot {
-  background: var(--availability-mark);
-  box-shadow: 0 0 0 1px var(--availability-edge), 0 0 5px var(--availability-glow);
-}
-@media (min-width: 769px) {
-  .library-page--v3 .poster-item.has-media-availability::after {
-    border-top-color: var(--availability-edge);
-    color: var(--availability-paper);
-    background: var(--availability-fill);
-    box-shadow: inset 0 0 0 1px var(--availability-edge), 0 0 5px var(--availability-glow);
-  }
-  .library-page--v3 .poster-item.has-media-availability > .poster-rank {
-    border-color: var(--availability-edge);
-    color: var(--availability-paper);
-    background: var(--availability-fill);
-    box-shadow: inset 0 1px 0 var(--availability-edge);
-  }
-}
-.library-page:not(.library-page--v3) .poster-item.has-media-availability > .watched-info {
-  border-color: var(--availability-edge);
-  background: var(--availability-fill);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--availability-edge) 32%, transparent), 0 0 5px var(--availability-glow);
-}
-.library-page .poster-item.has-poster-rank > .poster-rank { top: 8px; left: 8px; right: auto; }
-.library-page--v3 .poster-item.has-poster-rank::after { display: none; }
 
 /* The lid owns the light, so it follows the case and disappears with its face. */
 .idx-home .hero3__case-cover-face > .media-availability { opacity: 0; }
 .idx-home .hero3[data-hero-intro="ready"] .hero3__case-cover-face > .media-availability { opacity: 1; }
 @media (max-width: 768px) {
-  .library-page .poster-item.has-media-availability > .watched-info {
-    border-color: var(--availability-edge);
-    background: var(--availability-fill);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--availability-edge) 32%, transparent), 0 0 5px var(--availability-glow);
-  }
-  .library-page .poster-item.has-poster-rank > .poster-rank { left: auto; right: 8px; }
   .idx-home .idx-section--updates .sec-hd__more { flex-shrink: 0; white-space: nowrap; }
+}
+
+/* A small episode ticket is subordinate to the title. The state symbol is
+   visible without hover; Hero retains only its existing case-owned glint. */
+.has-media-availability:not(.hero3__case-cover-face) > .media-availability {
+  top: 6px;
+  right: 6px;
+  left: auto;
+  width: auto;
+  height: 18px;
+  min-width: 18px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 4px;
+  border: 1px solid #687161;
+  border-radius: 2px;
+  color: #f0f3e9;
+  background: #20251e;
+  box-shadow: 0 1px 2px #11140e60;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+  text-shadow: none;
+}
+.has-media-availability:not(.hero3__case-cover-face) > .media-availability::before {
+  content: none;
+}
+.has-media-availability:not(.hero3__case-cover-face) > .media-availability[data-state="behind"] {
+  border-color: #a8834b;
+}
+.has-media-availability:not(.hero3__case-cover-face) > .media-availability[data-state="available"] {
+  border-color: #64733f;
+}
+.has-media-availability:not(.hero3__case-cover-face) > .media-availability::after {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.has-media-availability:not(.hero3__case-cover-face) > .media-availability[data-state="available"]::after {
+  content: "✓";
+  color: #d9f45b;
+}
+.has-media-availability:not(.hero3__case-cover-face) > .media-availability:is([data-state="behind"], [data-state="empty"])::after {
+  content: "↓";
+  color: #f3b35a;
+}
+/* The sole ticket uses the freed top corner; dense columns keep smaller digits. */
+.idx-home .timeline-card__frame.has-media-availability > .media-availability {
+  font-size: 9px;
+  right: auto;
+  left: 6px;
+}
+.idx-home .pc__frame.has-media-availability > .media-availability {
+  right: auto;
+  left: 6px;
+}
+.library-page .poster-item.has-media-availability > .media-availability {
+  top: 8px;
+  right: 8px;
+}
+@media (forced-colors: active) {
+  .has-media-availability:not(.hero3__case-cover-face) > .media-availability[data-state] {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
+    box-shadow: none;
+    forced-color-adjust: none;
+  }
+  .has-media-availability:not(.hero3__case-cover-face) > .media-availability[data-state]::after {
+    color: CanvasText;
+  }
+}
+
+/* Keep observation geometry while an update has no reliable answer. */
+.has-media-availability > .media-availability[aria-hidden="true"] {
+  visibility: hidden;
 }

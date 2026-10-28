@@ -24,6 +24,7 @@
     var exitSettle = null;
     var sourceCancel = null;
     var mediaCleanup = null;
+    var mediaRetry = null;
     var returnFocus = null;
     var armedPayload = null;
     var arrivalPromise = null;
@@ -399,7 +400,17 @@
         copy.appendChild(signal);
         scene.appendChild(copy);
         loading.appendChild(scene);
+        var actions = document.createElement('div');
+        actions.className = 'ddp-route-morph__loading-actions';
+        var retryButton = document.createElement('button');
+        retryButton.type = 'button';
+        retryButton.setAttribute('data-morph-retry', '');
+        retryButton.textContent = '重试读取';
+        retryButton.hidden = true;
+        retryButton.addEventListener('click', function () { if (mediaRetry) mediaRetry(); });
+        actions.appendChild(retryButton);
         var cancelButton = document.createElement('button');
+        cancelButton.setAttribute('data-morph-cancel', '');
         cancelButton.type = 'button';
         cancelButton.textContent = '取消加载';
         cancelButton.addEventListener('click', function () {
@@ -407,13 +418,17 @@
             // On the player, only dismiss the gate; keep native media controls usable.
             cancel('user-cancelled');
         });
-        loading.appendChild(cancelButton);
+        actions.appendChild(cancelButton);
+        loading.appendChild(actions);
         root.appendChild(loading);
         root.addEventListener('keydown', function (event) {
             if (!root.classList.contains('is-loading')) return;
             if (event.key === 'Tab') {
                 event.preventDefault();
-                cancelButton.focus({ preventScroll: true });
+                var buttons = Array.prototype.filter.call(actions.querySelectorAll('button'), function (button) { return !button.hidden && !button.disabled; });
+                var index = buttons.indexOf(document.activeElement);
+                var next = index < 0 ? (event.shiftKey ? buttons.length - 1 : 0) : (index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
+                if (buttons[next]) buttons[next].focus({ preventScroll: true });
             }
             if (event.key === 'Escape') {
                 event.preventDefault();
@@ -432,7 +447,8 @@
         root.querySelector('[role="status"]').textContent = destinationReady ? '正在装载媒体' : '正在进入播放';
         root.querySelector('.ddp-route-morph__loading-title').textContent =
             root.querySelector('.ddp-route-morph__label b').textContent || '下一场，即将开始';
-        var button = root.querySelector('.ddp-route-morph__loading button');
+        root.querySelector('[data-morph-retry]').hidden = true;
+        var button = root.querySelector('[data-morph-cancel]');
         button.textContent = destinationReady ? '显示播放器' : '取消加载';
         if (!returnFocus) returnFocus = document.activeElement;
         button.focus({ preventScroll: true });
@@ -621,6 +637,7 @@
     function clearMediaWait() {
         if (mediaCleanup) mediaCleanup();
         mediaCleanup = null;
+        mediaRetry = null;
     }
 
     function killTimeline() {
@@ -689,7 +706,7 @@
         return true;
     }
 
-    function waitForMedia(targetElement, mediaElement, hasSource) {
+    function waitForMedia(targetElement, mediaElement, hasSource, retryLoad) {
         if (!armedPayload || mode !== 'armed') return false;
         clearMediaWait();
         if (!mediaElement || hasSource === false) {
@@ -703,13 +720,48 @@
         function failed() {
             cancel('media-error');
         }
+        var waitTimer = 0;
+        var waited = 0;
+        var visibleSince = document.hidden ? null : window.performance.now();
+        function updateWait() {
+            window.clearTimeout(waitTimer);
+            waitTimer = 0;
+            var clock = window.performance.now();
+            if (visibleSince !== null) waited += Math.max(0, clock - visibleSince);
+            visibleSince = document.hidden ? null : clock;
+            if (mode !== 'armed' || document.hidden || mediaElement.readyState >= 1 || mediaElement.error) return;
+            if (waited >= 12000) {
+                if (overlay) {
+                    overlay.querySelector('[role="status"]').textContent = '媒体仍未就绪。可以继续等待、重试读取，或显示播放器。';
+                    overlay.querySelector('[data-morph-retry]').hidden = typeof retryLoad !== 'function';
+                }
+                return;
+            }
+            waitTimer = window.setTimeout(updateWait, 12000 - waited);
+        }
+        if (typeof retryLoad === 'function') mediaRetry = function () {
+            if (mode !== 'armed') return;
+            waited = 0;
+            visibleSince = document.hidden ? null : window.performance.now();
+            if (overlay) {
+                overlay.querySelector('[role="status"]').textContent = '正在重新读取媒体';
+                overlay.querySelector('[data-morph-retry]').hidden = true;
+                overlay.querySelector('[data-morph-cancel]').focus({ preventScroll: true });
+            }
+            try { retryLoad(); } catch (error) { failed(); return; }
+            updateWait();
+        };
         var readyEvents = ['loadedmetadata', 'loadeddata', 'canplay', 'playing'];
         readyEvents.forEach(function (name) { mediaElement.addEventListener(name, ready); });
         mediaElement.addEventListener('error', failed);
+        document.addEventListener('visibilitychange', updateWait);
         mediaCleanup = function () {
+            window.clearTimeout(waitTimer);
             readyEvents.forEach(function (name) { mediaElement.removeEventListener(name, ready); });
             mediaElement.removeEventListener('error', failed);
+            document.removeEventListener('visibilitychange', updateWait);
         };
+        updateWait();
         if (mediaElement.error) failed();
         // DPlayer intentionally preloads metadata; canplay alone can wait for Play.
         else if (mediaElement.readyState >= 1) ready();

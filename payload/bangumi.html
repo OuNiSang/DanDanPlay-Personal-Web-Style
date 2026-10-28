@@ -8,7 +8,7 @@
     <link href="css/bootstrap-5.3.3.min.css" rel="stylesheet">
     <link href="css/font-awesome-all-6.5.2.min.css" rel="stylesheet">
     @Partial['style.sshtml'];
-    <link href="css/media-availability.css?v=@Model.StaticResourceVersion&amp;ui=6" rel="stylesheet">
+    <link href="css/media-availability.css?v=@Model.StaticResourceVersion&amp;ui=8" rel="stylesheet">
     <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/web1-v3-library-desktop.css?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r6" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
@@ -160,7 +160,7 @@
 <script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=3"></script>
 <script src="js/vendor/pinyin-pro-3.18.2.js?v=@Model.StaticResourceVersion"></script>
 <script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r4"></script>
-<script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=8"></script>
+<script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=9"></script>
 <script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.2-recent-r2"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
@@ -278,10 +278,9 @@
                 if (!item) return;
                 var watched = Number(item.EpisodeWatched) || 0;
                 var total = Number(item.EpisodeTotal) || 0;
-                var badge = card.querySelector('.watched-info');
                 var caption = card.querySelector('.poster-info p');
                 var progress = (total > 0 ? Math.max(0, Math.min(100, Math.round(watched / total * 100))) : 0) + '%';
-                if (badge.textContent !== watched + '/' + total) badge.textContent = watched + '/' + total;
+                card.setAttribute('aria-description', getCardWatchDescription(item));
                 if (card.style.getPropertyValue('--watch-progress') !== progress) card.style.setProperty('--watch-progress', progress);
                 if (caption.textContent !== (item.Details || '')) caption.textContent = item.Details || '';
             });
@@ -473,6 +472,13 @@
         applyBangumiList(RecentPlayRefresh.sort(bangumiList));
     }
 
+    function getCardWatchDescription(b) {
+        var watched = Number(b.EpisodeWatched || 0);
+        var total = Number(b.EpisodeTotal || 0);
+        if (!Number.isFinite(watched) || !Number.isFinite(total) || watched < 0 || total <= 0) return '';
+        return '观看进度 ' + watched + '/' + total;
+    }
+
     function createPosterItem(bangumi, globalIndex, sourceGroup) {
         var watched = Number(bangumi.EpisodeWatched) || 0;
         var total = Number(bangumi.EpisodeTotal) || 0;
@@ -482,10 +488,11 @@
             .attr('data-anime-id', String(bangumi.AnimeId))
             .attr('data-anime-title', bangumi.Title || '')
             .attr('data-list-index', globalIndex)
-            .attr('data-code', String(globalIndex + 1).padStart(2, '0'))
             .attr('data-source-group', sourceGroup)
             .attr('role', 'button')
             .attr('tabindex', '0')
+            .attr('aria-label', '查看 ' + (bangumi.Title || '') + ' 的剧集详情')
+            .attr('aria-description', getCardWatchDescription(bangumi))
             .css('--watch-progress', progress + '%')
             .on('click', function () {
                 showModal(String(bangumi.AnimeId), bangumi.Title);
@@ -497,16 +504,7 @@
                 }
             });
 
-        $('<div></div>')
-            .addClass('watched-info')
-            .text(watched + '/' + total)
-            .appendTo(posterItem);
         if (window.MediaAvailability) MediaAvailability.attach(posterItem[0], bangumi, bangumiDetailsApiTemplate);
-
-        if (currentNav === 'rating') {
-            posterItem.addClass('has-poster-rank');
-            $('<span></span>').addClass('poster-rank').text('#' + (globalIndex + 1)).appendTo(posterItem);
-        }
 
         var posterImage = $('<img>')
             .attr('alt', bangumi.Title)
@@ -528,6 +526,9 @@
         $('<span></span>').addClass('poster-source-group').text(sourceGroup).appendTo(posterInfo);
         $('<h3></h3>').text(bangumi.Title).attr('title', bangumi.Title).appendTo(posterInfo);
         $('<p></p>').text(bangumi.Details).appendTo(posterInfo);
+        if (currentNav === 'rating') {
+            $('<span></span>').addClass('poster-rating-position').text('排名 #' + (globalIndex + 1)).appendTo(posterInfo);
+        }
 
         if (currentNav === 'lastplay') {
             $('<span></span>').addClass('poster-progress').attr('aria-hidden', 'true').appendTo(posterItem);

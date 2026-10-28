@@ -2,11 +2,11 @@
 
 弹弹play Web1 的非官方视觉与交互改版，用连续 CD 架、媒体封套和放映控制台浏览自己的媒体库。
 
-**当前版本：3.4 · 兼容弹弹play Windows 18.1.3**
+**当前版本：3.5 · 兼容弹弹play Windows 18.1.3**
 
-**[下载 3.4 安装包 ZIP](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.4/DanDanPlay-Personal-Web-Style-3.4.zip)** · [版本说明与校验文件](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/tag/3.4)
+**[下载 3.5 安装包 ZIP](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.5/DanDanPlay-Personal-Web-Style-3.5.zip)** · [版本说明与校验文件](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/tag/3.5)
 
-3.4 在播放器内加入上一集、下一集图标，修复点击“跳过片头”后控制栏不收起的问题，并适配手机小尺寸。最近更新从今天开始排列，拥挤日期的卡片完整保留；打开番剧详情时，背景列表和翻页位置保持不动。
+3.5 将封面状态收敛为一个小号数字与符号，修正季归类和播放恢复，并加入客户端 E-AC-3 软件解码。原生可播放格式继续沿用原路径；软件解码直接输出声音，不转 AAC、不生成媒体副本。软解码已获用户验收通过。
 
 > 电脑端默认使用 3.x 界面，右上角可切换稳定版。宽度不超过 768px 时自动使用 2.4 稳定布局。桌面模式仍沿用 Web1 3.0 标识，以保留原有偏好设置。新的播放器控制同时适用于桌面、稳定版和手机。
 
@@ -28,11 +28,11 @@
 
 最近更新左侧固定为**今天**，向右依次是昨天及前五天，按访问者设备的本地日历划分。未来日期单独标注；当天作品较多时可以在原有栏位内滚动查看全部卡片，手机保留完整近期列表，“更早”入口可进入完整归档。
 
-原有角标以**琥珀色**表示网络已更新、本地尚未跟上，以**酸绿色**表示确认本地已覆盖更新；信息不足时保持中性。日期继续兼容跨午夜、显式时区偏移和夏令时。
+每张封面仅保留一个小角标：数字是可信的最新话数，**✓** 表示本地已有对应话，**↓** 表示本地尚缺。独立底色在复杂封面上保持可读；观看进度留在原有进度条与辅助信息中。无法确认最新话数时不伪造同步，也不显示“待核对”。日期继续兼容跨午夜、显式时区偏移和夏令时。
 
-![Web1 3.4 最近更新：从今天开始的七天与完整卡片](screenshots/recent-updates-desktop-3.4.webp)
+![Web1 3.5 最近更新：虚构封面的单一最新话数与本地状态角标](screenshots/recent-updates-desktop-3.5.png)
 
-![Web1 3.4 继续观看：媒体封套与观看进度](screenshots/continue-watching-desktop-3.4.webp)
+![Web1 3.5 继续观看：仅保留一个状态角标，观看进度由进度条表达](screenshots/continue-watching-desktop-3.5.png)
 
 ![Web1 3.4 全部分区：播放动态、番剧目录与文件入口](screenshots/all-sections-desktop-3.4.webp)
 
@@ -40,7 +40,7 @@
 
 番剧库保留分页封套、搜索、键盘操作及连续侧边详情。打开、加载和关闭详情时，背景卡片、归档分页和滚动位置保持不动；最近观看信息到达后更新现有卡片。季度栏和剧集列表共用抽屉宽度，定位最近观看集数时只滚动剧集列表。
 
-![Web1 3.4 番剧库](screenshots/library-desktop-3.4.webp)
+![Web1 3.5 近期归档：单一状态角标](screenshots/library-desktop-3.5.png)
 
 ![Web1 3.4 番剧详情：保持背景位置的连续侧栏](screenshots/library-drawer-desktop-3.4.webp)
 
@@ -60,23 +60,23 @@
 
 | 首页 | 番剧库 |
 | --- | --- |
-| ![Web1 3.4 手机端稳定首页](screenshots/home-stable-mobile-3.4.webp) | ![Web1 3.4 手机端稳定番剧库](screenshots/library-stable-mobile-3.4.webp) |
+| ![Web1 3.4 手机端稳定首页](screenshots/home-stable-mobile-3.4.webp) | ![Web1 3.5 手机端近期归档：单一状态角标](screenshots/library-stable-mobile-3.5.png) |
 
 ![Web1 3.4 手机播放器：上下集与跳过片头图标](screenshots/player-stable-mobile-3.4.webp)
 
-以上截图和 GIF 来自 3.4 候选运行文件，使用虚构作品、明暗封面、长短标题与缺图案例，不含真实媒体清单、账号、服务器或播放记录。GIF 是界面演示，不代表实际设备帧率。
+标有 3.5 的角标截图来自本批受测候选；其余截图和 GIF 标有 3.4，展示保留的既有界面。所有公开预览使用虚构作品、明暗封面、长短标题与缺图案例，不含真实媒体清单、账号、服务器或播放记录。GIF 是界面演示，不代表实际设备帧率。
 
 ## 安装与回退
 
-1. 下载独立附件 **`DanDanPlay-Personal-Web-Style-3.4.zip`** 并完整解压，不要直接在压缩包内运行。
+1. 下载独立附件 **`DanDanPlay-Personal-Web-Style-3.5.zip`** 并完整解压，不要直接在压缩包内运行。
 2. 建议先退出弹弹play。
 3. 双击 `manage-style.bat`，选择 `1` 安装或重新应用。
 4. 在弹弹play中开启远程访问，进入客户端显示地址的 `/web1/index.html`。
 5. 需要回退时再次运行管理器并选择 `2`；选择 `3` 查看安装与版本状态。
 
-安装包包含 28 个运行文件及管理器、许可证和安装说明；截图/GIF 留在项目主页。使用同一 Release 的 `.zip.sha256` 文件核对完整性。
+安装包包含 manifest 中列出的运行文件、第三方许可与管理器、安装说明；截图/GIF 留在项目主页。使用同一 Release 的 `.zip.sha256` 文件核对完整性。
 
-管理器默认中文，主菜单选择 `4` 可切换英文。优先读取 Web1 目录同级的 `dandanplay.exe` 版本；版本不匹配或无法识别时会提示确认。3.4 的安装、状态、重复应用和回退使用 `18.1.3.0` 验证，无需跳过版本检查。
+管理器默认中文，主菜单选择 `4` 可切换英文。优先读取 Web1 目录同级的 `dandanplay.exe` 版本；版本不匹配或无法识别时会提示确认。兼容目标为 `18.1.3`，发布安装检查使用 `18.1.3.0`，不跳过版本检查。
 
 待覆盖文件有变化时先备份；重复应用同一版本不重复创建备份。回退恢复原有文件，并移除安装时新增的文件。备份位于：
 
@@ -89,6 +89,14 @@
 GitHub 自动生成的 `Source code` 压缩包仍可用，推荐使用独立安装附件。附件下载次数表示请求次数，不等于独立用户或安装人数；本项目没有为此添加使用遥测。
 
 ## 更新记录
+
+### 3.5
+
+- 每张相关封面仅一个小号最新话数与本地状态角标；不再出现“待核对”，未知数据不冒充已同步。
+- 修正季号提取及分组，第一季文件不再误归特别篇；不改媒体库匹配或原文件。
+- 修正首帧等待、暂停恢复、明确重试后的定位与转场遮罩；恢复零音量控件的可用操作。
+- 增加固定官方 libmedia AVPlayer 1.3.1 客户端直接解码，仅在同源 MP4 确认 E-AC-3 且浏览器原生不支持时自动启用。软解码已获用户验收通过。
+- 保留原生播放切换与安装备份回退；更新隐私安全单角标预览、独立 ZIP 与 SHA-256 附件。
 
 ### 3.4
 
@@ -113,11 +121,21 @@ GitHub 自动生成的 `Source code` 压缩包仍可用，推荐使用独立安�
 
 ## 验证范围
 
-发布检查覆盖 2048、1440、1280、900、768 和 390px；播放器额外检查 360/320px、长时长、鼠标、键盘、触屏、全屏及二十次连续换集。功能记录覆盖正常、空内容、加载、失败、日期边界、重复打开/关闭详情、跳过片头和安装回退。
+既有页面检查覆盖 2048、1440、1280、900、768 和 390px；播放器额外检查 360/320px、长时长、鼠标、键盘、触屏、全屏及二十次连续换集。功能记录覆盖正常、空内容、加载、失败、日期边界、重复打开/关闭详情、跳过片头和安装回退。
 
-保留 NancyFx 模板、现有媒体库 API、DPlayer、字幕、弹幕、播放记录、文件路由和版本偏好，不引入新生产依赖。安装器在 PowerShell 7 和 Windows PowerShell 5.1 下验证。
+保留 NancyFx 模板、现有媒体库 API、DPlayer 控件、弹幕、播放记录、文件路由和版本偏好。新增固定版本 libmedia 客户端解码依赖；原生播放仍保留。安装器验证覆盖 PowerShell 7 和 Windows PowerShell 5.1。
 
 无头浏览器不等于实体手机、Safari 原生视频全屏或实际显卡认证。原生修饰键的新标签创建已检查，新标签完整加载仍有测试环境限制。快速连续切换的 60Hz 帧预算与真实显卡表现尚未完成验收，**不承诺 60fps**。不同编码、字幕与转码服务仍取决于弹弹play和浏览器。
+
+### 软件解码与验证边界
+
+软件解码使用官方 `@libmedia/avplayer@1.3.1`，固定源码提交 `152f629d3021fd8013efa464fcb7b55f9fbe7753`。E-AC-3 直接解为 PCM；不会上传、改写原媒体或生成转码副本。版本与第三方说明见 [libmedia NOTICE](payload/js/vendor/libmedia-1.3.1/NOTICE.txt)。
+
+播放器下方可切回原生；视频 URL 添加 `decoder=native` 强制原生，`decoder=software` 可显式试用软解码。自动判断失败、信息不足或混合音轨时保留原生路径。
+
+**当前软解码不显示高级 ASS 字幕**，会明确提示；切回原生后恢复原生字幕路径。软解码下原生画中画、AirPlay 和截图功能不可用。已验收不代表全部编码、容器、手机或长时间播放均已验证；HEVC 软件视频解码可能消耗较多 CPU 与内存。未声称机器量化同步误差达到固定毫秒界限。
+
+全源码校验仍有 **5 项既存下载/遥控页面检查失败**：下载页同一整页重试命中两条规则，另有下载、电脑遥控、Android 遥控的 `beforeunload` 清理各一条。这些文件不在本次发布 payload，规则未删除、失败未改称通过，也未将无关修复混入本批。
 
 ## 自定义目录与打包
 
@@ -129,10 +147,12 @@ pwsh -NoProfile -File .\scripts\manage-style.ps1 -Action restore -TargetPath "D:
 
 管理器兼容 Windows PowerShell 5.1。命令行遇到版本不匹配时默认退出；仅在自行确认兼容性后才考虑 `-Force`。
 
-维护者可用 PowerShell 7 执行 `scripts/build-release.ps1 -Version 3.4`，向 `dist/` 生成 ZIP 与校验文件。脚本核对 manifest 和 payload 完整文件集合，并拒绝覆盖已有产物。
+维护者可用 PowerShell 7 执行 `scripts/build-release.ps1 -Version 3.5`，向 `dist/` 生成 ZIP 与校验文件。脚本核对 manifest 和 payload 完整文件集合，并拒绝覆盖已有产物。
 
 `payload/` 按实际测试源码保留文件字节，Git 不自动改写其中的行尾；安装附件与对应版本的 payload 可逐文件校验。
 
 ## 声明
 
-本项目是个人维护的非官方界面修改，与弹弹play官方无隶属或背书关系。应用中的作品图片来自用户媒体库及元数据服务；公开包不附带真实番剧图片、媒体、账号配置、服务器地址、播放记录或弹弹play自带的第三方前端资源。
+本项目是个人维护的非官方界面修改，与弹弹play官方无隶属或背书关系。应用中的作品图片来自用户媒体库及元数据服务；公开包不附带真实番剧图片、媒体、账号配置、服务器地址、播放记录；弹弹play自带的基础前端资源仍由原应用提供。libmedia 第三方组件及许可随本版本一并提供。
+
+对应的第三方源码、构建说明和许可文档随同 [3.5 源码材料 ZIP](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.5/DanDanPlay-Personal-Web-Style-3.5-corresponding-source.zip) 单独提供。FFmpeg 来源按上游同版生成头文件关联到固定提交；未执行逐字节重编验证，WASM 不作 LGPL-only 声明。
