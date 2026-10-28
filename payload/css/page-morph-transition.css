@@ -529,3 +529,14 @@ html.ddp-route-morph-pending.ddp-route-morph-arriving::before {
     transform: none !important;
   }
 }
+
+.ddp-route-morph__loading-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ddp-route-morph__loading-actions [hidden] {
+  display: none;
+}

@@ -1,0 +1,45 @@
+libmedia AVPlayer 1.3.1
+Copyright (C) 2024-present, Gaoxing Zhao
+
+This package contains unmodified official @libmedia/avplayer 1.3.1 UMD
+files and selected official E-AC-3, HEVC, audio-resampling and time-stretch
+WebAssembly modules. The original package.json and README.md are retained.
+Web1's adapter is separate from these replaceable library files.
+
+Official project and pinned source:
+https://github.com/zhaohappy/libmedia/tree/152f629d3021fd8013efa464fcb7b55f9fbe7753
+https://github.com/zhaohappy/libmedia/archive/152f629d3021fd8013efa464fcb7b55f9fbe7753.tar.gz
+Official prebuilt JavaScript package:
+https://registry.npmjs.org/@libmedia/avplayer/-/avplayer-1.3.1.tgz
+
+The JavaScript package declares LGPL-3.0-or-later. COPYING.LGPLv3 and the
+incorporated GPLv3 text are included. Upstream identifies FFmpeg as the
+source of codec/resampling modules and SoundTouch as the source of time
+stretching. COPYING.LGPLv2.1 is also included for those upstream components.
+See the pinned source README and build scripts for component details.
+
+FFmpeg upstream: https://ffmpeg.org/
+SoundTouch upstream: https://www.surina.net/soundtouch/
+Pinned libmedia build scripts:
+https://github.com/zhaohappy/libmedia/tree/152f629d3021fd8013efa464fcb7b55f9fbe7753/build
+Pinned embedded SoundTouch sources:
+https://github.com/zhaohappy/libmedia/tree/152f629d3021fd8013efa464fcb7b55f9fbe7753/packages/audiostretchpitch/src/clib/soundtouch
+
+No x264/x265 encoding modules or other encoders are included. The Web1
+adapter directly decodes media and does not create converted media copies.
+You may replace the library files with a compatible modified build; the adapter is provided in editable source form. See the source and license terms
+for modification and redistribution rights.
+
+Corresponding source materials for this distribution:
+https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.5/DanDanPlay-Personal-Web-Style-3.5-corresponding-source.zip
+FFmpeg source: https://github.com/zhaohappy/FFmpeg/tree/a216f26d6ed993bdc12d842cdab3f91bd0b31909
+The upstream generated ffversion.h at the decoder rebuild commit and at
+the pinned libmedia revision both declare n7.0.1-8-ga216f26d6e. This is the
+upstream same-version source declaration; no bit-reproducible build was
+performed. The decoder build script enables GPL and version3. These WASM
+components are not represented as LGPL-only. Full source, build scripts,
+license documents, pinned submodules and the evidence are supplied in the
+separate source attachment. See its README for the source layout.
+To use a modified decoder build, replace the library/WASM files and update
+the adapter's explicit byte-length expectations if those files change size.
+There is no cryptographic or account restriction on modified versions.

@@ -1481,7 +1481,7 @@
     }
     </style>
     <link href="css/home-v18.css?v=home18-r41" rel="stylesheet">
-    <link href="css/media-availability.css?v=@Model.StaticResourceVersion&amp;ui=6" rel="stylesheet">
+    <link href="css/media-availability.css?v=@Model.StaticResourceVersion&amp;ui=8" rel="stylesheet">
     <link href="css/home-stable-mobile.css?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3" rel="stylesheet">
     <link data-web1-v3 href="css/home-v3-hero.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.2-hero-r26" rel="stylesheet" media="(min-width: 769px)">
@@ -2070,7 +2070,7 @@
 
 <script src="js/jquery-3.7.1.min.js"></script>
 <script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=4"></script>
-<script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=8"></script>
+<script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=9"></script>
 <script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.2-recent-r2"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
@@ -2309,6 +2309,13 @@ $(function () {
         return apiUrl;
     }
 
+    function getCardWatchDescription(b) {
+        var watched = Number(b.EpisodeWatched || 0);
+        var total = Number(b.EpisodeTotal || 0);
+        if (!Number.isFinite(watched) || !Number.isFinite(total) || watched < 0 || total <= 0) return '';
+        return '观看进度 ' + watched + '/' + total;
+    }
+
     function bindBangumiCard($card, b) {
         return $card.attr({
             href: '#',
@@ -2316,7 +2323,8 @@ $(function () {
             'data-cover-url': b.Cover || '',
             'aria-haspopup': 'dialog',
             'aria-controls': 'bangumiModal',
-            'aria-label': '查看 ' + b.Title + ' 的剧集详情'
+            'aria-label': '查看 ' + b.Title + ' 的剧集详情',
+            'aria-description': getCardWatchDescription(b)
         }).on('click', function (event) {
             event.preventDefault();
             showModal(String(b.AnimeId), b.Title);
@@ -2394,9 +2402,6 @@ $(function () {
         if (!useWeb3Desktop()) {
             var $stableFrame = $('<div class="pc__frame"></div>');
             appendCover($stableFrame, b, 'pc__img');
-            if (b.EpisodeWatched > 0) {
-                $('<div class="pc__badge">' + b.EpisodeWatched + '/' + b.EpisodeTotal + '</div>').appendTo($stableFrame);
-            }
             var stableEpisodeText = '第' + b.EpisodeWatched + '话 · ' + pct + '%';
             var $stableOverlay = $('<div class="pc__overlay"></div>');
             $('<div class="pc__ep"></div>').text(stableEpisodeText).appendTo($stableOverlay);
@@ -2410,9 +2415,6 @@ $(function () {
         var mediaCase = createMediaCase($card, 'continue', 'pc__frame');
         var $frame = mediaCase.frame;
         appendCover($frame, b, 'pc__img media-case__cover');
-        if (b.EpisodeWatched > 0) {
-            $('<div class="pc__badge">' + b.EpisodeWatched + '/' + b.EpisodeTotal + '</div>').appendTo($frame);
-        }
         var epText = '第' + b.EpisodeWatched + '话 · ' + pct + '%';
         var $ov = $('<div class="pc__overlay"></div>');
         $('<div class="pc__ep"></div>').text(epText).appendTo($ov);
@@ -2502,11 +2504,6 @@ $(function () {
         }
         if (!useWeb3Desktop()) {
             appendCover($card, b, 'timeline-card__cover');
-            if (isInProgress || isUnwatched) {
-                $('<div class="timeline-card__watch-badge"></div>').text(watched + '/' + total).appendTo($card);
-            } else if (isComplete) {
-                $('<div class="timeline-card__watch-dot" aria-hidden="true"></div>').appendTo($card);
-            }
             var $stableBody = $('<div class="timeline-card__body"></div>');
             $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($stableBody);
             $('<div class="timeline-card__title"></div>').text(b.Title).appendTo($stableBody);
@@ -2520,11 +2517,6 @@ $(function () {
         var mediaCase = createMediaCase($card, 'update', 'timeline-card__frame');
         var $frame = mediaCase.frame;
         appendCover($frame, b, 'timeline-card__cover media-case__cover');
-        if (isInProgress || isUnwatched) {
-            $('<div class="timeline-card__watch-badge"></div>').text(watched + '/' + total).appendTo($frame);
-        } else if (isComplete) {
-            $('<div class="timeline-card__watch-dot" aria-hidden="true"></div>').appendTo($frame);
-        }
         var $body = $('<div class="timeline-card__body media-case__info"></div>');
         $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($body);
         $('<div class="timeline-card__title media-case__title"></div>').text(b.Title).appendTo($body);
@@ -3918,8 +3910,8 @@ $(function () {
         });
         var progress = getWatchProgress(bangumi);
         var $card = $('.pc--continue[data-anime-id="' + String(animeId).replace(/"/g, '\\"') + '"]');
+        $card.attr('aria-description', getCardWatchDescription(bangumi));
         if ($card.length && progress) {
-            $card.find('.pc__badge').text(progress.watched + '/' + progress.total);
             $card.find('.pc__ep').text('第' + progress.watched + '话 · ' + progress.percent + '%');
             $card.find('.pc__bar').attr('aria-valuenow', String(progress.percent));
             $card.find('.pc__bar-fill').css('width', progress.percent + '%');
@@ -4609,24 +4601,24 @@ $(function () {
     }
 
     function inferSeasonIdFromFile(file) {
-        var titleMatch = (file.EpisodeTitle || '').match(/第\\s*(\\d+)\\s*季/i);
+        var titleMatch = (file.EpisodeTitle || '').match(/第\s*(\d+)\s*季/i);
         if (titleMatch) return String(parseInt(titleMatch[1], 10));
-        var nameMatch = (file.Name || '').match(/S(\\d{1,2})E\\d{1,2}/i);
+        var nameMatch = (file.Name || '').match(/S(\d{1,2})E\d{1,2}/i);
         if (nameMatch) return String(parseInt(nameMatch[1], 10));
         return null;
     }
 
     function inferEpisodeNumberFromFile(file) {
-        var titleMatch = (file.EpisodeTitle || '').match(/\\((\\d+)\\)/);
+        var titleMatch = (file.EpisodeTitle || '').match(/\((\d+)\)/);
         if (titleMatch) return String(parseInt(titleMatch[1], 10));
-        var nameMatch = (file.Name || '').match(/S\\d{1,2}E(\\d{1,2})/i);
+        var nameMatch = (file.Name || '').match(/S\d{1,2}E(\d{1,2})/i);
         if (nameMatch) return String(parseInt(nameMatch[1], 10));
         return '';
     }
 
     function normalizeFallbackEpisodeTitle(title) {
         if (!title) return '未知剧集';
-        return title.replace(/^第\\s*\\d+\\s*季\\s*\\(\\d+\\)\\s*/, '');
+        return title.replace(/^第\s*\d+\s*季\s*\(\d+\)\s*/, '');
     }
 
     function determineInitialSeasonId(officialGroups, mergedGroups, lastWatchedEpisode) {

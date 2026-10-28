@@ -1,0 +1,18 @@
+.dplayer-video-wrap { position: relative; }
+.ddp-software-surface { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: #000; }
+.ddp-software-surface canvas, .ddp-software-surface video { width: 100%; height: 100%; object-fit: contain; }
+.dplayer-video.ddp-software-facade { opacity: 0; }
+.ddp-software-active .dplayer-pip-icon, .ddp-software-active .dplayer-airplay-icon { display: none; }
+.ddp-software-page #videoCompatibility { display: none; }
+.video-decoder-status { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; padding: .55rem .8rem; font-size: .8rem; color: var(--text-secondary, #bbb); }
+.video-decoder-status[hidden] { display: none; }
+.video-decoder-status button { margin-left: auto; padding: .3rem .6rem; border: 1px solid currentColor; border-radius: .35rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.video-decoder-status button:hover { color: var(--text-primary, #fff); }
+.video-decoder-status button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.video-decoder-status button:active { transform: translateY(1px); }
+.video-decoder-status button:disabled { opacity: .5; cursor: wait; }
+.video-decoder-status[data-decoder-state="error"] { color: #f0bf78; }
+@media (min-width: 769px) {
+  html[data-ui-version="v3"] .video-page .video-decoder-status { grid-column: 1; grid-row: 3; min-width: 0; }
+  html[data-ui-version="v3"] .video-page .player-sidebar { grid-column: 2; grid-row: 2; }
+}

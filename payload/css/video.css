@@ -81,7 +81,12 @@ body {
     display: none;
 }
 
-.video-page #dplayer .dplayer-episode-step:not([aria-disabled="true"]):hover,
+@media (hover: hover) and (pointer: fine) {
+    .video-page #dplayer .dplayer-episode-step:not([aria-disabled="true"]):hover {
+        color: var(--video3-signal, var(--accent, #ffb53a));
+        background: rgba(255, 255, 255, 0.07);
+    }
+}
 .video-page #dplayer .dplayer-episode-step:focus-visible {
     color: var(--video3-signal, var(--accent, #ffb53a));
     background: rgba(255, 255, 255, 0.07);
@@ -101,7 +106,13 @@ body {
     white-space: nowrap;
 }
 
-.video-page .dplayer-skip-forward:not(:disabled):hover .dplayer-skip-forward__label,
+@media (hover: hover) and (pointer: fine) {
+    .video-page .dplayer-skip-forward:not(:disabled):hover .dplayer-skip-forward__label {
+        border-color: var(--video3-signal, var(--accent, #ffb53a));
+        color: var(--video3-signal, var(--accent, #ffb53a));
+        background: rgba(255, 255, 255, 0.07);
+    }
+}
 .video-page .dplayer-skip-forward:focus-visible .dplayer-skip-forward__label {
     border-color: var(--video3-signal, var(--accent, #ffb53a));
     color: var(--video3-signal, var(--accent, #ffb53a));
@@ -150,7 +161,12 @@ body {
     }
     .video-page #dplayer .dplayer-skip-forward__label { display: none; }
     .video-page #dplayer .dplayer-skip-forward__icon { display: inline-block; }
-    .video-page #dplayer .dplayer-skip-forward:not(:disabled):hover,
+    @media (hover: hover) and (pointer: fine) {
+        .video-page #dplayer .dplayer-skip-forward:not(:disabled):hover {
+            color: var(--video3-signal, var(--accent, #ffb53a));
+            background: rgba(255, 255, 255, 0.07);
+        }
+    }
     .video-page #dplayer .dplayer-skip-forward:focus-visible {
         color: var(--video3-signal, var(--accent, #ffb53a));
         background: rgba(255, 255, 255, 0.07);
