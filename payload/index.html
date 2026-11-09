@@ -699,6 +699,60 @@
 
     .update-timeline::-webkit-scrollbar { display: none; }
 
+    .update-timeline.update-timeline--notice {
+        grid-template-rows: minmax(0, 1fr);
+        grid-auto-columns: minmax(0, 1fr);
+        overflow-x: hidden;
+    }
+
+    .update-timeline__notice {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        align-self: center;
+        justify-self: center;
+        box-sizing: border-box;
+        width: min(100%, 520px);
+        min-height: 180px;
+        padding: 24px;
+        border: 1px solid var(--home3-line-strong, rgba(255,255,255,0.22));
+        background: var(--home3-surface, var(--bg));
+        color: var(--text-1);
+        pointer-events: auto;
+    }
+
+    .update-timeline__notice strong { font-size: 18px; }
+    .update-timeline__notice p { margin: 8px 0 16px; color: var(--text-2); }
+
+    .update-timeline__notice a,
+    .update-timeline__retry {
+        display: inline-block;
+        margin: 4px 12px 0 0;
+        padding: 7px 11px;
+        border: 1px solid var(--home3-line-strong, rgba(255,255,255,0.22));
+        background: transparent;
+        color: var(--home3-signal-strong, var(--accent));
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .update-timeline__notice a:hover,
+    .update-timeline__retry:hover,
+    .update-timeline__notice a:focus-visible,
+    .update-timeline__retry:focus-visible {
+        border-color: var(--home3-signal-strong, var(--accent));
+        outline: 2px solid var(--home3-signal-strong, var(--accent));
+        outline-offset: 2px;
+    }
+
+    .update-timeline__notice a:active,
+    .update-timeline__retry:active { transform: translateY(1px); }
+
+    .update-timeline__retry:disabled { cursor: default; opacity: 0.56; }
+
     .update-timeline::before,
     .update-timeline::after {
         content: '';
@@ -748,6 +802,25 @@
         background: linear-gradient(90deg, #fff4c7, var(--accent));
         opacity: 1;
         box-shadow: 0 0 18px rgba(232,160,32,0.36);
+    }
+
+    .update-timeline:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+
+    /* A calendar rollover reuses settled content; new nodes must not replay
+       the entrance and briefly hide otherwise unchanged works. */
+    .update-timeline.is-calendar-synced .update-timeline__page::before,
+    .update-timeline.is-calendar-synced .update-timeline__page::after,
+    .update-timeline.is-calendar-synced .schedule-day,
+    .update-timeline.is-calendar-synced .schedule-day::before,
+    .update-timeline.is-calendar-synced .schedule-day::after,
+    .update-timeline.is-calendar-synced .schedule-day__header,
+    .update-timeline.is-calendar-synced .timeline-card,
+    .update-timeline.is-calendar-synced .media-case__surface,
+    .update-timeline.is-calendar-synced .media-case__info {
+        animation: none !important;
     }
 
     /* ── 海报卡片 ── */
@@ -1480,12 +1553,12 @@
         .follow-card { animation: none !important; }
     }
     </style>
-    <link href="css/home-v18.css?v=home18-r41" rel="stylesheet">
+    <link href="css/home-v18.css?v=home18-r45" rel="stylesheet">
     <link href="css/media-availability.css?v=@Model.StaticResourceVersion&amp;ui=8" rel="stylesheet">
-    <link href="css/home-stable-mobile.css?v=@Model.StaticResourceVersion&amp;ui=2.4-stable-r3" rel="stylesheet">
+    <link href="css/home-stable-mobile.css?v=@Model.StaticResourceVersion&amp;ui=2.4-mobile-loading-r4" rel="stylesheet">
     <link data-web1-v3 href="css/home-v3-hero.css?v=@Model.StaticResourceVersion&amp;ui=3.0-hero-r6" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/home-v3-hero-polish.css?v=@Model.StaticResourceVersion&amp;ui=3.2-hero-r26" rel="stylesheet" media="(min-width: 769px)">
-    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.3-content-r10" rel="stylesheet" media="(min-width: 769px)">
+    <link data-web1-v3 href="css/home-v3-content.css?v=@Model.StaticResourceVersion&amp;ui=3.4-content-r18" rel="stylesheet" media="(min-width: 769px)">
     <link data-web1-v3 href="css/page-morph-transition.css?v=@Model.StaticResourceVersion&amp;ui=3.2-route-r7" rel="stylesheet" media="(min-width: 769px)">
     <script>if (window.Web1UiVersion) window.Web1UiVersion.syncStyles();</script>
 </head>
@@ -1676,6 +1749,14 @@
     <!-- <=768px keeps the last stable Web1 2.4 Hero.  Its data is mirrored
          from the existing source nodes so API and artwork logic stay shared. -->
     <div class="hero-stable-mobile">
+        <div class="hero-mobile-status" id="heroMobileStatus" role="status">
+            <strong id="heroMobileStatusTitle">正在整理你的媒体库</strong>
+            <p id="heroMobileStatusDescription">正在核对最近播放；你可以先浏览媒体库分区。</p>
+            <div>
+                <button class="btn-ghost" type="button" id="heroMobileRetryBtn" hidden>重试</button>
+                <a class="btn-ghost" href="#mediaSection">浏览媒体库</a>
+            </div>
+        </div>
         <div class="idx-hero__bg" id="heroMobileBg"></div>
         <div class="idx-hero__overlay"></div>
         <div class="idx-hero__inner">
@@ -1720,8 +1801,9 @@
         <div class="sec-hd">
             <div>
                 <h2 class="sec-hd__title">最近更新</h2>
-                <p class="sec-hd__summary"><span id="luCount">0</span> 部作品按条目更新日期编排</p>
+                <p class="sec-hd__summary"><span id="luCount">0</span> <span id="luSummaryText">部作品按最近一集播出日编排</span></p>
             </div>
+            <a id="luArchiveLink" class="sec-hd__archive" href="bangumi.html?nav=lastupdate" style="display:none;"></a>
             <a href="bangumi.html?nav=lastupdate" class="sec-hd__more">
                 查看全部 <i class="fas fa-chevron-right"></i>
             </a>
@@ -2069,9 +2151,9 @@
 </footer>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=4"></script>
+<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=9-airing-unified"></script>
 <script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=9"></script>
-<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.2-recent-r2"></script>
+<script src="js/recent-play-refresh.js?v=@Model.StaticResourceVersion&amp;ui=3.4-recent-r5"></script>
 <script src="js/bootstrap.bundle-5.3.3.min.js"></script>
 <script src="js/lazysizes-5.3.1.min.js"></script>
 <script src="js/gsap.min.js"></script>
@@ -2087,6 +2169,7 @@ $(function () {
     var currentModalState = null;
     var libraryFallbackPromise = null;
     var sectionData = { continueWatching: [], latestUpdates: [], latestFollows: [] };
+    var updateDatesReady = false;
     var recentPlayItems = [];
     var currentHeroAnimeId = null;
     var resizeTimer = null;
@@ -2110,6 +2193,8 @@ $(function () {
     var hero3UserSelected = false;
     var hero3InitialDataPending = Boolean(window.DandanHero3);
     var renderedSectionSignatures = {};
+    var updateDayStamp = MediaCalendar.dayStamp(new Date());
+    var updateCalendarTimer = 0;
     var shouldStartAtHero = !window.location.hash;
     var lastSectionMobile = null;
     var web3DesktopQuery = window.matchMedia('(min-width: 769px)');
@@ -2331,6 +2416,26 @@ $(function () {
         });
     }
 
+    var sectionCoverObserver = null;
+
+    function observeSectionCovers() {
+        if (!window.IntersectionObserver) return;
+        if (!sectionCoverObserver) sectionCoverObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                var image = entry.target;
+                var source = image.getAttribute('data-section-cover');
+                if (source) image.setAttribute('src', source);
+                image.removeAttribute('data-section-cover');
+                sectionCoverObserver.unobserve(image);
+            });
+        }, { rootMargin: '80px' });
+        sectionCoverObserver.disconnect();
+        document.querySelectorAll('.idx-body img[data-section-cover]').forEach(function (image) {
+            sectionCoverObserver.observe(image);
+        });
+    }
+
     function appendCover($frame, b, className) {
         if (window.MediaAvailability) MediaAvailability.attach($frame[0], b, bangumiDetailsApiTemplate);
         if (b.Cover) {
@@ -2338,7 +2443,8 @@ $(function () {
                 .addClass(className)
                 // Section cards have reserved frame geometry. Keep the Hero's
                 // separate decoded-artwork gate eager; defer these scroll cards.
-                .attr({ src: b.Cover, alt: b.Title, loading: 'lazy', decoding: 'async', width: 300, height: 400 })
+                .attr({ alt: b.Title, loading: 'lazy', decoding: 'async', width: 300, height: 400 })
+                .attr(window.IntersectionObserver ? 'data-section-cover' : 'src', b.Cover)
                 .appendTo($frame);
         } else {
             $('<div class="pc__placeholder"><i class="fas fa-play-circle"></i></div>')
@@ -2432,10 +2538,6 @@ $(function () {
         return $card;
     }
 
-    function parseTimelineDate(value) {
-        return MediaCalendar.parse(value);
-    }
-
     function getTimelineDateParts(date) {
         return MediaCalendar.parts(date);
     }
@@ -2444,34 +2546,15 @@ $(function () {
         return MediaCalendar.dayStamp(date);
     }
 
-    function getUpdateDateCandidate(b) {
-        var names = [
-            'LastUpdated', 'LastUpdate', 'UpdateTime', 'UpdatedAt', 'ModifiedAt',
-            'LastModified', 'PublishDate', 'AirDate', 'EpisodeAirDate', 'LastEpisodeAirDate',
-            'CreateTime', 'CreatedAt', 'AddedAt'
-        ];
-        for (var i = 0; i < names.length; i++) {
-            if (b && b[names[i]]) {
-                var parsed = parseTimelineDate(b[names[i]]);
-                if (parsed) return parsed;
-            }
-        }
-        return null;
+    function getUpdateDateCandidate(b, now) {
+        return MediaCalendar.airingAt(b, now);
     }
 
-    function formatTimelineDateLabel(b, index) {
-        var date = getUpdateDateCandidate(b);
-        if (!date) {
-            if (index === 0) return '最新';
-            if (index < 3) return '近期';
-            return '队列 ' + String(index + 1).padStart(2, '0');
-        }
-        var diffDays = MediaCalendar.relativeDay(date);
-        if (diffDays === -1) return '明天';
-        if (diffDays < -1) {
-            var futureParts = getTimelineDateParts(date);
-            return futureParts.month + '/' + futureParts.day;
-        }
+    function formatTimelineDateLabel(b, index, now) {
+        var date = getUpdateDateCandidate(b, now);
+        if (!date) return '日期未注明';
+        var diffDays = MediaCalendar.relativeDay(date, now);
+        if (diffDays < 0) return '日期未注明';
         if (diffDays === 0) return '今天';
         if (diffDays === 1) return '昨天';
         if (diffDays > 1 && diffDays < 7) return diffDays + '天前';
@@ -2480,7 +2563,7 @@ $(function () {
     }
 
     /* ── 最近更新：横向时间线 ── */
-    function makeUpdateCard(b, index) {
+    function makeUpdateCard(b, index, now) {
         var progress = getWatchProgress(b);
         var pct = progress ? progress.percent : 0;
         var watched = Number(b.EpisodeWatched || 0);
@@ -2505,7 +2588,7 @@ $(function () {
         if (!useWeb3Desktop()) {
             appendCover($card, b, 'timeline-card__cover');
             var $stableBody = $('<div class="timeline-card__body"></div>');
-            $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($stableBody);
+            $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0, now)).appendTo($stableBody);
             $('<div class="timeline-card__title"></div>').text(b.Title).appendTo($stableBody);
             $('<div class="timeline-card__meta"></div>').text(getEpisodeText(b)).appendTo($stableBody);
             var $stableBar = $('<div class="timeline-card__bar"></div>');
@@ -2518,7 +2601,7 @@ $(function () {
         var $frame = mediaCase.frame;
         appendCover($frame, b, 'timeline-card__cover media-case__cover');
         var $body = $('<div class="timeline-card__body media-case__info"></div>');
-        $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0)).appendTo($body);
+        $('<div class="timeline-card__time"></div>').text(formatTimelineDateLabel(b, index || 0, now)).appendTo($body);
         $('<div class="timeline-card__title media-case__title"></div>').text(b.Title).appendTo($body);
         $('<div class="timeline-card__meta media-case__meta"></div>').text(getCardEpisodeTitle(b) || getEpisodeText(b)).appendTo($body);
         var $bar = $('<div class="timeline-card__bar"></div>');
@@ -2593,21 +2676,25 @@ $(function () {
         });
     }
 
-    function getScheduleGroupMeta(item, index) {
-        var date = getUpdateDateCandidate(item);
+    function getScheduleGroupMeta(item, index, now) {
+        var current = MediaCalendar.parse(now === undefined ? new Date() : now);
+        var date = getUpdateDateCandidate(item, current);
+        if (!date && MediaCalendar.nextAiringAt(item, current)) return null;
         if (date) {
-            var diffDays = MediaCalendar.relativeDay(date);
-            if (diffDays < 0) return { key: 'future', label: '明天及以后', type: 'future', age: -1 };
+            if (current && date.getTime() > current.getTime()) return null;
+            var diffDays = MediaCalendar.relativeDay(date, current);
+            if (diffDays === null) return { key: 'undated', label: '日期未注明', type: 'undated', age: 9 };
+            if (diffDays < 0) return null;
             if (diffDays === 0) return { key: 'day-0', label: '今天', type: 'recent', age: 0 };
             if (diffDays === 1) return { key: 'day-1', label: '昨天', type: 'recent', age: 1 };
             if (diffDays < 7) return { key: 'day-' + diffDays, label: formatTimelineWeekday(date), type: 'recent', age: diffDays };
             return { key: 'archive', label: '更早', type: 'archive', age: 7 };
         }
-        return null;
+        return { key: 'undated', label: '日期未注明', type: 'undated', age: 9 };
     }
 
-    function getScheduleGroupLabel(item, index) {
-        var meta = getScheduleGroupMeta(item, index);
+    function getScheduleGroupLabel(item, index, now) {
+        var meta = getScheduleGroupMeta(item, index, now);
         return meta ? meta.label : '';
     }
 
@@ -2618,42 +2705,22 @@ $(function () {
     }
 
     function buildUpdateTimelineColumns(groups) {
-        if (window.matchMedia('(max-width: 768px)').matches) return '';
-        return groups.map(function (group, index) {
-            var visibleCount = Math.min(group.items.length, group.type === 'archive' ? 8 : 4);
-            if (group.type === 'archive') {
-                var archiveWidth = visibleCount >= 7 ? 'clamp(286px, 15vw, 330px)' : 'clamp(190px, 12vw, 286px)';
-                var archiveFlex = 1.36;
-                return 'minmax(' + archiveWidth + ', ' + archiveFlex.toFixed(2) + 'fr)';
-            }
-            if (group.type === 'fallback') {
-                return 'minmax(clamp(180px, 16vw, 300px), ' + (1 + Math.min(index, 2) * 0.18).toFixed(2) + 'fr)';
-            }
-            var age = typeof group.age === 'number' ? group.age : index;
-            var minWidth = visibleCount <= 1 ? 156 : (visibleCount <= 4 ? 286 : 318);
-            var flex = age <= 1 ? 0.58 : (age <= 4 ? 0.68 : 0.82);
-            if (visibleCount >= 3) {
-                flex += 0.18;
-            }
-            if (visibleCount >= 5) {
-                flex += 0.18;
-            }
-            if (index === 0) {
-                flex = 1.46;
-            }
-            return 'minmax(' + minWidth + 'px, ' + flex.toFixed(2) + 'fr)';
+        return groups.map(function (group) {
+            var count = group.items.length;
+            var weight = count === 0 ? 0.55 : (count === 1 ? 1 : (count === 2 ? 1.18 : 1.5));
+            return 'minmax(0, ' + weight.toFixed(2) + 'fr)';
         }).join(' ');
     }
 
     function getUpdateTimelineSlot(group, groupIndex) {
-        if (group.type === 'archive') return 92;
+        if (group.type === 'archive' || group.type === 'undated') return 92;
         var slots = [7, 19, 31, 43, 56, 69, 80];
         var age = typeof group.age === 'number' ? group.age : groupIndex;
         return slots[Math.max(0, Math.min(slots.length - 1, age))];
     }
 
     function getUpdateTimelineLane(group, groupIndex) {
-        if (group.type === 'archive' || group.type === 'future') return 'split';
+        if (group.type === 'archive' || group.type === 'undated') return 'split';
         var age = typeof group.age === 'number' ? group.age : groupIndex;
         return age % 2 === 0 ? 'upper' : 'lower';
     }
@@ -2697,18 +2764,22 @@ $(function () {
         updateRevealObserver.observe(section);
     }
 
-    function renderUpdateSchedule($grid, items, count) {
+    function getUpdateDayPage(items, limit, previous) {
+        if (!previous || !items.length) return 0;
+        var firstIndex = items.findIndex(function (item) { return String(item.AnimeId) === previous.firstId; });
+        var requested = firstIndex >= 0 ? Math.floor(firstIndex / limit) : previous.index;
+        return Math.max(0, Math.min(Math.ceil(items.length / limit) - 1, requested || 0));
+    }
+
+    function renderUpdateSchedule($grid, items, count, options) {
+        options = options || {};
         var isMobileLayout = !useWeb3Desktop();
-        var visibleItems = items.filter(function (item) {
-            return !!getUpdateDateCandidate(item);
-        }).sort(function (a, b) {
-            var dateOrder = getUpdateDateCandidate(b) - getUpdateDateCandidate(a);
-            return dateOrder || String(a.AnimeId).localeCompare(String(b.AnimeId), undefined, { numeric: true });
-        });
-        var todayStamp = getTimelineDayStamp(new Date());
-        var compactWeek = window.innerWidth < 1024;
-        var signature = (isMobileLayout ? 'mobile|' : (compactWeek ? 'compact|' : 'desktop|')) + todayStamp + '|' + visibleItems.map(function (item) {
-            var meta = getScheduleGroupMeta(item, 0);
+        var renderNow = options.now || new Date();
+        var visibleItems = MediaCalendar.localizeAiringList(items, renderNow);
+        var todayStamp = getTimelineDayStamp(renderNow);
+        var recentPageSize = window.innerWidth < 1024 ? 1 : (window.innerWidth < 1650 || window.innerHeight < 1200 ? 2 : 4);
+        var signature = (isMobileLayout ? 'mobile|' : 'desktop-' + recentPageSize + '|') + todayStamp + '|' + visibleItems.map(function (item) {
+            var meta = getScheduleGroupMeta(item, 0, renderNow);
             if (!meta) return '';
             return [
                 item.AnimeId,
@@ -2720,33 +2791,46 @@ $(function () {
                 item.VideoFileCount == null ? '?' : item.VideoFileCount,
                 meta.key,
                 meta.label,
-                getTimelineDayStamp(getUpdateDateCandidate(item))
+                item.LastUpdate || '',
+                getUpdateDateCandidate(item, renderNow) ? getUpdateDateCandidate(item, renderNow).getTime() : '',
+                Array.isArray(item.__airingDates) ? item.__airingDates.join(',') : 'list',
+                item.__airingState || ''
             ].join(':');
         }).join('|');
         if (renderedSectionSignatures.updates === signature) return;
         renderedSectionSignatures.updates = signature;
+        var previousDayPages = Object.create(null);
+        $grid.find('.schedule-day[data-group-key]').each(function () {
+            var focusedCard = this.contains(document.activeElement) && document.activeElement.closest('.timeline-card');
+            var first = focusedCard || this.querySelector('.timeline-card:not([hidden])');
+            previousDayPages[this.getAttribute('data-group-key')] = {
+                firstId: first ? first.getAttribute('data-anime-id') : null,
+                index: Number(this.getAttribute('data-page-index')) || 0
+            };
+        });
+        $grid.removeClass('update-timeline--notice').toggleClass('is-calendar-synced', Boolean(options.skipReveal));
         $grid.empty().removeAttr('data-page-count');
 
-        var groups = [];
         var groupMap = {};
         visibleItems.forEach(function (item, index) {
-            var meta = getScheduleGroupMeta(item, index);
+            var meta = getScheduleGroupMeta(item, index, renderNow);
             if (!meta) return;
             if (!groupMap[meta.key]) {
                 groupMap[meta.key] = { key: meta.key, label: meta.label, type: meta.type, age: meta.age, items: [] };
-                groups.push(groupMap[meta.key]);
             }
             groupMap[meta.key].items.push(item);
         });
 
         function createScheduleDay(group, groupIndex, limit, options) {
             options = options || {};
-            // Recent/future days retain every card. Their existing lanes scroll
-            // when full; only the historical archive remains a linked preview.
+            // Keep every recent card in the DOM; desktop lanes page within
+            // their existing bay instead of clipping a vertically scrolling grid.
             var visibleGroupItems = group.type === 'archive' ? group.items.slice(0, limit) : group.items;
-            var overflowing = group.type !== 'archive' && visibleGroupItems.length > limit;
+            var paged = !isMobileLayout && group.type === 'recent' && visibleGroupItems.length > limit;
+            var overflowing = !paged && group.type !== 'archive' && visibleGroupItems.length > limit;
             var shouldBalanceGroup = Boolean(options.balance && visibleGroupItems.length >= 5);
             var $day = $('<section class="schedule-day"></section>')
+                .attr('data-group-key', group.key)
                 .attr('data-update-count', String(visibleGroupItems.length))
                 .attr('data-group-type', group.type)
                 .attr('data-age', String(group.age))
@@ -2755,7 +2839,8 @@ $(function () {
                 .css('--group-index', String(groupIndex))
                 .css('--timeline-slot', getUpdateTimelineSlot(group, groupIndex) + '%')
                 .toggleClass('schedule-day--balanced', shouldBalanceGroup)
-                .toggleClass('schedule-day--overflow', overflowing);
+                .toggleClass('schedule-day--overflow', overflowing)
+                .toggleClass('schedule-day--paged', paged);
             if (options.className) $day.addClass(options.className);
             if (options.label) $day.attr('aria-label', options.label);
             var $header = $('<header class="schedule-day__header"></header>');
@@ -2781,13 +2866,58 @@ $(function () {
                 var $bottomItems = $('<div class="schedule-day__items schedule-day__items--bottom"></div>').appendTo($day);
                 visibleGroupItems.forEach(function (item, itemIndex) {
                     var $target = itemIndex < splitIndex ? $topItems : $bottomItems;
-                    $target.append(makeUpdateCard(item, itemIndex));
+                    $target.append(makeUpdateCard(item, itemIndex, renderNow));
                 });
             } else {
                 var $items = $('<div class="schedule-day__items"></div>').appendTo($day);
                 visibleGroupItems.forEach(function (item, itemIndex) {
-                    $items.append(makeUpdateCard(item, itemIndex));
+                    $items.append(makeUpdateCard(item, itemIndex, renderNow));
                 });
+            }
+            if (paged) {
+                var pageIndex = 0;
+                var pageCount = Math.ceil(visibleGroupItems.length / limit);
+                var $pageItems = $day.children('.schedule-day__items');
+                var $cards = $pageItems.children('.timeline-card');
+                var itemsId = 'update-day-' + group.key;
+                $pageItems.attr('id', itemsId).attr('tabindex', '0')
+                    .attr('role', 'group').attr('aria-label', group.label + '的作品，左右方向键翻页');
+                var $pager = $('<nav class="schedule-day__pager"></nav>')
+                    .attr('aria-label', group.label + '作品翻页').appendTo($day);
+                var $previous = $('<button type="button" class="schedule-day__page-button">‹</button>')
+                    .attr('data-day-page-action', 'previous')
+                    .attr('aria-label', group.label + '上一组作品').attr('aria-controls', itemsId).appendTo($pager);
+                var $status = $('<span class="schedule-day__page-status" aria-live="polite" aria-atomic="true"></span>').appendTo($pager);
+                var $next = $('<button type="button" class="schedule-day__page-button">›</button>')
+                    .attr('data-day-page-action', 'next')
+                    .attr('aria-label', group.label + '下一组作品').attr('aria-controls', itemsId).appendTo($pager);
+                function showPage(nextPage) {
+                    pageIndex = Math.max(0, Math.min(pageCount - 1, nextPage));
+                    var first = pageIndex * limit;
+                    var last = Math.min(first + limit, $cards.length);
+                    $cards.each(function (index) { this.hidden = index < first || index >= last; });
+                    $day.attr('data-visible-count', String(last - first));
+                    $day.attr('data-page-index', String(pageIndex));
+                    $previous.prop('disabled', pageIndex === 0);
+                    $next.prop('disabled', pageIndex === pageCount - 1);
+                    $status.text((first + 1 === last ? last : (first + 1) + '–' + last) + ' / ' + $cards.length)
+                        .attr('aria-label', '第 ' + (first + 1) + ' 至 ' + last + ' 部，共 ' + $cards.length + ' 部');
+                }
+                $day[0].__revealScheduleCard = function (card) {
+                    var index = $cards.index(card);
+                    if (index >= 0) showPage(Math.floor(index / limit));
+                };
+                $previous.on('click', function () { showPage(pageIndex - 1); });
+                $next.on('click', function () { showPage(pageIndex + 1); });
+                $pageItems.on('keydown', function (event) {
+                    if (event.target !== this || event.altKey || event.ctrlKey || event.metaKey) return;
+                    var key = event.key;
+                    if (key !== 'ArrowLeft' && key !== 'ArrowRight' && key !== 'Home' && key !== 'End') return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showPage(key === 'Home' ? 0 : (key === 'End' ? pageCount - 1 : pageIndex + (key === 'ArrowRight' ? 1 : -1)));
+                });
+                showPage(getUpdateDayPage(visibleGroupItems, limit, previousDayPages[group.key]));
             }
             if (overflowing) {
                 $day.find('.schedule-day__items').attr('tabindex', '0')
@@ -2800,23 +2930,6 @@ $(function () {
             return $day;
         }
 
-        if (isMobileLayout) {
-            $grid.css('grid-template-columns', '');
-            groups.sort(function (a, b) {
-                var aOrder = a.type === 'recent' ? a.age : (a.type === 'future' ? 7 : 8);
-                var bOrder = b.type === 'recent' ? b.age : (b.type === 'future' ? 7 : 8);
-                return aOrder - bOrder;
-            });
-            groups.forEach(function (group, groupIndex) {
-                createScheduleDay(group, groupIndex, group.type === 'archive' ? 8 : 4, {
-                    label: group.label + '，' + group.items.length + ' 部作品'
-                }).appendTo($grid);
-            });
-            armUpdateReveal($grid);
-            return;
-        }
-
-        var recentLimit = compactWeek ? 2 : 4;
         var recentGroups = [];
         for (var age = 0; age < 7; age++) {
             var key = 'day-' + age;
@@ -2838,11 +2951,29 @@ $(function () {
             items: []
         };
 
-        $grid.attr('data-page-count', groupMap.future ? '3' : '2').css('grid-template-columns', '');
+        if (isMobileLayout) {
+            $grid.css('grid-template-columns', window.innerWidth > 768 ? buildUpdateTimelineColumns(recentGroups) : '');
+            var mobileGroups = recentGroups.slice();
+            var stableRecentLimit = window.innerWidth > 768 && window.innerWidth < 1650 ? 2 : 4;
+            mobileGroups.forEach(function (group, groupIndex) {
+                createScheduleDay(group, groupIndex, stableRecentLimit, {
+                    label: group.label + '，' + group.items.length + ' 部作品'
+                }).appendTo($grid);
+            });
+            if (!options.skipReveal) armUpdateReveal($grid);
+            return;
+        }
+
+        var recentLimit = recentPageSize;
+        $grid.attr('data-page-count', String(2 + (groupMap.undated ? 1 : 0)))
+            .css('grid-template-columns', '');
         var $weekPage = $('<div class="update-timeline__page update-timeline__page--week"></div>')
             .attr('data-timeline-page', 'week')
+            .attr('data-page-label', '最近七天 · ' + recentGroups.reduce(function (total, group) { return total + group.items.length; }, 0))
             .attr('aria-label', '最近七天更新');
-        var $weekGrid = $('<div class="update-week-grid"></div>').appendTo($weekPage);
+        var $weekGrid = $('<div class="update-week-grid"></div>')
+            .css('grid-template-columns', buildUpdateTimelineColumns(recentGroups))
+            .appendTo($weekPage);
         recentGroups.forEach(function (group, groupIndex) {
             createScheduleDay(group, groupIndex, recentLimit, {
                 className: 'schedule-day--recent',
@@ -2851,18 +2982,9 @@ $(function () {
         });
         $weekPage.appendTo($grid);
 
-        if (groupMap.future) {
-            var $futurePage = $('<div class="update-timeline__page update-timeline__page--archive"></div>')
-                .attr('data-timeline-page', 'future').attr('aria-label', '明天及以后');
-            createScheduleDay(groupMap.future, 7, 8, {
-                className: 'schedule-day--archive',
-                label: '明天及以后，' + groupMap.future.items.length + ' 部作品'
-            }).appendTo($futurePage);
-            $futurePage.appendTo($grid);
-        }
-
         var $archivePage = $('<div class="update-timeline__page update-timeline__page--archive"></div>')
             .attr('data-timeline-page', 'archive')
+            .attr('data-page-label', '更早 · ' + archiveGroup.items.length)
             .attr('aria-label', '更早更新');
         createScheduleDay(archiveGroup, 7, 8, {
             className: 'schedule-day--archive',
@@ -2870,7 +2992,19 @@ $(function () {
             emptyText: '暂无更早更新'
         }).appendTo($archivePage);
         $archivePage.appendTo($grid);
-        armUpdateReveal($grid);
+
+        if (groupMap.undated) {
+            var $undatedPage = $('<div class="update-timeline__page update-timeline__page--archive"></div>')
+                .attr('data-timeline-page', 'undated')
+                .attr('data-page-label', '日期未注明 · ' + groupMap.undated.items.length)
+                .attr('aria-label', '日期未注明');
+            createScheduleDay(groupMap.undated, 8, 8, {
+                className: 'schedule-day--archive',
+                label: '日期未注明，' + groupMap.undated.items.length + ' 部作品'
+            }).appendTo($undatedPage);
+            $undatedPage.appendTo($grid);
+        }
+        if (!options.skipReveal) armUpdateReveal($grid);
     }
 
     function setupRailIndicator(rail) {
@@ -2878,6 +3012,9 @@ $(function () {
         var $rail = $(rail);
         var id = $rail.attr('id') || ('rail' + Math.random().toString(36).slice(2));
         $rail.attr('id', id);
+        var $updatePages = id === 'luGrid' ? $rail.children('[data-timeline-page]') : $();
+        var hasNamedPages = $updatePages.length > 0;
+        if (id === 'luGrid') $rail.attr('tabindex', '0').attr('aria-label', '最近更新时间线');
 
         var maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
         var explicitPageCount = Number($rail.attr('data-page-count') || 0);
@@ -2886,8 +3023,11 @@ $(function () {
             : (maxScroll > 24 ? Math.min(12, Math.ceil(rail.scrollWidth / Math.max(1, rail.clientWidth))) : 1);
         var $dots = $rail.next('.rail-dots');
         if (!$dots.length) {
-            $dots = $('<div class="rail-dots" aria-hidden="true"></div>').insertAfter($rail);
+            $dots = $('<div class="rail-dots"></div>').insertAfter($rail);
         }
+        $dots.toggleClass('rail-dots--labeled', hasNamedPages);
+        if (hasNamedPages) $dots.removeAttr('aria-hidden').attr('role', 'navigation').attr('aria-label', '最近更新分区');
+        else $dots.attr('aria-hidden', 'true').removeAttr('role aria-label');
 
         if (pageCount <= 1) {
             $dots.empty().hide();
@@ -2899,24 +3039,33 @@ $(function () {
         if ($dots.children().length !== pageCount) {
             $dots.empty();
             for (var i = 0; i < pageCount; i++) {
-                $('<button class="rail-dots__dot" type="button" tabindex="-1"></button>')
+                var $dot = $('<button class="rail-dots__dot" type="button"></button>')
                     .attr('aria-label', '滚动到第 ' + (i + 1) + ' 页')
-                    .data('page', i)
-                    .appendTo($dots);
+                    .data('page', i);
+                if (hasNamedPages) $dot.attr('aria-controls', id);
+                else $dot.attr('tabindex', '-1');
+                $dot.appendTo($dots);
             }
+        }
+        if (hasNamedPages) {
+            $updatePages.each(function (index) {
+                var label = $(this).attr('data-page-label') || $(this).attr('aria-label') || ('第 ' + (index + 1) + ' 页');
+                $dots.children().eq(index).text(label).attr('aria-label', '查看' + label);
+            });
         }
 
         function updateActiveDot() {
             var currentMaxScroll = Math.max(1, rail.scrollWidth - rail.clientWidth);
             var active = Math.max(0, Math.min(pageCount - 1, Math.round(rail.scrollLeft / currentMaxScroll * (pageCount - 1))));
-            $dots.children().removeClass('is-active').eq(active).addClass('is-active');
+            $dots.children().removeClass('is-active').removeAttr('aria-current').eq(active)
+                .addClass('is-active').attr('aria-current', 'page');
         }
 
         $dots.off('click.railDots').on('click.railDots', '.rail-dots__dot', function () {
             var page = Number($(this).data('page') || 0);
             var currentMaxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
             var left = pageCount <= 1 ? 0 : currentMaxScroll * page / (pageCount - 1);
-            rail.scrollTo({ left: left, behavior: 'smooth' });
+            rail.scrollTo({ left: left, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
         });
 
         var frameRequested = false;
@@ -2945,6 +3094,51 @@ $(function () {
         renderItems($grid, sectionData.latestFollows, getFollowRenderCount($grid, sectionData.latestFollows.length, isMobile), makeFollowCard, 'follows');
     }
 
+    function renderUpdateNotice(type) {
+        var messages = {
+            loading: ['正在读取播出日程', '作品列表返回后会显示最近七天的播出安排。'],
+            empty: ['暂无可显示的番剧', '媒体库返回的最近更新列表为空。'],
+            error: ['暂时无法读取播出日程', '作品列表加载失败，请重试。']
+        };
+        var message = messages[type] || messages.error;
+        $('#luSection').css('display', 'flex').removeClass('is-update-armed is-update-revealed');
+        $('#luCount').text(sectionData.latestUpdates.length).toggle(type === 'empty');
+        $('#luSummaryText').text(type === 'loading' ? '正在读取播出日程' :
+            (type === 'error' ? '播出日程暂时无法读取' : '部作品按最近一集播出日编排'));
+        $('#luArchiveLink').hide();
+        var $notice = $('<div class="update-timeline__notice"></div>')
+            .attr('role', type === 'error' ? 'alert' : 'status');
+        $('<strong></strong>').text(message[0]).appendTo($notice);
+        $('<p></p>').text(message[1]).appendTo($notice);
+        if (type === 'error') {
+            $('<button type="button" class="update-timeline__retry">重新读取</button>')
+                .on('click', loadHomeData).appendTo($notice);
+        }
+        if (type !== 'loading') {
+            $('<a href="bangumi.html?nav=lastupdate">打开媒体库列表</a>').appendTo($notice);
+        }
+        $('#luGrid').empty().addClass('update-timeline--notice').removeAttr('data-page-count').css('grid-template-columns', '').append($notice);
+        $('#luSection > .rail-dots').empty().hide();
+        delete renderedSectionSignatures.updates;
+    }
+
+    function renderUpdateSummary(now) {
+        now = now || new Date();
+        var visibleCount = 0;
+        var weekCount = sectionData.latestUpdates.reduce(function (total, item) {
+            var meta = getScheduleGroupMeta(item, 0, now);
+            if (!meta) return total;
+            visibleCount += 1;
+            return total + (meta.type === 'recent' ? 1 : 0);
+        }, 0);
+        var outsideCount = visibleCount - weekCount;
+        $('#luCount').text(weekCount).show();
+        $('#luSummaryText').text('部作品按最近一集播出日编排 · 全库 ' + sectionData.latestUpdates.length + ' 部');
+        $('#luArchiveLink').text('更多作品 · ' + outsideCount + ' 部')
+            .attr('title', '打开媒体库查看其它作品')
+            .toggle(outsideCount > 0);
+    }
+
     function renderDynamicSections(options) {
         options = options || {};
         var isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -2961,13 +3155,15 @@ $(function () {
             renderItems($('#cwGrid'), sectionData.continueWatching, 12, makeContinueCard, 'continue');
         }
 
-        if (sectionData.latestUpdates.length) {
+        if (updateDatesReady && sectionData.latestUpdates.length) {
+            var renderNow = new Date();
             $('#luSection').css('display', 'flex');
-            $('#luCount').text(sectionData.latestUpdates.length);
-            renderUpdateSchedule($('#luGrid'), sectionData.latestUpdates, isMobile ? 18 : sectionData.latestUpdates.length);
+            renderUpdateSummary(renderNow);
+            renderUpdateSchedule($('#luGrid'), sectionData.latestUpdates, isMobile ? 18 : sectionData.latestUpdates.length, { now: renderNow });
         }
 
         renderLatestFollows(isMobile);
+        observeSectionCovers();
 
         window.requestAnimationFrame(function () {
             if (window.MediaAvailability) MediaAvailability.prune();
@@ -2975,6 +3171,74 @@ $(function () {
             if (!options.skipHeroSync) syncCurrentHero3();
         });
     }
+
+    function scheduleUpdateCalendarDay() {
+        window.clearTimeout(updateCalendarTimer);
+        var delay = MediaCalendar.msUntilNextAiringChange(sectionData.latestUpdates, new Date());
+        if (delay === null) return;
+        updateCalendarTimer = window.setTimeout(syncUpdateCalendarDay, delay + 20);
+    }
+
+    function syncUpdateCalendarDay() {
+        var renderNow = new Date();
+        updateDayStamp = MediaCalendar.dayStamp(renderNow);
+        if (updateDatesReady && sectionData.latestUpdates.length) {
+            renderUpdateSummary(renderNow);
+            var rail = document.getElementById('luGrid');
+            var pages = rail ? rail.querySelectorAll('[data-timeline-page]') : [];
+            var oldPage = pages.length
+                ? pages[Math.min(pages.length - 1, Math.round(rail.scrollLeft / Math.max(1, rail.clientWidth)))].getAttribute('data-timeline-page')
+                : null;
+            var focused = rail && rail.contains(document.activeElement) ? document.activeElement : null;
+            var focusedCard = focused && focused.closest('[data-anime-id]');
+            var focusedId = focusedCard ? focusedCard.getAttribute('data-anime-id') : null;
+            var focusedDay = focused && focused.closest('.schedule-day');
+            var focusKind = focused && focused.matches('.schedule-day__items') ? '.schedule-day__items[tabindex]' :
+                (focused && focused.matches('.schedule-day__all') ? '.schedule-day__all' :
+                    (focused && focused.hasAttribute('data-day-page-action') ?
+                        '[data-day-page-action="' + focused.getAttribute('data-day-page-action') + '"]' : null));
+            var oldSignature = renderedSectionSignatures.updates;
+            renderUpdateSchedule($('#luGrid'), sectionData.latestUpdates, sectionData.latestUpdates.length, { skipReveal: true, now: renderNow });
+            observeSectionCovers();
+            if (rail && oldSignature !== renderedSectionSignatures.updates) {
+                var nextPages = Array.from(rail.querySelectorAll('[data-timeline-page]'));
+                var nextFocus = focusedId ? Array.from(rail.querySelectorAll('[data-anime-id]')).find(function (card) {
+                    return card.getAttribute('data-anime-id') === focusedId;
+                }) : null;
+                if (!nextFocus && focusedDay && focusKind) {
+                    var nextDay = Array.from(rail.querySelectorAll('.schedule-day')).find(function (day) {
+                        return day.getAttribute('data-group-type') === focusedDay.getAttribute('data-group-type') &&
+                            day.getAttribute('data-age') === focusedDay.getAttribute('data-age');
+                    });
+                    if (nextDay) nextFocus = nextDay.querySelector(focusKind);
+                }
+                if (nextFocus && nextFocus.classList.contains('timeline-card') && nextFocus.hidden) {
+                    var cardDay = nextFocus.closest('.schedule-day');
+                    if (cardDay && cardDay.__revealScheduleCard) cardDay.__revealScheduleCard(nextFocus);
+                }
+                if (nextFocus && nextFocus.disabled) nextFocus = nextFocus.closest('.schedule-day').querySelector('.schedule-day__items[tabindex]');
+                var focusPage = nextFocus && nextFocus.closest('[data-timeline-page]');
+                var nextPageKey = focusPage ? focusPage.getAttribute('data-timeline-page') : oldPage;
+                var nextIndex = nextPages.findIndex(function (page) { return page.getAttribute('data-timeline-page') === nextPageKey; });
+                rail.scrollLeft = Math.max(0, nextIndex) * rail.clientWidth;
+                if (focused && !focused.isConnected) {
+                    if (!nextFocus) nextFocus = (nextPages[Math.max(0, nextIndex)] || rail).querySelector('a, [tabindex]');
+                    if (nextFocus && nextFocus.focus) nextFocus.focus({ preventScroll: true });
+                }
+                window.requestAnimationFrame(function () {
+                    if (window.MediaAvailability) MediaAvailability.prune();
+                    setupRailIndicator(rail);
+                });
+            }
+        }
+        scheduleUpdateCalendarDay();
+    }
+
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) syncUpdateCalendarDay();
+    });
+    window.addEventListener('focus', syncUpdateCalendarDay);
+    scheduleUpdateCalendarDay();
 
     $(window).on('resize', function () {
         window.clearTimeout(resizeTimer);
@@ -3355,6 +3619,9 @@ $(function () {
             });
         }
 
+        // The API's original poster is sufficient for the phone composition.
+        // Optional large variants must not delay its first visible cover.
+        if (window.matchMedia('(max-width: 768px)').matches) add(coverUrl, 'dandanplay', '本地');
         var upgrades = [
             coverUrl.replace(/%2Fposter%2Fmedium%2F/ig, '%2Fposter%2Flarge%2F'),
             coverUrl.replace(/\/poster\/medium\//ig, '/poster/large/'),
@@ -3428,26 +3695,45 @@ $(function () {
         return new Promise(function (resolve, reject) {
             var image = new Image();
             var settled = false;
+            var decoding = false;
             image.decoding = 'async';
-            function finish() {
+            // One deadline covers both the transfer and decode: either can
+            // remain pending on a weak connection or an interrupted image.
+            var deadline = setTimeout(function () {
+                finish(new Error('Artwork probe timed out'));
+            }, 5000);
+            function finish(error) {
                 if (settled) return;
                 settled = true;
-                resolve($.extend({}, candidate, {
+                clearTimeout(deadline);
+                var loaded = !error && $.extend({}, candidate, {
                     width: image.naturalWidth || candidate.width || 0,
                     height: image.naturalHeight || candidate.height || 0
-                }));
+                });
+                image.onload = null;
+                image.onerror = null;
+                if (error) image.removeAttribute('src');
+                image = null;
+                if (error) reject(error);
+                else resolve(loaded);
             }
             image.onload = function () {
-                if (image.decode) image.decode().catch(function () {}).then(finish);
-                else finish();
+                if (settled || decoding) return;
+                if (!image.naturalWidth) { finish(new Error('Artwork has no usable pixels')); return; }
+                decoding = true;
+                if (image.decode) {
+                    try {
+                        Promise.resolve(image.decode()).then(function () { finish(); }, function (error) {
+                            finish(error || new Error('Artwork failed to decode'));
+                        });
+                    } catch (error) { finish(error); }
+                } else finish();
             };
             image.onerror = function (error) {
-                if (settled) return;
-                settled = true;
-                reject(error);
+                finish(error || new Error('Artwork failed to load'));
             };
             image.src = candidate.url;
-            if (image.complete && image.naturalWidth) image.onload();
+            if (image && image.complete && image.naturalWidth) image.onload();
         });
     }
 
@@ -3552,6 +3838,7 @@ $(function () {
         var artworkRequestId = ++heroArtworkRequestId;
         applyHeroDescription(null, artworkRequestId);
         $('#heroCover').empty();
+        currentHeroArtwork = null;
         heroArtworkSwitchRequest += 1;
         heroArtworkSwitching = false;
         heroArtworkCandidates = [];
@@ -3576,6 +3863,7 @@ $(function () {
         }
         // 标题
         $('#heroTitle').text(b.Title);
+        $('#heroMobileStatus').prop('hidden', true);
         $('#heroCover img').attr('alt', b.Title);
         // 元信息
         var metaHtml = '';
@@ -3615,7 +3903,11 @@ $(function () {
                 if (artworkRequestId !== heroArtworkRequestId) return;
                 resolveHeroArtwork(b).then(function (candidates) {
                     if (!candidates || !candidates.length || artworkRequestId !== heroArtworkRequestId) return;
-                    setHeroCandidates(candidates);
+                    if (!window.DandanHero3 && currentHeroArtwork) {
+                        // The first decoded cover owns this selection. Later
+                        // artwork becomes an explicit choice, not a late swap.
+                        appendHeroCandidates([currentHeroArtwork].concat(candidates));
+                    } else setHeroCandidates(candidates);
                 });
             });
         }
@@ -3801,11 +4093,27 @@ $(function () {
 
     function fetchLibraryFallback() {
         if (!libraryFallbackPromise) {
-            libraryFallbackPromise = $.ajax({
+            var deferred = $.Deferred();
+            var pending = deferred.promise();
+            libraryFallbackPromise = pending;
+            pending.fail(function () {
+                if (libraryFallbackPromise === pending) libraryFallbackPromise = null;
+            });
+            $.ajax({
                 url: getLibraryFallbackApi(),
                 method: 'GET',
-                timeout: 10000
+                dataType: 'json',
+                timeout: 10000,
+                success: function (response, status, xhr) {
+                    var valid = Array.isArray(response) && response.every(function (file) {
+                        return file && typeof file === 'object' && !Array.isArray(file);
+                    });
+                    if (valid) deferred.resolve(response);
+                    else deferred.reject(xhr, 'parsererror');
+                },
+                error: function (xhr, status) { deferred.reject(xhr, status); }
             });
+            return pending;
         }
         return libraryFallbackPromise;
     }
@@ -3842,8 +4150,17 @@ $(function () {
         $.ajax({
             url: bangumiDetailsApiTemplate.replace('{id}', animeId),
             method: 'GET',
+            dataType: 'json',
             timeout: 10000,
             success: function (response) {
+                var valid = response && Array.isArray(response.Episodes) && response.Episodes.every(function (episode) {
+                    return episode && typeof episode === 'object' && !Array.isArray(episode);
+                });
+                if (!valid) {
+                    DandanApp.toast('服务器返回的作品详情格式无效，请重试。', 'error');
+                    onReady(null);
+                    return;
+                }
                 refreshRecentPlayFromDetails(animeId, response);
                 if (shouldAttemptLibraryFallback(response, bangumiMeta)) {
                     fetchLibraryFallback()
@@ -3883,7 +4200,7 @@ $(function () {
             return;
         }
 
-        var heroItem = inProgress[0] || recentPlayItems[0] || null;
+        var heroItem = options.initialSelection ? recentPlayItems[0] : (inProgress[0] || recentPlayItems[0] || null);
         var selectedItem = (hero3UserSelected || options.preserveHeroSelection) ? recentPlayItems.find(function (item) {
             return String(item.AnimeId) === currentHeroAnimeId;
         }) : null;
@@ -4146,6 +4463,7 @@ $(function () {
 
     /* ── 主流程：先拿到真实 API 路径再加载数据 ── */
     var homeBootstrapRequest = null;
+    var homeRecentFilesRequest = null;
     var homeSectionRequests = [];
     var homeLoadRun = 0;
 
@@ -4171,21 +4489,87 @@ $(function () {
         $hero.attr('data-hero-state', type || 'loading');
         $('#hero3StatusTitle').text(title || '正在读取最近播放');
         $('#hero3StatusDescription').text(description || '连接本地媒体库并整理封面。');
+        if (!currentHeroAnimeId) {
+            $('#heroMobileStatus').prop('hidden', false);
+            $('#heroMobileStatusTitle').text(title || '正在读取最近播放');
+            $('#heroMobileStatusDescription').text(description || '你可以先浏览下方媒体库分区。');
+            $('#heroMobileRetryBtn').prop('hidden', type !== 'error');
+        }
     }
 
     function abortHomeRequests() {
         if (homeBootstrapRequest) homeBootstrapRequest.abort();
+        if (homeRecentFilesRequest) homeRecentFilesRequest.abort();
         homeSectionRequests.forEach(function (request) { if (request) request.abort(); });
         homeBootstrapRequest = null;
+        homeRecentFilesRequest = null;
         homeSectionRequests = [];
     }
 
+    function resumePendingUpdateAiringDates() {
+        var jobs = [];
+        var jobsById = Object.create(null);
+        sectionData.latestUpdates.forEach(function (item, index) {
+            if (item.__airingState !== 'pending' || item.AnimeId == null) return;
+            var animeId = String(item.AnimeId);
+            if (!animeId) return;
+            if (!jobsById[animeId]) {
+                jobsById[animeId] = { animeId: animeId, indices: [] };
+                jobs.push(jobsById[animeId]);
+            }
+            jobsById[animeId].indices.push(index);
+        });
+        hydrateUpdateAiringDates(jobs, homeLoadRun);
+    }
+
+    function hydrateUpdateAiringDates(jobs, runId) {
+        var queueIndex = 0;
+        var active = 0;
+        function applyDetails(job, response) {
+            if (runId !== homeLoadRun) return;
+            job.indices.forEach(function (index) {
+                var item = sectionData.latestUpdates[index];
+                if (item && String(item.AnimeId) === job.animeId) {
+                    sectionData.latestUpdates[index] = MediaCalendar.withAiringDates(item, response, 'china-calendar');
+                }
+            });
+        }
+        function start(job) {
+            active += 1;
+            var request = $.ajax({
+                url: bangumiDetailsApiTemplate.replace('{id}', encodeURIComponent(job.animeId)),
+                method: 'GET',
+                cache: false,
+                timeout: 8000,
+                success: function (response) { applyDetails(job, response); },
+                error: function (xhr, status) {
+                    if (status !== 'abort') applyDetails(job, null);
+                },
+                complete: function () {
+                    active -= 1;
+                    if (runId !== homeLoadRun) return;
+                    syncUpdateCalendarDay();
+                    pump();
+                }
+            });
+            homeSectionRequests.push(request);
+        }
+        function pump() {
+            if (runId !== homeLoadRun) return;
+            while (active < 3 && queueIndex < jobs.length) start(jobs[queueIndex++]);
+        }
+        pump();
+    }
+
     function loadHomeData() {
+        var runId = ++homeLoadRun;
         abortHomeRequests();
         if (window.MediaAvailability) MediaAvailability.reset();
         renderedSectionSignatures = {};
-        var runId = ++homeLoadRun;
-        hero3InitialDataPending = Boolean(window.DandanHero3 && !DandanHero3.debugState().entryPlayed);
+        sectionData.latestUpdates = [];
+        updateDatesReady = false;
+        renderUpdateNotice('loading');
+        hero3InitialDataPending = !currentHeroAnimeId || Boolean(window.DandanHero3 && !DandanHero3.debugState().entryPlayed);
         if (hero3InitialDataPending) hero3ArtworkWarmStarted = false;
         setHomeStatus('loading', '正在整理你的媒体库', '最近播放、更新和关注内容正在同步。');
 
@@ -4198,27 +4582,129 @@ $(function () {
                 bangumiListApi = extractApiUrl(html, 'bangumiListApi');
                 bangumiDetailsApiTemplate = extractApiUrl(html, 'bangumiDetailsApiTemplate') || extractApiUrl(html, 'getBangumiDetailsApi');
                 if (!bangumiListApi || !bangumiDetailsApiTemplate) {
+                    renderUpdateNotice('error');
                     setHomeStatus('error', '无法读取媒体库接口', '页面配置不完整，请重试或检查服务器模板。');
                     return;
                 }
 
-                var endpoints = [
-                    { url: bangumiListApi, apply: function (items) {
-                        hero3InitialDataPending = false;
-                        applyRecentPlayItems(items);
-                        window.requestAnimationFrame(function () { restoreInitialHeroPosition(true); });
-                        if (window.RecentPlayRefresh) {
-                            RecentPlayRefresh.hydrate(items, bangumiDetailsApiTemplate, { limit: 16, concurrency: 3, timeout: 3500 })
-                                .then(function (freshItems) {
-                                    if (runId === homeLoadRun) applyRecentPlayItems(freshItems, { preserveHeroSelection: true });
-                                });
+                var initialSelection = !currentHeroAnimeId;
+                var recentPlayFailed = false;
+                var recentSelectionFinished = !initialSelection;
+                var recentFiles = Promise.resolve(null);
+                if (initialSelection && window.RecentPlayRefresh) {
+                    recentFiles = new Promise(function (resolve) {
+                        var idleTimer = 0;
+                        function watchTransfer() {
+                            window.clearTimeout(idleTimer);
+                            idleTimer = window.setTimeout(function () {
+                                if (homeRecentFilesRequest && runId === homeLoadRun) homeRecentFilesRequest.abort();
+                            }, 8000);
                         }
+                        homeRecentFilesRequest = $.ajax({
+                            url: getLibraryFallbackApi(),
+                            method: 'GET',
+                            cache: false,
+                            // A measured gzip index is about 1 MB: an active
+                            // 1 Mbps transfer exceeds eight seconds. Still fail
+                            // an idle connection in 8s and cap total work at 20s.
+                            timeout: 20000,
+                            xhr: function () {
+                                var xhr = $.ajaxSettings.xhr();
+                                xhr.addEventListener('progress', watchTransfer);
+                                return xhr;
+                            },
+                            success: function (files) { resolve(RecentPlayRefresh.indexLocalPlays(files)); },
+                            error: function () { resolve(null); },
+                            complete: function () {
+                                window.clearTimeout(idleTimer);
+                                homeRecentFilesRequest = null;
+                            }
+                        });
+                        watchTransfer();
+                    });
+                }
+
+                function presentRecentPlay(items) {
+                    if (runId !== homeLoadRun) return;
+                    recentSelectionFinished = true;
+                    if (!items.length && homeRecentFilesRequest) homeRecentFilesRequest.abort();
+                    hero3InitialDataPending = false;
+                    applyRecentPlayItems(items, { initialSelection: initialSelection, preserveHeroSelection: !initialSelection });
+                    startSecondarySections();
+                    resumePendingUpdateAiringDates();
+                    window.requestAnimationFrame(function () { restoreInitialHeroPosition(true); });
+                    if (window.RecentPlayRefresh) {
+                        RecentPlayRefresh.hydrate(items, bangumiDetailsApiTemplate, {
+                            limit: 16, concurrency: 3, timeout: 3500,
+                            isCurrent: function () { return runId === homeLoadRun; }
+                        })
+                            .then(function (freshItems) {
+                                if (runId === homeLoadRun) applyRecentPlayItems(freshItems, { preserveHeroSelection: true });
+                            });
+                    }
+                }
+
+                var endpoints = [
+                    { url: bangumiListApi, allowEmpty: true,
+                        fail: function () {
+                            recentPlayFailed = true;
+                            recentSelectionFinished = true;
+                            if (homeRecentFilesRequest) homeRecentFilesRequest.abort();
+                            setHero3Status('error', '最近播放加载失败', '请重试，或先浏览下方媒体库分区。');
+                            startSecondarySections();
+                            resumePendingUpdateAiringDates();
+                        },
+                        apply: function (items) {
+                        if (!initialSelection || !window.RecentPlayRefresh || !items.length) return presentRecentPlay(items);
+                        // Browsing and verified initial playback have different readiness.
+                        // Show cards now, but keep Hero identity behind the history check.
+                        applyRecentPlayItems(items);
+                        return recentFiles.then(function (files) {
+                            if (runId !== homeLoadRun) return [];
+                            if (!files) {
+                                failedSections += 1;
+                                recentPlayFailed = true;
+                                recentSelectionFinished = true;
+                                setHero3Status('error', '无法核对最近播放', '观看记录暂时无法读取，请重试，或从下方卡片选择作品。');
+                                startSecondarySections();
+                                resumePendingUpdateAiringDates();
+                                return null;
+                            }
+                            return RecentPlayRefresh.resolveInitial(items, bangumiDetailsApiTemplate, {
+                                libraryFiles: files, limit: 16, concurrency: 3, timeout: 3500,
+                                isCurrent: function () { return runId === homeLoadRun; }
+                            });
+                        }).then(function (freshItems) { if (freshItems) presentRecentPlay(freshItems); })
+                            .catch(function () {
+                                if (runId !== homeLoadRun) return;
+                                recentPlayFailed = true;
+                                recentSelectionFinished = true;
+                                failedSections += 1;
+                                setHero3Status('error', '无法核对最近播放', '观看记录格式无效，请重试，或从下方卡片选择作品。');
+                                startSecondarySections();
+                                resumePendingUpdateAiringDates();
+                            });
                     } },
-                    { url: replaceBangumiNav(bangumiListApi, 'lastupdate'), apply: function (items) {
-                        sectionData.latestUpdates = MediaCalendar.localizeList(items, 'lastupdate');
-                        renderDynamicSections({ skipHeroSync: true });
-                    } },
-                    { url: replaceBangumiNav(bangumiListApi, 'lastadd'), apply: function (items) {
+                    { url: replaceBangumiNav(bangumiListApi, 'lastupdate'), allowEmpty: true, deferUntilRecent: true,
+                        fail: function () { renderUpdateNotice('error'); },
+                        apply: function (items) {
+                            var now = new Date();
+                            var preparedItems = items.map(function (item) {
+                                var clone = Object.assign({}, item);
+                                if (!MediaCalendar.needsAiringDetails(item, now)) return clone;
+                                clone.__airingDates = [];
+                                var animeId = item.AnimeId == null ? '' : String(item.AnimeId);
+                                clone.__airingState = animeId ? 'pending' : 'unavailable';
+                                return clone;
+                            });
+                            sectionData.latestUpdates = MediaCalendar.localizeList(preparedItems, 'lastupdate');
+                            updateDatesReady = true;
+                            if (items.length) renderDynamicSections({ skipHeroSync: true });
+                            else renderUpdateNotice('empty');
+                            scheduleUpdateCalendarDay();
+                            if (recentSelectionFinished || currentHeroAnimeId) resumePendingUpdateAiringDates();
+                        } },
+                    { url: replaceBangumiNav(bangumiListApi, 'lastadd'), deferUntilRecent: true, apply: function (items) {
                         sectionData.latestFollows = MediaCalendar.localizeList(items, 'lastadd');
                         renderDynamicSections({ skipHeroSync: true });
                     } }
@@ -4233,7 +4719,7 @@ $(function () {
                     hero3InitialDataPending = false;
                     if (loadedSections > 0) {
                         $('#homeStatus').slideUp(180);
-                        if (!recentPlayItems.length) {
+                        if (!recentPlayItems.length && !recentPlayFailed) {
                             setHero3Status('empty', '最近播放暂时为空', '可以从下方分区进入媒体库。');
                         }
                         if (failedSections > 0) DandanApp.toast('部分首页内容暂时未能同步。', 'warning');
@@ -4244,25 +4730,54 @@ $(function () {
                     }
                 }
 
-                homeSectionRequests = endpoints.map(function (endpoint) {
-                    return $.ajax({
+                var deferredSections = [];
+                function startSecondarySections() {
+                    if (runId !== homeLoadRun) return;
+                    var queued = deferredSections;
+                    deferredSections = [];
+                    queued.forEach(startSection);
+                }
+
+                function startSection(endpoint) {
+                    var applying = null;
+                    var request = $.ajax({
                         url: endpoint.url,
                         method: 'GET',
-                        timeout: 8000,
+                        cache: false,
+                        timeout: endpoint.timeout || 8000,
                         success: function (data) {
                             if (runId !== homeLoadRun) return;
-                            var items = Array.isArray(data) ? data : [];
-                            if (!items.length) return;
-                            loadedSections += 1;
-                            endpoint.apply(items);
+                            if (!Array.isArray(data) || !data.every(function (item) {
+                                return item && typeof item === 'object' && !Array.isArray(item);
+                            })) {
+                                failedSections += 1;
+                                if (endpoint.fail) endpoint.fail();
+                                return;
+                            }
+                            if (data.length && endpoint.countAsSection !== false) loadedSections += 1;
+                            if (data.length || endpoint.allowEmpty) applying = endpoint.apply(data);
                         },
-                        error: function (xhr, status) { if (status !== 'abort') failedSections += 1; },
-                        complete: settle
+                        error: function (xhr, status) {
+                            if (status === 'abort' || runId !== homeLoadRun) return;
+                            failedSections += 1;
+                            if (endpoint.fail) endpoint.fail();
+                        },
+                        complete: function () {
+                            if (applying && typeof applying.then === 'function') applying.then(settle, settle);
+                            else settle();
+                        }
                     });
+                    homeSectionRequests.push(request);
+                }
+                endpoints.forEach(function (endpoint) {
+                    if (initialSelection && endpoint.deferUntilRecent) deferredSections.push(endpoint);
+                    else startSection(endpoint);
                 });
+
             },
             error: function (xhr, status) {
                 if (status === 'abort' || runId !== homeLoadRun) return;
+                renderUpdateNotice('error');
                 setHomeStatus('error', '无法连接媒体库', DandanApp.describeError(xhr, '无法加载首页内容，请稍后重试。'));
             },
             complete: function () { homeBootstrapRequest = null; }
@@ -4270,12 +4785,18 @@ $(function () {
     }
 
     $('#homeRetryBtn').on('click', loadHomeData);
+    $('#heroMobileRetryBtn').on('click', loadHomeData);
     window.addEventListener('pagehide', function () {
+        if (sectionCoverObserver) sectionCoverObserver.disconnect();
+        window.clearTimeout(updateCalendarTimer);
         homeLoadRun += 1;
         abortHomeRequests();
     });
     window.addEventListener('pageshow', function (event) {
+        observeSectionCovers();
+        syncUpdateCalendarDay();
         if (event.persisted && window.DandanHero3 && !DandanHero3.debugState().entryPlayed) loadHomeData();
+        else if (event.persisted) resumePendingUpdateAiringDates();
     });
     loadHomeData();
 

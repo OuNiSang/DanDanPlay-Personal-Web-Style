@@ -19,8 +19,6 @@
         selectVelocity: 0.22,
         selectDwell: 96,
         readableAngle: 75,
-        minScale: 0.92,
-        renderedRadius: 25,
         preloadRadius: 3.5
     };
     var ENTRY_RAIL_CRUISE_MS = 560;
@@ -213,10 +211,6 @@
             if (value) return value;
         }
         return '';
-    }
-
-    function pickArtwork(source, names) {
-        return pickText(source, names);
     }
 
     function pickRankedArtwork(source, names) {
@@ -2360,28 +2354,6 @@
             }
             card.__hero3CaseOpen = false;
             card.classList.remove('is-case-open', 'is-case-transitioning');
-        });
-    }
-
-    function requestCardArtwork(entry, item) {
-        var card = entry && entry.card;
-        if (!card || !item || !item.poster) return Promise.resolve(false);
-        if (card.__hero3ArtworkRequested) return state.imagePromises[item.poster] || Promise.resolve(true);
-        card.__hero3ArtworkRequested = true;
-        var token = (card.__hero3ArtworkToken || 0) + 1;
-        card.__hero3ArtworkToken = token;
-        var image = qs('.hero3__poster', card);
-        var discArtwork = qs('.hero3__disc-art', card);
-        return preloadImage(item.poster, { reason: 'nearby-poster', priority: 'auto' }).then(function (loaded) {
-            if (!loaded || !card.isConnected || !image || !card.__hero3ArtworkRequested || card.__hero3ArtworkToken !== token) return false;
-            image.src = item.poster;
-            setDiscArtwork(discArtwork, item.poster);
-            setSpineArtwork(card, item.poster);
-            card.__hero3ArtworkCommitted = true;
-            card.classList.add('has-rack-artwork');
-            revealArtwork(image);
-            revealArtwork(discArtwork);
-            return true;
         });
     }
 

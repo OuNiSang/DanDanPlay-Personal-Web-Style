@@ -7,6 +7,28 @@
   display: none;
 }
 
+.idx-home .hero-mobile-status {
+  position: absolute;
+  z-index: 30;
+  top: 42%;
+  left: 24px;
+  right: 24px;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 24px;
+  color: var(--home-text);
+  background: var(--home-bg, #090a0d);
+  border: 1px solid var(--home-line, #424242);
+}
+
+.idx-home .hero-mobile-status[hidden] { display: none; }
+.idx-home .hero-mobile-status strong { font-size: 23px; line-height: 1.35; }
+.idx-home .hero-mobile-status p { margin: 12px 0 20px; line-height: 1.6; }
+.idx-home .hero-mobile-status > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.idx-home .hero-mobile-status .btn-ghost { min-height: 44px; }
+.idx-home .hero-mobile-status button[hidden] { display: none; }
+.idx-home .hero-mobile-status:not([hidden]) ~ .idx-hero__inner { visibility: hidden; }
+
 @media (min-width: 769px) {
   html[data-ui-version="stable"] body.idx-home #heroBanner .hero3__backdrop,
   html[data-ui-version="stable"] body.idx-home #heroBanner .hero3__source,

@@ -3243,6 +3243,7 @@ body.idx-home.is-modal-open {
   .idx-home .schedule-day--archive .schedule-day__header {
     position: relative;
     z-index: 4;
+    pointer-events: auto;
     display: flex;
     min-width: 0;
     grid-column: 1;
@@ -3307,6 +3308,67 @@ body.idx-home.is-modal-open {
   .idx-home #luSection > .rail-dots {
     min-height: 14px;
     margin: 3px 0 0;
+  }
+
+  .idx-home #luSection > .rail-dots--labeled {
+    order: 1;
+    align-self: flex-end;
+    min-height: 30px;
+    gap: 6px;
+    margin: 0 clamp(8px, 0.8vw, 14px) 4px 0;
+    align-items: center;
+  }
+
+  .idx-home #luSection > .update-timeline {
+    order: 2;
+  }
+
+  .idx-home #luSection > .rail-dots--labeled .rail-dots__dot,
+  .idx-home #luSection > .rail-dots--labeled .rail-dots__dot.is-active {
+    width: auto;
+    min-height: 25px;
+    height: auto;
+    padding: 4px 9px;
+    border: 1px solid var(--home3-line-strong);
+    border-radius: 2px;
+    background: var(--home3-surface);
+    color: var(--home3-muted);
+    box-shadow: none;
+    font-family: Bahnschrift, "Arial Narrow", sans-serif;
+    font-size: 10px;
+    font-weight: 760;
+    line-height: 1.25;
+    white-space: nowrap;
+    opacity: 1;
+    transition: color var(--home3-fast), border-color var(--home3-fast), background-color var(--home3-fast);
+  }
+
+  .idx-home #luSection > .rail-dots--labeled .rail-dots__dot:hover {
+    color: var(--home3-paper);
+    border-color: var(--home3-signal);
+    transform: none;
+  }
+
+  .idx-home #luSection > .rail-dots--labeled .rail-dots__dot:active {
+    background: var(--home3-signal);
+    color: var(--home3-surface);
+  }
+
+  .idx-home #luSection > .rail-dots--labeled .rail-dots__dot.is-active {
+    color: var(--home3-paper);
+    border-color: var(--home3-signal-strong);
+    background: color-mix(in srgb, var(--home3-signal) 12%, var(--home3-surface));
+  }
+
+  .idx-home #luSection > .rail-dots--labeled .rail-dots__dot:focus-visible,
+  .idx-home #luSection .update-timeline:focus-visible {
+    outline: 2px solid var(--home3-signal-strong);
+    outline-offset: 2px;
+  }
+
+  .idx-home #luSection > .rail-dots--labeled .rail-dots__dot:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   /* All sections: three semantic districts, deliberately different in scale. */
@@ -3981,4 +4043,105 @@ body.idx-home.is-modal-open {
   .idx-home .schedule-day--archive[data-group-type="archive"] .schedule-day__header::before {
     content: "ARCHIVE / EARLIER";
   }
+  .idx-home .schedule-day--archive[data-group-type="undated"] .schedule-day__header::before {
+    content: "UNDATED / SOURCE";
+  }
+}
+
+@media (min-width: 769px) {
+  /* The named archive pages already provide this route in v3. */
+  html[data-ui-version="v3"] .idx-home #luSection #luArchiveLink {
+    display: none !important;
+  }
+
+  html[data-ui-version="v3"] .idx-home #luSection .update-week-grid {
+    padding-inline: clamp(20px, 2.1vw, 56px);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  html[data-ui-version="v3"] .idx-home #luSection .update-week-grid {
+    --update-week-card-size: clamp(78px, 10vw, 94px);
+    --update-week-single-size: var(--update-week-card-size);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1359px) {
+  html[data-ui-version="v3"] .idx-home #luSection .update-week-grid > .schedule-day--overflow {
+    --update-week-card-size: clamp(94px, min(8.2vw, 13vh), 106px);
+    --update-week-single-size: var(--update-week-card-size);
+  }
+}
+
+/* Crowded dates retain the alternating weekly rail and expose complete pages. */
+@media (min-width: 769px) {
+  .idx-home .schedule-day--paged .timeline-card[hidden] { display: none !important; }
+
+  .idx-home .update-week-grid > .schedule-day--paged[data-lane] > .schedule-day__items,
+  .idx-home .schedule-day--archive.schedule-day--paged > .schedule-day__items {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .idx-home .update-week-grid > .schedule-day--paged[data-visible-count="1"] > .schedule-day__items {
+    grid-template-columns: var(--update-week-card-size);
+  }
+
+  .idx-home .schedule-day__pager {
+    position: absolute;
+    z-index: 8;
+    top: calc(50% + 28px);
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: max-content;
+    transform: translateX(-50%);
+    color: var(--home3-signal, var(--accent));
+    background: var(--home3-ink, #090b07);
+  }
+
+  .idx-home .schedule-day--recent[data-lane="lower"] > .schedule-day__pager {
+    top: auto;
+    bottom: calc(50% + 28px);
+  }
+
+  .idx-home .schedule-day__page-button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--home3-line, #616a31);
+    color: inherit;
+    background: transparent;
+    font-size: 23px;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .idx-home .schedule-day__page-button:hover:not(:disabled),
+  .idx-home .schedule-day__page-button:focus-visible {
+    color: var(--home3-ink, #090b07);
+    background: var(--home3-signal, var(--accent));
+    border-color: currentColor;
+  }
+  .idx-home .schedule-day__page-button:focus-visible { outline: 2px solid var(--home3-signal, var(--accent)); outline-offset: 3px; }
+  .idx-home .schedule-day__page-button:active:not(:disabled) { transform: translateY(1px); }
+  .idx-home .schedule-day__page-button:disabled { opacity: 0.3; cursor: default; }
+  .idx-home .schedule-day__page-status { min-width: 49px; text-align: center; font: 11px/1.2 Bahnschrift, "Microsoft YaHei UI", sans-serif; white-space: nowrap; }
+  .idx-home .schedule-day--paged > .schedule-day__items:focus-visible { outline: 2px solid var(--home3-signal, var(--accent)); outline-offset: 3px; }
+
+  /* A native touch tap on the same paging controls remains comfortable. */
+  @media (pointer: coarse) {
+    .idx-home .schedule-day__page-button { width: 44px; height: 44px; }
+  }
+}
+@media (min-width: 769px) {
+  .idx-home .update-week-grid > .schedule-day--paged[data-lane] > .schedule-day__items {
+    height: max-content;
+    align-self: end;
+  }
+  .idx-home .update-week-grid > .schedule-day--paged[data-lane="lower"] > .schedule-day__items { align-self: start; }
 }

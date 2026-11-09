@@ -1,7 +1,7 @@
 # DanDanPlay Personal Web Style 安装包
 
-版本：3.5
-兼容目标：弹弹play Windows 18.1.3（发布检查版本 18.1.3.0）。
+版本：3.6
+兼容目标：弹弹play Windows 18.2.4（发布检查版本 18.2.4.0）。
 
 1. 完整解压 ZIP。不要直接在压缩包内运行。
 2. 建议先退出弹弹play。
@@ -14,6 +14,8 @@
 本 ZIP 包含 manifest 列出的运行文件与第三方许可及安装、回退所需的管理器。不包含弹弹play主程序、媒体、账号、服务器配置、播放记录、开发文档、截图或 GIF；依赖弹弹play自带的 Web1 基础资源。
 
 SHA-256 校验值位于同一 Release 的 `.zip.sha256` 附件。
+
+3.6 包含 F 全屏切换、手机横拖进度预览与松手定位，以及首页首次选片、放送日期与跨日归档改进。私人媒体映射及需要本机预生成媒体的音轨服务不包含在静态安装包中。
 
 项目说明、界面预览与更新记录：[GitHub 项目主页](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style)
 

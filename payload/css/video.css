@@ -47,6 +47,39 @@ body {
     container: video-player / inline-size;
 }
 
+/* Horizontal movement belongs to seeking, including while media is loading.
+   Keep native page scrolling and pinch zoom available on the video surface. */
+.video-page .dplayer-video-wrap,
+.video-page .dplayer-controller-mask {
+    touch-action: pan-y pinch-zoom;
+}
+
+/* Transient seek readout stays inside the player, including DOM fullscreen. */
+.video-page .dplayer-gesture-seek {
+    position: absolute;
+    z-index: 8;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    gap: 4px;
+    max-width: calc(100% - 32px);
+    padding: 10px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
+    background: rgba(12, 15, 18, 0.88);
+    color: #fff;
+    font: 14px/1.4 system-ui, "Microsoft YaHei", sans-serif;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.video-page .dplayer-gesture-seek[hidden] { display: none; }
+.video-page .dplayer-gesture-seek strong { font-size: 18px; }
+.video-page .dplayer-gesture-seek span { color: #d6d9dc; }
+
 /* Danmaku styles are now dynamically controlled by JavaScript */
 .dplayer-mobile .dplayer-controller-mask {
     height: 60px;

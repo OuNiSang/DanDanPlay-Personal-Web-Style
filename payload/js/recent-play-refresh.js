@@ -90,6 +90,10 @@
         });
     }
 
+    function isCurrent(options) {
+        return !options.isCurrent || options.isCurrent();
+    }
+
     function hydrate(items, detailsApiTemplate, options) {
         options = options || {};
         if (!detailsApiTemplate || !items || !items.length) return Promise.resolve(items || []);
@@ -100,12 +104,13 @@
         var cursor = 0;
 
         function worker() {
+            if (!isCurrent(options)) return Promise.resolve();
             var index = cursor++;
             if (index >= limit) return Promise.resolve();
             var bangumi = items[index];
             return requestDetails(detailsApiTemplate, bangumi.AnimeId, timeout)
                 .then(function (response) {
-                    if (response) applyDetails(bangumi, response);
+                    if (response && isCurrent(options)) applyDetails(bangumi, response);
                 })
                 .then(worker);
         }
@@ -115,9 +120,70 @@
         return Promise.all(workers).then(function () { return sort(items); });
     }
 
+    function indexLocalPlays(files) {
+        if (!Array.isArray(files) || !files.every(function (file) {
+            return file && typeof file === 'object' && !Array.isArray(file);
+        })) return null;
+        var byId = Object.create(null);
+        files.forEach(function (file) {
+            if (!file || !file.AnimeId) return;
+            var key = String(file.AnimeId);
+            var time = parseWatchTime(file.LastPlay);
+            if (time > 0 && (!byId[key] || time > byId[key].time)) {
+                byId[key] = { time: time, value: file.LastPlay };
+            }
+        });
+        return Object.keys(byId).map(function (key) {
+            return { AnimeId: key, LastPlay: byId[key].value };
+        });
+    }
+
+    function resolveInitial(items, detailsApiTemplate, options) {
+        options = options || {};
+        if (!isCurrent(options) || !items || !items.length || !detailsApiTemplate) return Promise.resolve(items || []);
+
+        var byId = Object.create(null);
+        items.forEach(function (item) { byId[String(item.AnimeId)] = item; });
+        var localItem = null;
+        var localTime = 0;
+        (Array.isArray(options.libraryFiles) ? options.libraryFiles : []).forEach(function (file) {
+            if (!file || !file.AnimeId) return;
+            var item = byId[String(file.AnimeId)];
+            var time = parseWatchTime(file.LastPlay);
+            if (item && time > localTime) {
+                localItem = item;
+                localTime = time;
+            }
+        });
+
+        // The summary and episode timestamps have different time bases on some
+        // servers. File timestamps find a local candidate only; episode records
+        // compare its local/cloud activity with the existing summary leader.
+        if (!localItem) return hydrate(items, detailsApiTemplate, options);
+        var first = items[0];
+        var candidates = String(first.AnimeId) === String(localItem.AnimeId) ? [first] : [first, localItem];
+        return Promise.all(candidates.map(function (item) {
+            if (!isCurrent(options)) return Promise.resolve();
+            return requestDetails(detailsApiTemplate, item.AnimeId, Number(options.timeout || 3500))
+                .catch(function () { return null; })
+                .then(function (response) { if (response && isCurrent(options)) applyDetails(item, response); });
+        })).then(function () {
+            if (!isCurrent(options)) return items;
+            var active = localItem;
+            if (first.__recentPlayAt && localItem.__recentPlayAt && first.__recentPlayAt >= localItem.__recentPlayAt) active = first;
+            // If detail lookup failed, retain the identity supported by the
+            // latest local file rather than discarding it as an unknown time.
+            return [active].concat(sort(items).filter(function (item) {
+                return String(item.AnimeId) !== String(active.AnimeId);
+            }));
+        });
+    }
+
     global.RecentPlayRefresh = {
         applyDetails: applyDetails,
         hydrate: hydrate,
+        indexLocalPlays: indexLocalPlays,
+        resolveInitial: resolveInitial,
         sort: sort
     };
 })(window, window.jQuery);
