@@ -237,6 +237,213 @@
         };
     }
 
+    function bindPlaybackInput(player) {
+        var container = player.container;
+        var video = player.video;
+        var gesture = null;
+        var ghostClick = null;
+        var fullscreenPending = false;
+        var destroyed = false;
+        var removers = [];
+        var preview = document.createElement('div');
+        preview.className = 'dplayer-gesture-seek';
+        preview.hidden = true;
+        preview.setAttribute('aria-hidden', 'true');
+        preview.innerHTML = '<strong data-seek-delta></strong><span data-seek-target></span>';
+        container.appendChild(preview);
+        var deltaText = preview.querySelector('[data-seek-delta]');
+        var targetText = preview.querySelector('[data-seek-target]');
+        var fullButton = container.querySelector('.dplayer-full-icon');
+        if (fullButton) {
+            fullButton.setAttribute('aria-keyshortcuts', 'f');
+            fullButton.setAttribute('aria-label', '全屏（F）');
+            fullButton.title = '全屏（F）';
+        }
+
+        function listen(target, name, handler, options) {
+            target.addEventListener(name, handler, options);
+            removers.push(function () { target.removeEventListener(name, handler, options); });
+        }
+
+        function editable(target) {
+            return target && (target.isContentEditable || (target.closest &&
+                target.closest('input, textarea, select, [role="textbox"], [role="combobox"]')));
+        }
+
+        function fullscreenFailed() {
+            if (!destroyed) player.notice('暂时无法切换全屏，请使用播放器全屏按钮');
+        }
+
+        function onFullscreenKey(event) {
+            if ((event.key !== 'f' && event.key !== 'F') || event.defaultPrevented ||
+                event.repeat || event.isComposing || event.keyCode === 229 ||
+                event.ctrlKey || event.altKey || event.metaKey || event.shiftKey ||
+                editable(event.target) || editable(document.activeElement) || document.hidden) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (fullscreenPending) return;
+            cancelGesture();
+            var full = player.fullScreen;
+            var current = document.fullscreenElement || document.webkitFullscreenElement ||
+                document.mozFullScreenElement || document.msFullscreenElement;
+            var target;
+            var action;
+            if (current) {
+                target = document;
+                action = document.exitFullscreen || document.webkitExitFullscreen ||
+                    document.webkitCancelFullScreen || document.mozCancelFullScreen || document.msExitFullscreen;
+            } else if (video.webkitDisplayingFullscreen) {
+                target = video;
+                action = video.webkitExitFullscreen || video.webkitExitFullScreen;
+            } else if (full.isFullScreen('web')) {
+                full.cancel('web');
+                return;
+            } else {
+                // DPlayer's fullscreen events still own resize and scroll restoration.
+                full.lastScrollPosition = { left: window.pageXOffset, top: window.pageYOffset };
+                target = container;
+                action = container.requestFullscreen || container.webkitRequestFullscreen ||
+                    container.mozRequestFullScreen || container.msRequestFullscreen;
+                if (!action) {
+                    target = video;
+                    action = video.webkitEnterFullscreen || video.webkitEnterFullScreen;
+                }
+            }
+            if (!action) { fullscreenFailed(); return; }
+            try {
+                fullscreenPending = true;
+                Promise.resolve(action.call(target)).then(function () {
+                    fullscreenPending = false;
+                }, function () {
+                    fullscreenPending = false;
+                    fullscreenFailed();
+                });
+            } catch (error) {
+                fullscreenPending = false;
+                fullscreenFailed();
+            }
+        }
+
+        function seekable() {
+            return !video.error && video.readyState >= 1 && !player.options.live &&
+                Number.isFinite(video.duration) && video.duration > 0 && Number.isFinite(video.currentTime);
+        }
+
+        function cancelGesture() {
+            gesture = null;
+            preview.hidden = true;
+        }
+
+        function clock(seconds) {
+            var value = Math.max(0, Math.round(seconds));
+            var hours = Math.floor(value / 3600);
+            var minutes = Math.floor(value / 60) % 60;
+            var tail = String(value % 60).padStart(2, '0');
+            return (hours ? hours + ':' + String(minutes).padStart(2, '0') : String(minutes).padStart(2, '0')) + ':' + tail;
+        }
+
+        function updatePreview(touch) {
+            // Relative distance, independent of duration; one full player width = 90s.
+            gesture.target = Math.max(0, Math.min(video.duration,
+                gesture.time + (touch.clientX - gesture.x) / gesture.width * 90));
+            var delta = gesture.target - gesture.time;
+            deltaText.textContent = (delta < 0 ? '后退 ' : '前进 ') + clock(Math.abs(delta));
+            targetText.textContent = clock(gesture.target) + ' / ' + clock(video.duration);
+            preview.hidden = false;
+        }
+
+        function onTouchStart(event) {
+            ghostClick = null;
+            cancelGesture();
+            if (event.touches.length !== 1 || event.defaultPrevented || !seekable()) return;
+            var target = event.target;
+            if (!target.closest || target.closest('a, button, input, textarea, select, [contenteditable], [role="button"], ' +
+                '.dplayer-controller, .dplayer-setting, .dplayer-menu, .dplayer-mask, .dplayer-mobile-play')) return;
+            var width = container.getBoundingClientRect().width;
+            if (width <= 0) return;
+            var touch = event.touches[0];
+            gesture = { id: touch.identifier, x: touch.clientX, y: touch.clientY,
+                width: width, time: video.currentTime, source: video.currentSrc,
+                target: video.currentTime, horizontal: false };
+        }
+
+        function onTouchMove(event) {
+            if (!gesture) return;
+            if (event.touches.length !== 1 || !seekable() || video.currentSrc !== gesture.source) {
+                cancelGesture(); return;
+            }
+            var touch = event.touches[0];
+            if (touch.identifier !== gesture.id) { cancelGesture(); return; }
+            if (!gesture.horizontal) {
+                var dx = Math.abs(touch.clientX - gesture.x);
+                var dy = Math.abs(touch.clientY - gesture.y);
+                if (Math.max(dx, dy) < 10) return;
+                // Once scrolling wins, this contact cannot turn into a seek.
+                if (dy >= dx) { cancelGesture(); return; }
+                if (dx < dy * 1.25) return;
+                gesture.horizontal = true;
+            }
+            if (!event.cancelable) { cancelGesture(); return; }
+            event.preventDefault();
+            updatePreview(touch);
+        }
+
+        function onTouchEnd(event) {
+            if (!gesture) return;
+            if (event.touches.length || !gesture.horizontal || !seekable() || video.currentSrc !== gesture.source) {
+                cancelGesture(); return;
+            }
+            var touch = Array.prototype.find.call(event.changedTouches, function (point) {
+                return point.identifier === gesture.id;
+            });
+            if (!touch) { cancelGesture(); return; }
+            updatePreview(touch);
+            var time = gesture.target;
+            ghostClick = { x: touch.clientX, y: touch.clientY, until: Date.now() + 500 };
+            if (event.cancelable) event.preventDefault();
+            cancelGesture();
+            try { player.seek(time); }
+            catch (error) { player.notice('暂时无法调整进度，请等待媒体就绪'); }
+            player.controller.setAutoHide();
+        }
+
+        function onClick(event) {
+            // Only suppress the compatibility click at the released contact. A new
+            // touch, keyboard activation or unrelated mouse/control click stays native.
+            if (!ghostClick || event.detail === 0 || Date.now() > ghostClick.until ||
+                (event.sourceCapabilities && !event.sourceCapabilities.firesTouchEvents) ||
+                Math.abs(event.clientX - ghostClick.x) > 25 || Math.abs(event.clientY - ghostClick.y) > 25) return;
+            ghostClick = null;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+
+        function onVisibility() { if (document.hidden) cancelGesture(); }
+        listen(document, 'keydown', onFullscreenKey, true);
+        listen(container, 'touchstart', onTouchStart, { passive: true });
+        listen(container, 'touchmove', onTouchMove, { passive: false });
+        listen(container, 'touchend', onTouchEnd, { passive: false });
+        listen(container, 'touchcancel', cancelGesture, { passive: true });
+        listen(container, 'click', onClick, true);
+        listen(video, 'emptied', cancelGesture);
+        listen(video, 'loadstart', cancelGesture);
+        listen(video, 'error', cancelGesture);
+        listen(window, 'resize', cancelGesture);
+        listen(window, 'blur', cancelGesture);
+        listen(document, 'visibilitychange', onVisibility);
+        listen(document, 'fullscreenchange', cancelGesture);
+        listen(document, 'webkitfullscreenchange', cancelGesture);
+        player.on('resize', cancelGesture);
+
+        return function () {
+            destroyed = true;
+            cancelGesture();
+            ghostClick = null;
+            removers.forEach(function (remove) { remove(); });
+            preview.remove();
+        };
+    }
+
     function bindPlayer(player) {
         if (!player || !player.video || !player.container) return;
         var controls = player.container.querySelector('.dplayer-icons-left');
@@ -348,10 +555,12 @@
             control.addEventListener('keyup', onKeyup);
             control.addEventListener('focus', resumeAutoHide);
         });
+        var destroyPlaybackInput = bindPlaybackInput(player);
         var destroyed = false;
         function destroy() {
             if (destroyed) return;
             destroyed = true;
+            destroyPlaybackInput();
             events.forEach(function (name) { video.removeEventListener(name, sync); });
             button.removeEventListener('click', skip);
             previous.removeEventListener('click', navigate);

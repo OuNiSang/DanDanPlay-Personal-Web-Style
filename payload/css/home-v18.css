@@ -2756,3 +2756,54 @@ body.idx-home::before {
     grid-template-columns: minmax(180px, 32%);
   }
 }
+
+/* Seven-day overflow remains outside the stable timeline. */
+.idx-home #luArchiveLink {
+  align-self: center;
+  padding: 8px 11px;
+  border: 1px solid var(--home-line-strong);
+  border-radius: var(--home-radius-control);
+  color: var(--home-accent-strong);
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.idx-home #luArchiveLink:hover {
+  color: var(--home-text);
+  background: rgba(242, 184, 75, 0.12);
+  transform: translateY(-2px);
+}
+.idx-home #luArchiveLink:active { transform: translateY(1px); }
+.idx-home #luArchiveLink:focus-visible {
+  outline: 2px solid var(--home-accent-strong);
+  outline-offset: 2px;
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  html[data-ui-version="stable"] .idx-home #luSection .update-timeline {
+    --update-card-size: clamp(78px, 10vw, 94px);
+  }
+}
+
+@media (min-width: 769px) {
+  html[data-ui-version="stable"] .idx-home #luSection .sec-hd {
+    width: calc(100% - 2 * var(--updates-edge-pad));
+  }
+
+  html[data-ui-version="stable"] .idx-home #luSection .schedule-day--overflow > .schedule-day__items {
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--home-accent-strong) transparent;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1650px) {
+  html[data-ui-version="stable"] .idx-home #luSection .schedule-day--overflow {
+    --update-card-size: clamp(88px, 6.9vw, 102px);
+  }
+}

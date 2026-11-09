@@ -157,7 +157,7 @@
 </div>
 
 <script src="js/jquery-3.7.1.min.js"></script>
-<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=3"></script>
+<script src="js/media-calendar.js?v=@Model.StaticResourceVersion&amp;ui=9-airing-unified"></script>
 <script src="js/vendor/pinyin-pro-3.18.2.js?v=@Model.StaticResourceVersion"></script>
 <script src="js/library-navigation.js?v=@Model.StaticResourceVersion&amp;ui=3.0-library-r4"></script>
 <script src="js/media-availability.js?v=@Model.StaticResourceVersion&amp;ui=9"></script>
@@ -185,10 +185,18 @@
     var modalBackgroundState = null;
     var modalScrollFrame = 0;
     var librarySnapshotPinned = false;
+    var libraryLoadRun = 0;
+    var libraryPageActive = true;
+    var libraryAiringItems = [];
+    var libraryAiringLoaded = false;
+    var libraryAiringRequests = [];
+    var libraryAiringHydratingRun = null;
+    var libraryAiringTimer = 0;
+    var libraryAppendSerial = 0;
 
     var viewPresentations = {
         lastplay: ['fa-circle-play', '观看动态', '从上次停下的位置继续，观看进度会直接显示在卡片上。'],
-        lastupdate: ['fa-clock-rotate-left', '最近更新', '按条目更新日期分组。'],
+        lastupdate: ['fa-clock-rotate-left', '最近更新', '按最近已到日期边界的正片分组，日期以设备当地时间显示。'],
         lastadd: ['fa-bookmark', '关注动态', '最近关注与新加入媒体库的作品，按时间自然归档。'],
         season: ['fa-calendar-days', '季度归档', '按播出季度浏览收藏，快速定位每一季的作品。'],
         name: ['fa-arrow-down-a-z', '名称索引', '按作品名称浏览媒体库，在完整海报墙中快速定位。'],
@@ -223,8 +231,25 @@
         });
     });
 
+    function isObjectList(value) {
+        return Array.isArray(value) && value.every(function (item) {
+            return item && typeof item === 'object' && !Array.isArray(item);
+        });
+    }
+
+    function showLibraryLoadError(xhr, message) {
+        $('#loadingIndicator, #posterGrid, #emptyState').hide();
+        $('#errorMessage').text(DandanApp.describeError(xhr, message || '无法加载番剧列表，请稍后重试。'));
+        $('#errorState').show();
+    }
+
     function loadBangumiList() {
+        var runId = ++libraryLoadRun;
+        libraryPageActive = true;
         librarySnapshotPinned = false;
+        abortLibraryAiringRequests();
+        libraryAiringItems = [];
+        libraryAiringLoaded = false;
         if (listRequest) listRequest.abort();
         if (window.MediaAvailability) MediaAvailability.reset();
         $('#loadingIndicator').show();
@@ -234,34 +259,118 @@
         listRequest = $.ajax({
             url: bangumiListApi,
             method: 'GET',
+            dataType: 'json',
             timeout: 12000,
             success: function (response) {
-                applyBangumiList(Array.isArray(response) ? response : []);
+                if (runId !== libraryLoadRun || !libraryPageActive) return;
+                if (!isObjectList(response)) {
+                    showLibraryLoadError(null, '服务器返回的作品列表格式无效，请重试。');
+                    return;
+                }
+                var items = response;
+                if (isRecentUpdateNav()) {
+                    libraryAiringItems = prepareLibraryAiringItems(items, new Date());
+                    libraryAiringLoaded = true;
+                    syncLibraryAiringDates();
+                    resumeLibraryAiringDates();
+                } else {
+                    applyBangumiList(items);
+                }
                 if (window.RecentPlayRefresh && isRecentPlayNav()) {
                     RecentPlayRefresh.hydrate(bangumiList, bangumiDetailsApiTemplate, {
                         limit: 16,
                         concurrency: 4,
                         timeout: 3500
                     }).then(function (freshItems) {
+                        if (runId !== libraryLoadRun || !libraryPageActive) return;
                         applyBangumiList(freshItems);
                     });
                 }
             },
             error: function (xhr, status) {
-                if (status === 'abort') return;
-                $('#loadingIndicator, #posterGrid, #emptyState').hide();
-                $('#errorMessage').text(DandanApp.describeError(xhr, '无法加载番剧列表，请稍后重试。'));
-                $('#errorState').show();
+                if (status === 'abort' || runId !== libraryLoadRun || !libraryPageActive) return;
+                showLibraryLoadError(xhr);
             },
             complete: function () {
+                if (runId !== libraryLoadRun || !libraryPageActive) return;
                 listRequest = null;
                 DandanApp.setBusy(document.getElementById('retryLoadBtn'), false);
             }
         });
     }
 
+    function captureLibraryViewport() {
+        var cards = Array.from(document.querySelectorAll('#posterGroups .poster-item'));
+        var focusedCard = cards.find(function (card) { return card.contains(document.activeElement); });
+        var anchor = focusedCard;
+        if (!anchor || anchor.getBoundingClientRect().bottom <= 0 || anchor.getBoundingClientRect().top >= window.innerHeight) {
+            anchor = cards.find(function (card) {
+                var bounds = card.getBoundingClientRect();
+                return bounds.bottom > 0 && bounds.top < window.innerHeight;
+            });
+        }
+        if (!anchor && !focusedCard) return null;
+        var scroller = anchor && anchor.parentElement;
+        while (scroller && scroller !== document.body && scroller !== document.documentElement) {
+            if (/(auto|scroll)/.test(window.getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight + 1) break;
+            scroller = scroller.parentElement;
+        }
+        var scrollOwner = scroller && scroller !== document.body && scroller !== document.documentElement ? scroller : null;
+        // The untouched first render should settle at the page header. Only
+        // preserve an established scroll position or an actual focused card.
+        if (!focusedCard && !(scrollOwner ? scrollOwner.scrollTop : window.scrollY)) return null;
+        return {
+            anchorId: anchor && anchor.dataset.animeId,
+            top: anchor && anchor.getBoundingClientRect().top,
+            focusedId: focusedCard && focusedCard.dataset.animeId,
+            scroller: scrollOwner
+        };
+    }
+
+    function restoreLibraryViewport(snapshot) {
+        if (!snapshot) return;
+        var cards = Array.from(document.querySelectorAll('#posterGroups .poster-item'));
+        var focusedCard = cards.find(function (card) { return card.dataset.animeId === snapshot.focusedId; });
+        if (!focusedCard && snapshot.focusedId && !modalOpen) {
+            var distance = Infinity;
+            cards.forEach(function (card) {
+                var bounds = card.getBoundingClientRect();
+                if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return;
+                var nextDistance = Math.abs(bounds.top - (snapshot.top || 0));
+                if (nextDistance < distance) { focusedCard = card; distance = nextDistance; }
+            });
+            if (!focusedCard) {
+                var search = document.getElementById('searchInput');
+                focusedCard = search && search.offsetParent !== null ? search : document.getElementById('emptyState');
+                if (focusedCard && focusedCard.id === 'emptyState') focusedCard.setAttribute('tabindex', '-1');
+            }
+        }
+        if (focusedCard && !modalOpen && !focusedCard.contains(document.activeElement)) {
+            // A replaced card is already focused in the user's mental model.
+            // Apply that state before measuring its anchor, without replaying
+            // the CSS focus lift and drifting several pixels after restoration.
+            var transition = focusedCard.style.transition;
+            focusedCard.style.transition = 'none';
+            focusedCard.focus({ preventScroll: true });
+            focusedCard.getBoundingClientRect();
+            focusedCard.style.transition = transition;
+        }
+        var anchor = cards.find(function (card) { return card.dataset.animeId === snapshot.anchorId; });
+        if (anchor) {
+            var offset = anchor.getBoundingClientRect().top - snapshot.top;
+            if (Math.abs(offset) > 0.5) {
+                if (snapshot.scroller && snapshot.scroller.isConnected) snapshot.scroller.scrollTop += offset;
+                else window.scrollTo({ top: window.scrollY + offset, left: window.scrollX, behavior: 'instant' });
+            }
+        }
+    }
+
     function applyBangumiList(items) {
-        bangumiList = MediaCalendar.localizeList(items, isRecentPlayNav() ? 'lastplay' : currentNav);
+        // Capture only around this background metadata application. Explicit
+        // search, navigation and list reloads retain their own focus behavior.
+        var viewport = captureLibraryViewport();
+        bangumiList = isRecentUpdateNav() ? MediaCalendar.localizeAiringList(items, new Date()) :
+            MediaCalendar.localizeList(items, isRecentPlayNav() ? 'lastplay' : currentNav);
         bangumiMapById = {};
         bangumiList.forEach(function (bangumi) {
             bangumiMapById[String(bangumi.AnimeId)] = bangumi;
@@ -273,9 +382,19 @@
             // Keep the browsing snapshot alive after opening a dossier, including
             // hydration that arrives after it closes. Metadata can update in
             // place; the next search/list load uses the refreshed order.
+            var removed = false;
+            var restoreFocus = false;
             document.querySelectorAll('#posterGroups .poster-item').forEach(function (card) {
                 var item = bangumiMapById[card.dataset.animeId];
-                if (!item) return;
+                if (!item) {
+                    if (isRecentUpdateNav()) {
+                        if (modalReturnFocus && card.contains(modalReturnFocus)) modalReturnFocus = null;
+                        if (!modalOpen && card.contains(document.activeElement)) restoreFocus = true;
+                        card.remove();
+                        removed = true;
+                    }
+                    return;
+                }
                 var watched = Number(item.EpisodeWatched) || 0;
                 var total = Number(item.EpisodeTotal) || 0;
                 var caption = card.querySelector('.poster-info p');
@@ -284,10 +403,177 @@
                 if (card.style.getPropertyValue('--watch-progress') !== progress) card.style.setProperty('--watch-progress', progress);
                 if (caption.textContent !== (item.Details || '')) caption.textContent = item.Details || '';
             });
+            var added = false;
+            if (isRecentUpdateNav()) {
+                var presentIds = Object.create(null);
+                document.querySelectorAll('#posterGroups .poster-item').forEach(function (card) {
+                    presentIds[card.dataset.animeId] = true;
+                });
+                var newlyEligible = searchBangumi($('#searchInput').val()).filter(function (item) {
+                    return !presentIds[String(item.AnimeId)];
+                });
+                if (newlyEligible.length) {
+                    renderBangumiList(newlyEligible, { append: true });
+                    added = true;
+                }
+            }
+            if (removed || added) reconcilePinnedLibrarySnapshot(restoreFocus);
         } else {
             renderLibrarySearch($('#searchInput').val());
         }
+        restoreLibraryViewport(viewport);
     }
+
+    function reconcilePinnedLibrarySnapshot(restoreFocus) {
+        // Expired eligibility overrides pinning, but surviving nodes stay in
+        // their browsing positions. Counts and anchors describe that snapshot.
+        var groups = Array.from(document.querySelectorAll('#posterGroups .poster-group')).filter(function (group) {
+            if (group.querySelectorAll('.poster-item').length) return true;
+            group.remove();
+            return false;
+        });
+        var visibleItems = [];
+        groupAnchorMap = {};
+        groups.forEach(function (group, index) {
+            var cards = Array.from(group.querySelectorAll('.poster-item'));
+            var count = group.querySelector('.poster-group__count');
+            if (group.dataset.focusNumber) {
+                group.dataset.focusNumber = String(index + 1).padStart(2, '0');
+                group.dataset.focusMeta = 'SPREAD ' + (index + 1) + ' / ' + groups.length + ' · ' + cards.length + ' ITEMS';
+                if (count) count.textContent = 'SPREAD ' + String(index + 1).padStart(2, '0') + ' / ' + String(groups.length).padStart(2, '0');
+            } else if (count) count.textContent = cards.length + ' 部';
+            cards.forEach(function (card) {
+                var item = bangumiMapById[card.dataset.animeId];
+                var name = card.dataset.sourceGroup || item.GroupName || '未分组';
+                if (!groupAnchorMap[name]) groupAnchorMap[name] = group.id;
+                visibleItems.push(Object.assign({}, item, { GroupName: name }));
+            });
+        });
+        renderQuickNav(visibleItems);
+        updateLibrarySummary(visibleItems.length, countGroups(visibleItems));
+        $('#emptyState').toggle(visibleItems.length === 0);
+        $('#posterGrid').toggle(visibleItems.length > 0);
+        if (modalOpen && (!modalReturnFocus || !modalReturnFocus.isConnected)) {
+            modalReturnFocus = document.querySelectorAll('#posterGroups .poster-item')[0] || document.getElementById('searchInput');
+        } else if (!modalOpen && restoreFocus) {
+            var focusTarget = document.querySelectorAll('#posterGroups .poster-item')[0] || document.getElementById('searchInput');
+            focusTarget.focus({ preventScroll: true });
+        }
+        if (window.MediaAvailability) MediaAvailability.prune();
+        if (window.Web1V3LibraryMotion) Web1V3LibraryMotion.refresh();
+    }
+
+    function isRecentUpdateNav() {
+        return currentNav === 'lastupdate' || /(?:nav[=:])lastupdate/i.test(bangumiListApi || '');
+    }
+
+    function prepareLibraryAiringItems(items, now) {
+        return (items || []).map(function (item) {
+            var copy = Object.assign({}, item);
+            if (!MediaCalendar.needsAiringDetails(item, now)) return copy;
+            copy.__airingDates = [];
+            copy.__airingState = item.AnimeId == null || String(item.AnimeId) === '' ? 'unavailable' : 'pending';
+            return copy;
+        });
+    }
+
+    function abortLibraryAiringRequests() {
+        window.clearTimeout(libraryAiringTimer);
+        libraryAiringTimer = 0;
+        libraryAiringHydratingRun = null;
+        var requests = libraryAiringRequests;
+        libraryAiringRequests = [];
+        requests.forEach(function (request) { request.abort(); });
+    }
+
+    function syncLibraryAiringDates() {
+        if (!isRecentUpdateNav() || !libraryPageActive || !libraryAiringLoaded) return;
+        // Keep the complete source, including not-yet-due episodes. The shared
+        // adapter filters the view only, so a source boundary can restore them.
+        applyBangumiList(libraryAiringItems);
+        window.clearTimeout(libraryAiringTimer);
+        var delay = MediaCalendar.msUntilNextAiringChange(libraryAiringItems, new Date());
+        if (delay !== null) libraryAiringTimer = window.setTimeout(syncLibraryAiringDates, delay + 20);
+    }
+
+    function resumeLibraryAiringDates() {
+        if (!isRecentUpdateNav() || !libraryPageActive || libraryAiringHydratingRun === libraryLoadRun) return;
+        var jobs = [];
+        var byId = Object.create(null);
+        libraryAiringItems.forEach(function (item, index) {
+            if (item.__airingState !== 'pending' || item.AnimeId == null) return;
+            var id = String(item.AnimeId);
+            if (!id) return;
+            if (!byId[id]) {
+                byId[id] = { id: id, indices: [] };
+                jobs.push(byId[id]);
+            }
+            byId[id].indices.push(index);
+        });
+        if (!jobs.length) return;
+        hydrateLibraryAiringDates(jobs, libraryLoadRun);
+    }
+
+    function hydrateLibraryAiringDates(jobs, runId) {
+        var cursor = 0;
+        var active = 0;
+        libraryAiringHydratingRun = runId;
+        function isCurrent() { return runId === libraryLoadRun && libraryPageActive; }
+        function applyDetails(job, response) {
+            if (!isCurrent()) return;
+            job.indices.forEach(function (index) {
+                var item = libraryAiringItems[index];
+                if (item && String(item.AnimeId) === job.id && item.__airingState === 'pending') {
+                    libraryAiringItems[index] = MediaCalendar.withAiringDates(item, response, 'china-calendar');
+                }
+            });
+        }
+        function start(job) {
+            active += 1;
+            var request = $.ajax({
+                url: bangumiDetailsApiTemplate.replace('{id}', encodeURIComponent(job.id)),
+                method: 'GET',
+                cache: false,
+                timeout: 8000,
+                success: function (response) { applyDetails(job, response); },
+                error: function (xhr, status) { if (status !== 'abort') applyDetails(job, null); },
+                complete: function () {
+                    active -= 1;
+                    var index = libraryAiringRequests.indexOf(request);
+                    if (index >= 0) libraryAiringRequests.splice(index, 1);
+                    if (!isCurrent()) return;
+                    syncLibraryAiringDates();
+                    pump();
+                }
+            });
+            libraryAiringRequests.push(request);
+        }
+        function pump() {
+            if (!isCurrent()) return;
+            while (active < 3 && cursor < jobs.length) start(jobs[cursor++]);
+            if (!active && cursor === jobs.length) libraryAiringHydratingRun = null;
+        }
+        pump();
+    }
+
+    window.addEventListener('pagehide', function () {
+        if (!isRecentUpdateNav()) return;
+        libraryPageActive = false;
+        libraryLoadRun += 1;
+        abortLibraryAiringRequests();
+        if (listRequest) listRequest.abort();
+        listRequest = null;
+    });
+    window.addEventListener('pageshow', function (event) {
+        if (!isRecentUpdateNav()) return;
+        libraryPageActive = true;
+        if (event.persisted && !libraryAiringLoaded) { loadBangumiList(); return; }
+        syncLibraryAiringDates();
+        if (event.persisted) resumeLibraryAiringDates();
+    });
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) syncLibraryAiringDates();
+    });
 
     function normalizeSearchText(value) {
         var text = String(value == null ? '' : value);
@@ -465,7 +751,14 @@
         return currentNav === 'lastplay' || /(?:nav[=:])lastplay/i.test(bangumiListApi || '');
     }
 
-    function refreshBangumiListFromDetails(bangumi, response) {
+    function refreshBangumiListFromDetails(bangumi, response, sourceRun) {
+        if (isRecentUpdateNav() && bangumi && libraryPageActive && sourceRun === libraryLoadRun) {
+            libraryAiringItems = libraryAiringItems.map(function (item) {
+                return String(item.AnimeId) === String(bangumi.AnimeId) ?
+                    MediaCalendar.withAiringDates(item, response, 'china-calendar') : item;
+            });
+            syncLibraryAiringDates();
+        }
         if (!window.RecentPlayRefresh || !bangumi) return;
         if (!RecentPlayRefresh.applyDetails(bangumi, response)) return;
         if (!isRecentPlayNav()) return;
@@ -537,24 +830,39 @@
         return posterItem;
     }
 
-    function renderBangumiList(bangumiList) {
+    function renderBangumiList(bangumiList, options) {
+        var append = Boolean(options && options.append);
         if (window.MediaAvailability) window.requestAnimationFrame(MediaAvailability.prune);
         var posterGroups = $('#posterGroups');
-        posterGroups.empty();
+        if (!append) posterGroups.empty();
         var groups = groupBangumiItems(bangumiList);
         var archiveRecords = [];
-        var globalIndex = 0;
+        var globalIndex = append ? posterGroups.find('.poster-item').length : 0;
+        var groupOffset = append ? posterGroups.children('.poster-group').length : 0;
         var spreadSize = 12;
-        groupAnchorMap = {};
+        if (!append) groupAnchorMap = {};
 
         // Keep the existing grouped library untouched on the stable mobile path.
         // The spread compositor below is deliberately desktop-only.
         if (!window.Web1UiVersion || !window.Web1UiVersion.isV3Desktop()) {
             groups.forEach(function (group, groupIndex) {
-                var groupTitleId = 'group-title-' + groupIndex;
+                var existingGroup = append ? Array.from(document.querySelectorAll('#posterGroups .poster-group')).find(function (section) {
+                    var title = section.querySelector('.group-name');
+                    return title && title.textContent === group.name;
+                }) : null;
+                if (existingGroup) {
+                    var existingGrid = $(existingGroup).find('.poster-group__grid');
+                    group.items.forEach(function (bangumi) {
+                        existingGrid.append(createPosterItem(bangumi, globalIndex++, group.name));
+                    });
+                    return;
+                }
+                var groupNumber = groupOffset + groupIndex;
+                var groupKey = append ? 'snapshot-' + (++libraryAppendSerial) : String(groupNumber);
+                var groupTitleId = 'group-title-' + groupKey;
                 var groupSection = $('<section></section>')
                     .addClass('poster-group')
-                    .attr('id', 'group-' + groupIndex)
+                    .attr('id', 'group-' + groupKey)
                     .attr('aria-labelledby', groupTitleId);
                 var groupHeader = $('<header></header>').addClass('poster-group__header').appendTo(groupSection);
                 $('<h2></h2>')
@@ -588,16 +896,19 @@
             });
         });
 
-        var spreadCount = Math.max(1, Math.ceil(archiveRecords.length / spreadSize));
-        for (var spreadIndex = 0; spreadIndex < spreadCount; spreadIndex += 1) {
-            var spreadItems = archiveRecords.slice(spreadIndex * spreadSize, (spreadIndex + 1) * spreadSize);
+        var addedSpreads = Math.ceil(archiveRecords.length / spreadSize);
+        var spreadCount = Math.max(1, groupOffset + addedSpreads);
+        for (var addedIndex = 0; addedIndex < addedSpreads; addedIndex += 1) {
+            var spreadIndex = groupOffset + addedIndex;
+            var spreadItems = archiveRecords.slice(addedIndex * spreadSize, (addedIndex + 1) * spreadSize);
             var firstGroupName = spreadItems.length ? spreadItems[0].groupName : '未分组';
             var lastGroupName = spreadItems.length ? spreadItems[spreadItems.length - 1].groupName : firstGroupName;
             var spreadTitle = firstGroupName === lastGroupName ? firstGroupName : firstGroupName + ' - ' + lastGroupName;
-            var groupTitleId = 'archive-spread-title-' + spreadIndex;
+            var spreadKey = append ? 'snapshot-' + (++libraryAppendSerial) : String(spreadIndex);
+            var groupTitleId = 'archive-spread-title-' + spreadKey;
             var groupSection = $('<section></section>')
                 .addClass('poster-group')
-                .attr('id', 'archive-spread-' + spreadIndex)
+                .attr('id', 'archive-spread-' + spreadKey)
                 .attr('aria-labelledby', groupTitleId)
                 .attr('data-focus-number', String(spreadIndex + 1).padStart(2, '0'))
                 .attr('data-focus-title', spreadTitle)
@@ -720,6 +1031,7 @@
     function showModal(animeId, title) {
         if (modalRequest) modalRequest.abort();
         var requestSerial = ++modalRequestSerial;
+        var sourceRun = libraryLoadRun;
         var bangumi = bangumiMapById[String(animeId)];
         document.getElementById('modalTitle').innerText = title;
         var modalArtwork = document.getElementById('modalArtwork');
@@ -744,10 +1056,15 @@
         modalRequest = $.ajax({
             url: getBangumiDetailsApi,
             method: 'GET',
+            dataType: 'json',
             timeout: 10000,
             success: function (response) {
                 if (requestSerial !== modalRequestSerial) return;
-                refreshBangumiListFromDetails(bangumiMeta, response);
+                if (!response || !isObjectList(response.Episodes)) {
+                    showModalLoadError(null, '服务器返回的作品详情格式无效，请关闭后重试。');
+                    return;
+                }
+                refreshBangumiListFromDetails(bangumiMeta, response, sourceRun);
                 if (shouldAttemptLibraryFallback(response, bangumiMeta)) {
                     fetchLibraryFallback()
                         .done(function (libraryResponse) {
@@ -757,6 +1074,7 @@
                         .fail(function () {
                             if (requestSerial !== modalRequestSerial) return;
                             renderModalState(animeId, response, bangumiMeta, []);
+                            DandanApp.toast('本地文件列表暂时无法加载，部分播放入口可能缺失，请关闭后重试。', 'warning');
                         });
                     return;
                 }
@@ -765,15 +1083,19 @@
             },
             error: function (xhr, status) {
                 if (status === 'abort' || requestSerial !== modalRequestSerial) return;
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('episodeList').style.display = 'block';
-                document.getElementById('episodeList').innerHTML = '<li class="episode-item empty-state">作品详情加载失败，请关闭后重试。</li>';
-                DandanApp.toast(DandanApp.describeError(xhr, '作品详情加载失败。'), 'error');
+                showModalLoadError(xhr);
             },
             complete: function () {
                 if (requestSerial === modalRequestSerial) modalRequest = null;
             }
         });
+    }
+
+    function showModalLoadError(xhr, message) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('episodeList').style.display = 'block';
+        document.getElementById('episodeList').innerHTML = '<li class="episode-item empty-state">作品详情加载失败，请关闭后重试。</li>';
+        DandanApp.toast(DandanApp.describeError(xhr, message || '作品详情加载失败。'), 'error');
     }
 
     function shouldAttemptLibraryFallback(response, bangumiMeta) {
@@ -794,11 +1116,26 @@
 
     function fetchLibraryFallback() {
         if (!libraryFallbackPromise) {
-            libraryFallbackPromise = $.ajax({
+            var deferred = $.Deferred();
+            var pending = deferred.promise();
+            libraryFallbackPromise = pending;
+            // Share an in-flight/successful list, but let the next user action
+            // retry a failed request or an invalid HTTP-success response.
+            pending.fail(function () {
+                if (libraryFallbackPromise === pending) libraryFallbackPromise = null;
+            });
+            $.ajax({
                 url: getLibraryFallbackApi(),
                 method: 'GET',
-                timeout: 10000
+                dataType: 'json',
+                timeout: 10000,
+                success: function (response, status, xhr) {
+                    if (isObjectList(response)) deferred.resolve(response);
+                    else deferred.reject(xhr, 'parsererror');
+                },
+                error: function (xhr, status) { deferred.reject(xhr, status); }
             });
+            return pending;
         }
         return libraryFallbackPromise;
     }

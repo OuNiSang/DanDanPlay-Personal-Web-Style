@@ -80,11 +80,21 @@
         return controller;
     }
 
+    function updateRevealOwnsCase(card) {
+        var section = card && card.closest('.idx-section--updates');
+        return Boolean(section && section.classList.contains('is-update-armed') &&
+            !section.classList.contains('is-update-sequence-complete'));
+    }
+
     function resetCase(card, immediate) {
         if (!card) return;
+        card.classList.remove('is-pointer-active', 'is-pointer-pressed');
+        // The reveal owns visibility and transforms until all cards settle.
+        // A pointer exit or window blur must not cancel its pending autoAlpha
+        // tween and strand a complete cover/title surface at visibility:hidden.
+        if (updateRevealOwnsCase(card)) return;
         var parts = getParts(card);
         var duration = immediate || reducedMotion.matches ? 0 : 0.5;
-        card.classList.remove('is-pointer-active', 'is-pointer-pressed');
         gsap.killTweensOf([parts.surface, parts.shadow, parts.cover].filter(Boolean));
         motionControllers.delete(card);
         if (parts.surface) {
@@ -138,6 +148,7 @@
     function renderPointer() {
         moveFrame = 0;
         if (!activeCase || !activeRect || !lastPointer || reducedMotion.matches) return;
+        if (updateRevealOwnsCase(activeCase)) return;
         var profile = getMotionProfile(activeCase);
         var parts = getParts(activeCase);
         if (!parts.surface) return;
@@ -188,6 +199,7 @@
         if (!finePointer.matches || reducedMotion.matches) return;
         var card = event.target.closest('.media-case');
         if (!card || !root.contains(card)) return;
+        if (updateRevealOwnsCase(card)) return;
         if (event.relatedTarget && card.contains(event.relatedTarget)) return;
         if (activeCase && activeCase !== card) resetCase(activeCase, false);
         activeCase = card;
@@ -324,7 +336,7 @@
             defaults: { ease: 'power3.out' },
             onComplete: function () {
                 updateRevealTimeline = null;
-                section.classList.add('is-update-sequence-complete');
+                setUpdateRevealEndState(section);
                 setGsapTargets(headers, { clearProps: 'willChange' });
                 setGsapTargets(cards, { clearProps: 'willChange' });
                 setGsapTargets(surfaces, { clearProps: 'willChange' });
@@ -389,6 +401,16 @@
             }
         });
         updateRevealObserver.observe(section, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
+        // The deferred runtime may attach after index.html has already armed or
+        // revealed the section. Reconcile that state before waiting for changes.
+        if (section.classList.contains('is-update-armed') &&
+            !section.classList.contains('is-update-sequence-complete')) {
+            if (section.classList.contains('is-update-revealed')) {
+                if (!updateRevealTimeline) playUpdateReveal(section);
+            } else {
+                prepareUpdateReveal(section);
+            }
+        }
     }
 
     observeUpdateReveal();
@@ -412,14 +434,14 @@
     window.addEventListener('pageshow', function (event) {
         if (!event.persisted) return;
         syncDocumentMotion();
-        // pagehide disconnected the observer. Restore it for the same page
-        // when history navigation revives it from the back/forward cache.
-        observeUpdateReveal();
         var section = document.getElementById('luSection');
         if (section && section.classList.contains('is-update-revealed') &&
             !section.classList.contains('is-update-sequence-complete')) {
             setUpdateRevealEndState(section);
         }
+        // Settle an interrupted history restoration before reattaching: its
+        // current-state reconciliation must not replay an already revealed bay.
+        observeUpdateReveal();
     });
 
     window.DandanHomeContent = { reset: resetAll, revealUpdates: playUpdateReveal };
