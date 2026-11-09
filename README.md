@@ -2,9 +2,9 @@
 
 弹弹play Web1 的非官方视觉与交互改版，用连续 CD 架、媒体封套和放映控制台浏览自己的媒体库。
 
-**当前版本：3.5 · 兼容弹弹play Windows 18.1.3**
+**当前版本：3.6 · 兼容弹弹play Windows 18.2.4**
 
-**[下载 3.5 安装包 ZIP](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.5/DanDanPlay-Personal-Web-Style-3.5.zip)** · [版本说明与校验文件](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/tag/3.5)
+**[下载 3.6 安装包 ZIP](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.6/DanDanPlay-Personal-Web-Style-3.6.zip)** · [版本说明与校验文件](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/tag/3.6)
 
 3.5 将封面状态收敛为一个小号数字与符号，修正季归类和播放恢复，并加入客户端 E-AC-3 软件解码。原生可播放格式继续沿用原路径；软件解码直接输出声音，不转 AAC、不生成媒体副本。软解码已获用户验收通过。
 
@@ -64,11 +64,11 @@
 
 ![Web1 3.4 手机播放器：上下集与跳过片头图标](screenshots/player-stable-mobile-3.4.webp)
 
-标有 3.5 的角标截图来自本批受测候选；其余截图和 GIF 标有 3.4，展示保留的既有界面。所有公开预览使用虚构作品、明暗封面、长短标题与缺图案例，不含真实媒体清单、账号、服务器或播放记录。GIF 是界面演示，不代表实际设备帧率。
+3.6 仅更新客户端兼容目标，77 个运行文件与 3.5 保持逐字节一致。标有 3.5 的角标截图和标有 3.4 的既有截图、GIF 继续展示本版保留的界面。所有公开预览使用虚构作品、明暗封面、长短标题与缺图案例，不含真实媒体清单、账号、服务器或播放记录。GIF 是界面演示，不代表实际设备帧率。
 
 ## 安装与回退
 
-1. 下载独立附件 **`DanDanPlay-Personal-Web-Style-3.5.zip`** 并完整解压，不要直接在压缩包内运行。
+1. 下载独立附件 **`DanDanPlay-Personal-Web-Style-3.6.zip`** 并完整解压，不要直接在压缩包内运行。
 2. 建议先退出弹弹play。
 3. 双击 `manage-style.bat`，选择 `1` 安装或重新应用。
 4. 在弹弹play中开启远程访问，进入客户端显示地址的 `/web1/index.html`。
@@ -76,7 +76,7 @@
 
 安装包包含 manifest 中列出的运行文件、第三方许可与管理器、安装说明；截图/GIF 留在项目主页。使用同一 Release 的 `.zip.sha256` 文件核对完整性。
 
-管理器默认中文，主菜单选择 `4` 可切换英文。优先读取 Web1 目录同级的 `dandanplay.exe` 版本；版本不匹配或无法识别时会提示确认。兼容目标为 `18.1.3`，发布安装检查使用 `18.1.3.0`，不跳过版本检查。
+管理器默认中文，主菜单选择 `4` 可切换英文。优先读取 Web1 目录同级的 `dandanplay.exe` 版本；版本不匹配或无法识别时会提示确认。兼容目标为 `18.2.4`，发布安装检查使用 `18.2.4.0`，不跳过版本检查。
 
 待覆盖文件有变化时先备份；重复应用同一版本不重复创建备份。回退恢复原有文件，并移除安装时新增的文件。备份位于：
 
@@ -89,6 +89,12 @@
 GitHub 自动生成的 `Source code` 压缩包仍可用，推荐使用独立安装附件。附件下载次数表示请求次数，不等于独立用户或安装人数；本项目没有为此添加使用遥测。
 
 ## 更新记录
+
+### 3.6
+
+- 兼容目标更新为弹弹play Windows 18.2.4，安装管理器按 18.2.4.0 检查版本。
+- 保留 3.5 的 77 个运行文件；客户端更新覆盖网页后，可用本版管理器重新应用。
+- 本版不合入本地尚未发布的功能；软件解码及真实设备性能边界沿用 3.5。
 
 ### 3.5
 
@@ -147,7 +153,7 @@ pwsh -NoProfile -File .\scripts\manage-style.ps1 -Action restore -TargetPath "D:
 
 管理器兼容 Windows PowerShell 5.1。命令行遇到版本不匹配时默认退出；仅在自行确认兼容性后才考虑 `-Force`。
 
-维护者可用 PowerShell 7 执行 `scripts/build-release.ps1 -Version 3.5`，向 `dist/` 生成 ZIP 与校验文件。脚本核对 manifest 和 payload 完整文件集合，并拒绝覆盖已有产物。
+维护者可用 PowerShell 7 执行 `scripts/build-release.ps1 -Version 3.6`，向 `dist/` 生成 ZIP 与校验文件。脚本核对 manifest 和 payload 完整文件集合，并拒绝覆盖已有产物。
 
 `payload/` 按实际测试源码保留文件字节，Git 不自动改写其中的行尾；安装附件与对应版本的 payload 可逐文件校验。
 
