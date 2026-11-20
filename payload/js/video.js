@@ -237,7 +237,7 @@
         };
     }
 
-    function bindPlaybackInput(player) {
+    function bindPlaybackInput(player, skipIntro) {
         var container = player.container;
         var video = player.video;
         var gesture = null;
@@ -274,13 +274,31 @@
             if (!destroyed) player.notice('暂时无法切换全屏，请使用播放器全屏按钮');
         }
 
-        function onFullscreenKey(event) {
-            if ((event.key !== 'f' && event.key !== 'F') || event.defaultPrevented ||
+        // Video-only fullscreen omits the software surface and its ASS overlay.
+        function needsWebFullscreen() {
+            return video.ddpSoftwareDecoder && video.ddpSoftwareDecoder.isActive() &&
+                !(container.requestFullscreen || container.webkitRequestFullscreen ||
+                container.mozRequestFullScreen || container.msRequestFullscreen);
+        }
+        if (fullButton) listen(fullButton, 'click', function (event) {
+            if (!needsWebFullscreen()) return;
+            event.stopImmediatePropagation();
+            player.fullScreen.toggle('web');
+        }, true);
+
+        function onPlaybackKey(event) {
+            var key = String(event.key || '').toLowerCase();
+            if ((key !== 'f' && key !== 'j') || event.defaultPrevented ||
                 event.repeat || event.isComposing || event.keyCode === 229 ||
                 event.ctrlKey || event.altKey || event.metaKey || event.shiftKey ||
                 editable(event.target) || editable(document.activeElement) || document.hidden) return;
             event.preventDefault();
             event.stopPropagation();
+            if (key === 'j') {
+                cancelGesture();
+                skipIntro();
+                return;
+            }
             if (fullscreenPending) return;
             cancelGesture();
             var full = player.fullScreen;
@@ -305,6 +323,7 @@
                 action = container.requestFullscreen || container.webkitRequestFullscreen ||
                     container.mozRequestFullScreen || container.msRequestFullscreen;
                 if (!action) {
+                    if (needsWebFullscreen()) { full.request('web'); return; }
                     target = video;
                     action = video.webkitEnterFullscreen || video.webkitEnterFullScreen;
                 }
@@ -419,7 +438,7 @@
         }
 
         function onVisibility() { if (document.hidden) cancelGesture(); }
-        listen(document, 'keydown', onFullscreenKey, true);
+        listen(document, 'keydown', onPlaybackKey, true);
         listen(container, 'touchstart', onTouchStart, { passive: true });
         listen(container, 'touchmove', onTouchMove, { passive: false });
         listen(container, 'touchend', onTouchEnd, { passive: false });
@@ -453,7 +472,8 @@
         button.type = 'button';
         button.className = 'dplayer-icon dplayer-transport-control dplayer-skip-forward';
         button.setAttribute('aria-label', '跳过片头');
-        button.title = '跳过片头';
+        button.title = '跳过片头（J）';
+        button.setAttribute('aria-keyshortcuts', 'j');
         button.innerHTML = '<svg class="dplayer-skip-forward__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 5 9 7-9 7V5Zm9 0 9 7-9 7V5Z"/></svg>' +
             '<span class="dplayer-skip-forward__label" aria-hidden="true">跳过片头</span>';
         var playButton = controls.querySelector('.dplayer-play-icon');
@@ -519,6 +539,10 @@
         function skip(event) {
             event.stopPropagation();
             releasePointerFocus(event);
+            skipIntro();
+        }
+
+        function skipIntro() {
             resumeAutoHide();
             if (!canSeek()) { sync(); return; }
             try {
@@ -555,7 +579,7 @@
             control.addEventListener('keyup', onKeyup);
             control.addEventListener('focus', resumeAutoHide);
         });
-        var destroyPlaybackInput = bindPlaybackInput(player);
+        var destroyPlaybackInput = bindPlaybackInput(player, skipIntro);
         var destroyed = false;
         function destroy() {
             if (destroyed) return;

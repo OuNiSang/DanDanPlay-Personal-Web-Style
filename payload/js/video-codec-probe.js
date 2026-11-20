@@ -68,6 +68,89 @@
         return codecs;
     }
 
+    // EBML IDs retain their marker bit. Sizes drop it; an all-ones size
+    // means "unknown length", which is legal for a streaming Segment.
+    function ebmlHeader(bytes, offset) {
+        var pos = offset;
+        function vint(isId) {
+            var first = bytes[pos++], marker = 128, length = 1;
+            while (marker && !(first & marker)) { marker >>= 1; length++; }
+            if (!marker || length > (isId ? 4 : 8) || pos + length - 1 > bytes.length) throw failure('invalid-ebml-header');
+            var value = isId ? first : first - marker;
+            var unknown = !isId && value === marker - 1;
+            for (var i = 1; i < length; i++) {
+                var next = bytes[pos++];
+                unknown = unknown && next === 255;
+                value = value * 256 + next;
+            }
+            if (unknown) return null;
+            if (!Number.isSafeInteger(value)) throw failure('invalid-ebml-size');
+            return value;
+        }
+        var id = vint(true), size = vint(false);
+        return { id: id, size: size, body: pos };
+    }
+    function ebmlChildren(bytes, start, end, visit) {
+        var count = 0;
+        while (start < end) {
+            if (++count > 4096) throw failure('ebml-element-limit');
+            var tag = ebmlHeader(bytes, start);
+            var next = tag.body + tag.size;
+            if (tag.size === null || next > end) throw failure('invalid-ebml-size');
+            visit(tag, next);
+            start = next;
+        }
+    }
+    async function matroskaCodecs(read, total) {
+        async function header(offset, limit) {
+            if (offset >= limit) throw failure('missing-ebml-element');
+            var tag = ebmlHeader(await read(offset, Math.min(12, limit - offset)), 0);
+            tag.body += offset;
+            tag.end = tag.size === null ? limit : tag.body + tag.size;
+            if (tag.end > limit) throw failure('invalid-ebml-size');
+            return tag;
+        }
+        var head = await header(0, total);
+        if (!head.size || head.size > 4096) throw failure('invalid-ebml-header');
+        var validType = false;
+        var bytes = await read(head.body, head.size);
+        ebmlChildren(bytes, 0, bytes.length, function (tag) {
+            if (tag.id === 0x4282) validType = tag.size === 8 && text(bytes, tag.body, tag.size) === 'matroska';
+        });
+        if (!validType) throw failure('unsupported-ebml-doctype');
+        var limit = total, inSegment = false;
+        for (var offset = head.end, n = 0; offset < limit && n < 128; n++) {
+            var tag = await header(offset, limit);
+            if (!inSegment && tag.id === 0x18538067) {
+                inSegment = true; limit = tag.end; offset = tag.body; continue;
+            }
+            if (tag.size === null || tag.id === 0x1f43b675) throw failure('missing-matroska-tracks');
+            if (inSegment && tag.id === 0x1654ae6b && tag.size > 0) {
+                bytes = await read(tag.body, tag.size);
+                var codecs = [];
+                ebmlChildren(bytes, 0, bytes.length, function (entry, end) {
+                    if (entry.id !== 0xae) return;
+                    var type = null, codec = null;
+                    ebmlChildren(bytes, entry.body, end, function (field) {
+                        if (field.id === 0x83) {
+                            if (type !== null || !field.size || field.size > 8) throw failure('invalid-track-type');
+                            type = 0;
+                            for (var i = 0; i < field.size; i++) type = type * 256 + bytes[field.body + i];
+                        } else if (field.id === 0x86) {
+                            if (codec !== null || !field.size || field.size > 128) throw failure('invalid-codec-id');
+                            codec = text(bytes, field.body, field.size);
+                        }
+                    });
+                    if (type === null || codec === null) throw failure('incomplete-matroska-track');
+                    if (type === 2) codecs.push(codec);
+                });
+                return codecs;
+            }
+            offset = tag.end;
+        }
+        throw failure('missing-matroska-tracks');
+    }
+
     async function inspect(source, options) {
         options = options || {};
         var controller, timer, externalListener, reader;
@@ -152,6 +235,14 @@
             var offset = 0;
             for (var n = 0; n < 128; n += 1) {
                 var headerBytes = await read(offset, 8);
+                if (offset === 0 && u32(headerBytes, 0) === 0x1a45dfa3) {
+                    container = 'matroska';
+                    var tracks = await matroskaCodecs(read, total);
+                    if (!tracks.length) return result('other', 'no-audio-track');
+                    if (tracks.every(function (codec) { return codec === 'A_EAC3'; })) return result('eac3', 'matroska-eac3', tracks);
+                    if (tracks.indexOf('A_EAC3') >= 0) return result('unknown', 'mixed-audio-tracks', tracks);
+                    return result('other', 'matroska-other-audio', tracks);
+                }
                 var size32 = u32(headerBytes, 0), headerSize = size32 === 1 ? 16 : 8;
                 if (headerSize === 16) headerBytes = await read(offset, 16);
                 var size = size32 === 1 ? u32(headerBytes, 8) * 4294967296 + u32(headerBytes, 12) : size32;

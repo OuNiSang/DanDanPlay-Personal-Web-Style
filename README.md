@@ -2,15 +2,23 @@
 
 弹弹play Web1 的非官方视觉与交互改版，用连续 CD 架、媒体封套和放映控制台浏览自己的媒体库。
 
-**当前版本：3.6 · 兼容弹弹play Windows 18.2.4**
+**当前版本：3.7 · 兼容弹弹play Windows 18.2.4**
 
-**[下载 3.6 安装包 ZIP](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.6/DanDanPlay-Personal-Web-Style-3.6.zip)** · [版本说明与校验文件](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/tag/3.6)
+**[下载 3.7 安装包 ZIP](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/download/3.7/DanDanPlay-Personal-Web-Style-3.7.zip)** · [版本说明与校验文件](https://github.com/OuNiSang/DanDanPlay-Personal-Web-Style/releases/tag/3.7)
 
-3.6 加入 **F 全屏切换、手机横拖预览与松手定位**，并更新首页首次选片、放送日期与跨日归档、媒体库连续浏览。兼容弹弹play Windows 18.2.4。3.5 的单一状态角标、播放恢复及客户端 E-AC-3 软件解码继续保留。
+3.7 让浏览器在遇到已识别且原生不支持的 E-AC-3 音轨时自动启用软件解码，播放时可同时显示网页字幕列表提供的 ASS 字幕。字幕优先简体中文，然后是繁体中文，手动选择优先。Chrome 的 Global Speed 面板可以直接调整软解播放速度。当前引擎支持 0.5× 到 2×，超出范围时播放器会显示实际采用的倍速。
 
 > 电脑端默认使用 3.x 界面，右上角可切换稳定版。宽度不超过 768px 时自动使用 2.4 稳定布局。桌面模式仍沿用 Web1 3.0 标识，以保留原有偏好设置。新的播放器控制同时适用于桌面、稳定版和手机。
 
 ## 界面预览
+
+### 软件解码与中文字幕
+
+播放结束后默认倒计时 5 秒进入下一集，可取消或在设置中关闭自动连播。按 J 或点「跳过片头」快进 85 秒；按 ?、打开右键菜单或进入设置可查看快捷键。
+
+![3.7 桌面播放器使用 E-AC-3 软解，同时显示网页选择的简体字幕](screenshots/player-subtitles-3.7.png)
+
+![3.7 手机播放器横屏显示简体字幕](screenshots/player-subtitles-mobile-3.7.png)
 
 ### 连续 CD 架与首次展开
 
@@ -74,11 +82,11 @@
 
 ![Web1 3.6 手机播放器：上下集、跳过片头与横拖进度](screenshots/player-stable-mobile-3.6.png)
 
-标有 3.6 的预览来自本次最终候选；历史标有 3.4/3.5 的素材展示保留的既有界面。所有公开预览使用虚构作品、明暗封面、长短标题与缺图案例，不含真实媒体清单、账号、服务器或播放记录。GIF 是界面演示，不代表实际设备帧率。
+标有 3.7 的预览来自本次候选，标有 3.6 的预览展示上版保留的交互；历史标有 3.4/3.5 的素材展示保留的既有界面。所有公开预览使用虚构作品、明暗封面、长短标题与缺图案例，不含真实媒体清单、账号、服务器或播放记录。GIF 是界面演示，不代表实际设备帧率。
 
 ## 安装与回退
 
-1. 下载独立附件 **`DanDanPlay-Personal-Web-Style-3.6.zip`** 并完整解压，不要直接在压缩包内运行。
+1. 下载独立附件 **`DanDanPlay-Personal-Web-Style-3.7.zip`** 并完整解压，不要直接在压缩包内运行。
 2. 建议先退出弹弹play。
 3. 双击 `manage-style.bat`，选择 `1` 安装或重新应用。
 4. 在弹弹play中开启远程访问，进入客户端显示地址的 `/web1/index.html`。
@@ -99,6 +107,12 @@
 GitHub 自动生成的 `Source code` 压缩包仍可用，推荐使用独立安装附件。附件下载次数表示请求次数，不等于独立用户或安装人数；本项目没有为此添加使用遥测。
 
 ## 更新记录
+
+### 3.7
+
+- 增加 MKV E-AC-3 检测、软件解码字幕与简繁中文自动选择。
+- 加入自动连播、J 跳片头和快捷键帮助。
+- 离开播放页时保存本机观看位置。软解续播会在首帧和播放时钟就绪后定位，暂停、拖动和切换标签时可随时回到上次离页位置。
 
 ### 3.6
 
@@ -153,7 +167,7 @@ GitHub 自动生成的 `Source code` 压缩包仍可用，推荐使用独立安�
 
 播放器下方可切回原生；视频 URL 添加 `decoder=native` 强制原生，`decoder=software` 可显式试用软解码。自动判断失败、信息不足或混合音轨时保留原生路径。
 
-**当前软解码不显示高级 ASS 字幕**，会明确提示；切回原生后恢复原生字幕路径。软解码下原生画中画、AirPlay 和截图功能不可用。已验收不代表全部编码、容器、手机或长时间播放均已验证；HEVC 软件视频解码可能消耗较多 CPU 与内存。未声称机器量化同步误差达到固定毫秒界限。
+MP4 或 MKV 的音轨均为 E-AC-3 且浏览器报告不支持时，播放器会自动切换。网页字幕跟随软解播放时间，支持暂停、拖动、跳过片头和手机横屏。软解码下原生画中画、AirPlay 和截图功能不可用。已验收不代表全部编码、容器、手机或长时间播放均已验证；HEVC 软件视频解码可能消耗较多 CPU 与内存。未声称机器量化同步误差达到固定毫秒界限。
 
 全源码校验仍有 **5 项既存下载/遥控页面检查失败**：下载页同一整页重试命中两条规则，另有下载、电脑遥控、Android 遥控的 `beforeunload` 清理各一条。这些文件不在本次发布 payload，规则未删除、失败未改称通过，也未将无关修复混入本批。
 
@@ -167,7 +181,7 @@ pwsh -NoProfile -File .\scripts\manage-style.ps1 -Action restore -TargetPath "D:
 
 管理器兼容 Windows PowerShell 5.1。命令行遇到版本不匹配时默认退出；仅在自行确认兼容性后才考虑 `-Force`。
 
-维护者可用 PowerShell 7 执行 `scripts/build-release.ps1 -Version 3.6`，向 `dist/` 生成 ZIP 与校验文件。脚本核对 manifest 和 payload 完整文件集合，并拒绝覆盖已有产物。
+维护者可用 PowerShell 7 执行 `scripts/build-release.ps1 -Version 3.7`，向 `dist/` 生成 ZIP 与校验文件。脚本核对 manifest 和 payload 完整文件集合，并拒绝覆盖已有产物。
 
 `payload/` 按实际测试源码保留文件字节，Git 不自动改写其中的行尾；安装附件与对应版本的 payload 可逐文件校验。
 

@@ -4,3 +4,6 @@
      and injects the toggle button after DOM ready. -->
 <script src="js/theme.js?v=@Model.StaticResourceVersion&amp;ui=3.0-version-r2"></script>
 <script src="js/app.js?v=@Model.StaticResourceVersion"></script>
+
+<link rel="stylesheet" href="css/video-progress.css?v=@Model.StaticResourceVersion&amp;ui=progress-r1">
+<script src="js/video-progress.js?v=@Model.StaticResourceVersion&amp;ui=exit-resume-r2"></script>
