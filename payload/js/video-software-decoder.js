@@ -66,12 +66,12 @@
     function nativeEac3(video) {
         return !!video.canPlayType('audio/mp4; codecs="ec-3"');
     }
-    async function prepare(selection) {
+    async function prepare(selection, signal) {
         var mode = new URL(global.location.href).searchParams.get('decoder');
         if (mode === 'native' || selection.isCompatible) return selection;
         if (mode === 'software') return Object.assign({}, selection, { software: true, decoderReason: '用户指定软件解码' });
         if (nativeEac3(document.createElement('video')) || !global.DandanVideoCodecProbe) return selection;
-        var result = await global.DandanVideoCodecProbe.inspect(selection.url);
+        var result = await global.DandanVideoCodecProbe.inspect(selection.url, { signal: signal });
         if (result.codec === 'eac3') return Object.assign({}, selection, { software: true, decoderReason: '原生不支持 E-AC-3' });
         return selection;
     }
@@ -86,6 +86,7 @@
         var volume = video.volume, rate = video.playbackRate || 1, seeking = false, ended = false, error = null;
         var firstFrame = false, clockObserved = false, width = 0, height = 0, frameId = 0, frameCallbacks = new Map(), resize = null;
         var seekChain = Promise.resolve(), desiredTime = 0, panel = null, status = null, toggle = null;
+        var metadataSource = null, metadataUrl = null;
         var originalDestroy = null, originalScreenshot = null, records = [], nativeResume = null, nativeRestore = null, nativeSeeked = null, timerDescriptor = null, timerGuarded = false, requestedLoading = false;
         var EMPTY = { length: 0, start: function () { throw new DOMException('No range', 'IndexSizeError'); }, end: function () { throw new DOMException('No range', 'IndexSizeError'); } };
         function record(event, data) {
@@ -120,6 +121,37 @@
             if (engine) engine.setVolume(muted ? 0 : volume, true);
             emit('volumechange');
         }
+        function syncPlaybackRate() {
+            if (!active || destroyed) return;
+            rate = video.playbackRate;
+            if (engine) engine.setPlaybackRate(rate);
+            if (firstFrame && !error) showPlaybackStatus();
+        }
+        function showPlaybackStatus() {
+            var limited = rate < 0.5 || rate > 2;
+            notify('软件解码 · E-AC-3 试用' + (limited ? ' · 当前 ' + engine.getPlaybackRate() + '×（支持 0.5–2×）' : ''));
+        }
+        function publishDuration() {
+            if (metadataSource && metadataSource.readyState === 'open' && Number.isFinite(duration) && duration > 0) {
+                metadataSource.duration = duration;
+            }
+        }
+        function connectNativeMetadata() {
+            // Extension content scripts see native media properties in an isolated world.
+            // An empty MediaSource exposes the real duration without fetching or decoding the file twice.
+            if (!global.MediaSource) return;
+            metadataSource = new MediaSource();
+            metadataSource.addEventListener('sourceopen', publishDuration);
+            metadataUrl = URL.createObjectURL(metadataSource);
+            video.setAttribute('src', metadataUrl);
+            native.load();
+        }
+        function disconnectNativeMetadata() {
+            if (!metadataSource) return;
+            metadataSource.removeEventListener('sourceopen', publishDuration);
+            URL.revokeObjectURL(metadataUrl);
+            metadataSource = metadataUrl = null;
+        }
         function seekTo(value) {
             value = Number(value);
             if (!Number.isFinite(value) || value < 0 || destroyed) return;
@@ -144,6 +176,7 @@
             }).catch(function (reason) { fail(reason); throw reason; });
         }
         function pause() {
+            if (playing && engine && clockObserved && !seeking) time = Number(engine.currentTime) / 1000;
             playing = false;
             if (engine) Promise.resolve(engine.pause()).catch(fail);
             emit('pause');
@@ -151,13 +184,13 @@
         function rendered() {
             if (!active || destroyed) return;
             firstFrame = true;
-            if (engine.canvas) { width = engine.canvas.width; height = engine.canvas.height; }
+            if ((!width || !height) && engine.canvas) { width = engine.canvas.width; height = engine.canvas.height; }
             emit('loadeddata'); emit('canplay');
             var callbacks = Array.from(frameCallbacks.values());
             frameCallbacks.clear();
             callbacks.forEach(function (callback) { callback(performance.now(), { mediaTime: time, presentedFrames: 1, width: width, height: height }); });
             player.container.classList.remove('dplayer-loading');
-            notify('软件解码 · E-AC-3 试用');
+            showPlaybackStatus();
         }
         function installFacade() {
             var getters = {
@@ -170,10 +203,9 @@
                 seekable: function () { return Number.isFinite(duration) ? { length: 1, start: function () { return 0; }, end: function () { return duration; } } : EMPTY; }
             };
             Object.keys(getters).forEach(function (name) { property(name, { get: getters[name] }); });
-            property('currentTime', { get: function () { return engine && clockObserved && !seeking ? Number(engine.currentTime) / 1000 : time; }, set: seekTo });
+            property('currentTime', { get: function () { return engine && playing && clockObserved && !seeking ? Number(engine.currentTime) / 1000 : time; }, set: seekTo });
             property('volume', { get: function () { return volume; }, set: function (value) { volume = Math.min(1, Math.max(0, Number(value) || 0)); updateVolume(); } });
             property('muted', { get: function () { return muted; }, set: function (value) { muted = !!value; updateVolume(); } });
-            property('playbackRate', { get: function () { return rate; }, set: function (value) { rate = Number(value) || 1; if (engine) engine.setPlaybackRate(rate); emit('ratechange'); } });
             property('src', { get: function () { return originalUrl; }, set: function (value) { originalUrl = new URL(value, location.href).href; time = desiredTime = 0; } });
             property('play', { value: requestPlay }); property('pause', { value: pause });
             property('load', { value: function () { var keep = time, resume = playing; ready = open(keep); ready.catch(fail); if (resume) requestPlay().catch(function () {}); } });
@@ -187,7 +219,7 @@
         }
         async function open(position) {
             var own = ++generation, old = engine; engine = null;
-            firstFrame = false; clockObserved = false; error = null; duration = NaN; time = desiredTime = position || 0; seeking = false;
+            firstFrame = false; clockObserved = false; width = height = 0; error = null; duration = NaN; time = desiredTime = position || 0; seeking = false;
             emit('emptied'); emit('loadstart'); notify('正在读取软件解码器 · 试用');
             await disposeEngine(old); await cleanup;
             var Library = await loadLibrary();
@@ -198,14 +230,15 @@
                 enableJitterBuffer: false, audioWorkletBufferLength: 10, preLoadTime: 0.2, loop: false });
             function on(name, fn) { instance.on(name, function () { if (own === generation && active && !destroyed) fn.apply(null, arguments); }); }
             on(Library.Events.FIRST_VIDEO_RENDERED, rendered);
-            on(Library.Events.TIME, function () { if (!seeking && firstFrame) { clockObserved = true; time = Number(instance.currentTime) / 1000; } emit('timeupdate'); });
+            on(Library.Events.TIME, function () { if (playing && !seeking && firstFrame) { clockObserved = true; time = Number(instance.currentTime) / 1000; } emit('timeupdate'); });
             on(Library.Events.PLAYING, function () { if (playing) emit('playing'); else instance.pause(); });
-            on(Library.Events.SEEKED, function () { seeking = false; time = clockObserved ? Number(instance.currentTime) / 1000 : desiredTime; emit('seeked'); emit('timeupdate'); });
-            on(Library.Events.ENDED, function () { ended = true; playing = false; emit('ended'); });
+            on(Library.Events.SEEKED, function () { seeking = false; time = playing && clockObserved ? Number(instance.currentTime) / 1000 : desiredTime; emit('seeked'); emit('timeupdate'); });
+            on(Library.Events.ENDED, function () { if (Number.isFinite(duration)) time = duration; ended = true; playing = false; emit('ended'); });
             on(Library.Events.ERROR, function (reason) { fail(reason || '解码失败'); });
             await instance.load(new URL(originalUrl, location.href).href, { ioLoaderOptions: { preload: 1048576 } });
             if (!active || destroyed || own !== generation) return;
             duration = Number(instance.getDuration()) / 1000;
+            publishDuration();
             var streams = instance.getStreams();
             var visual = streams.find(function (stream) { return stream.codecparProxy && stream.codecparProxy.codecType === 0; });
             if (visual) { width = visual.codecparProxy.width; height = visual.codecparProxy.height; }
@@ -225,6 +258,9 @@
             nativeResume = nativeSeeked = nativeRestore = null;
             playing = !video.paused; native.pause(); video.removeAttribute('src'); native.load();
             active = true; installFacade();
+            video.addEventListener('ratechange', syncPlaybackRate);
+            connectNativeMetadata();
+            video.playbackRate = rate;
             document.body.classList.add('ddp-software-page');
             layer = document.createElement('div'); layer.className = 'ddp-software-surface';
             video.parentNode.insertBefore(layer, video); video.classList.add('ddp-software-facade');
@@ -239,7 +275,10 @@
         async function disable() {
             if (!active || destroyed) return;
             var position = time, resume = playing, old = engine; engine = null;
+            rate = video.playbackRate;
             active = false; playing = false; generation++; frameCallbacks.clear();
+            video.removeEventListener('ratechange', syncPlaybackRate);
+            disconnectNativeMetadata();
             if (resize) resize.disconnect(); resize = null;
             try { await disposeEngine(old); } catch (reason) { record('cleanup-error', String(reason.message || reason)); }
             if (destroyed) return;
@@ -288,6 +327,8 @@
         function destroy() {
             if (destroyed) return cleanup;
             destroyed = true; active = false; generation++; playing = false; frameCallbacks.clear();
+            video.removeEventListener('ratechange', syncPlaybackRate);
+            disconnectNativeMetadata();
             if (resize) resize.disconnect();
             if (nativeResume) video.removeEventListener('loadedmetadata', nativeResume);
             if (nativeSeeked) video.removeEventListener('seeked', nativeSeeked);

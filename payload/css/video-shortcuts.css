@@ -1,0 +1,94 @@
+.video-page #dplayer .dplayer-menu { z-index: 5; }
+.video-page #dplayer .dplayer-setting-box {
+    max-height: var(--ddp-shortcuts-menu-room, none);
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+.video-page #dplayer .dplayer-shortcuts-menu,
+.video-page #dplayer .dplayer-setting .dplayer-shortcuts-setting {
+    appearance: none;
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 34px;
+    margin: 0;
+    padding: 5px 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: 14px/24px system-ui, "Microsoft YaHei", sans-serif;
+    text-align: left;
+    cursor: pointer;
+}
+.video-page #dplayer .dplayer-shortcuts-menu:hover,
+.video-page #dplayer .dplayer-setting .dplayer-shortcuts-setting:hover { background: rgba(255, 255, 255, .08); }
+.video-page #dplayer .dplayer-shortcuts-menu:active,
+.video-page #dplayer .dplayer-setting .dplayer-shortcuts-setting:active { background: rgba(255, 255, 255, .16); }
+.video-page #dplayer .dplayer-shortcuts-menu:focus-visible,
+.video-page #dplayer .dplayer-setting .dplayer-shortcuts-setting:focus-visible { outline: 2px solid var(--video3-signal, var(--accent, #ffb53a)); outline-offset: -2px; }
+.video-page #dplayer .dplayer-shortcuts-menu:disabled,
+.video-page #dplayer .dplayer-setting .dplayer-shortcuts-setting:disabled { opacity: .5; cursor: default; }
+.video-page #dplayer .dplayer-shortcuts-dialog {
+    position: fixed;
+    inset: 0;
+    box-sizing: border-box;
+    width: min(440px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    padding: 22px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid #62705b;
+    border-top: 3px solid var(--video3-signal, var(--accent, #ffb53a));
+    border-radius: 5px;
+    background: #111610;
+    color: #f2f4ef;
+    font: 14px/1.5 system-ui, "Microsoft YaHei", sans-serif;
+    text-align: left;
+    box-shadow: 0 12px 48px #0009;
+}
+.dplayer-shortcuts-dialog::backdrop { background: rgba(0, 0, 0, .68); }
+.dplayer-shortcuts-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dplayer-shortcuts-dialog h2 { margin: 0; font-size: 21px; font-weight: 700; }
+.dplayer-shortcuts-dialog p { margin: 14px 0; color: #c0c8ba; }
+.dplayer-shortcuts-dialog table { width: 100%; border-collapse: collapse; }
+.dplayer-shortcuts-dialog th { color: #b0bba8; font-size: 12px; font-weight: 500; }
+.dplayer-shortcuts-dialog th, .dplayer-shortcuts-dialog td { padding: 10px 6px; border-bottom: 1px solid #3e4938; }
+.dplayer-shortcuts-dialog td:first-child { width: 36%; white-space: nowrap; }
+.dplayer-shortcuts-dialog kbd {
+    display: inline-block;
+    min-width: 26px;
+    padding: 1px 5px;
+    border: 1px solid #66735f;
+    border-radius: 3px;
+    background: #242d20;
+    color: #f2f4ef;
+    font: 13px/23px ui-monospace, monospace;
+    text-align: center;
+    box-shadow: 0 2px 0 #000;
+}
+.dplayer-shortcuts-dialog small { display: block; margin-top: 16px; color: #b9c3b1; font-size: 12px; }
+.video-page #dplayer .dplayer-shortcuts-dialog button {
+    appearance: none;
+    min-width: 60px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid #7b8b70;
+    border-radius: 3px;
+    background: #20291c;
+    color: #f2f4ef;
+    font: inherit;
+    cursor: pointer;
+}
+.video-page #dplayer .dplayer-shortcuts-dialog button:hover { background: #35462c; }
+.video-page #dplayer .dplayer-shortcuts-dialog button:active { transform: translateY(1px); }
+.video-page #dplayer .dplayer-shortcuts-dialog button:focus-visible { outline: 2px solid var(--video3-signal, var(--accent, #ffb53a)); outline-offset: 3px; }
+.video-page #dplayer .dplayer-shortcuts-dialog button:disabled { opacity: .5; cursor: default; transform: none; }
+@container video-player (max-width: 640px) {
+    .video-page #dplayer .dplayer-shortcuts-menu,
+    .video-page #dplayer .dplayer-setting .dplayer-shortcuts-setting { min-height: 44px; }
+}
+@media (max-width: 480px) {
+    .video-page #dplayer .dplayer-shortcuts-dialog { width: calc(100vw - 24px); padding: 16px; }
+}
